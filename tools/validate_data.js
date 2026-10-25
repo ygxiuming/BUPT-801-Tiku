@@ -22,6 +22,9 @@ require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
 require('../data/figures/2022/_index.js');
+require('../data/figures/2020/_index.js');
+require('../data/questions/2020/paper.js');
+require('../data/questions/2020/answer.js');
 require('../data/questions/2021/paper.js');
 require('../data/questions/2021/answer.js');
 require('../data/questions/2022/paper.js');
@@ -67,7 +70,8 @@ const EXPECT = {
   2023: { choice: 50, big: 8, score: 150 },
   2024: { choice: 40, big: 9, score: 150 },
   2025: { choice: 30, big: 8, score: 150 },
-  2026: { choice: 40, big: 7, score: 150 }
+  2026: { choice: 40, big: 7, score: 150 },
+  2020: { choice: 40, big: 8, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -719,6 +723,133 @@ t.push(['2026三(3) 门限 -3Tb、Pe=Q(√(E_b/N0))', approx((2 - 8) / 2, -3) &&
   t.push(['2024十(5) 噪声=1/48', approx(se2, 1 / 48, 1e-6) && approx(sx2 - 2 * sxy + sy2, 1 / 48, 1e-6)]);
   t.push(['2024十(6) SNR=E[X²]/噪声=96（按提示值 ≈20dB）', approx(sx2 / se2, 96, 1e-3)]);
 })();
+
+// ---------------- 2020 数值抽查（独立方法复核） ----------------
+// (5)(6) 能量信号 2sinc(2000τ)：E=R(0)=2；带宽由傅里叶积分数值验证 |X(f)|² 在 |f|>1000 Hz 处为零
+t.push(['2020(5) E=R(0)=2', approx(2, 2)]);
+(function () {
+  const N = 400000, T = 0.05, h = 2 * T / N; // τ∈[-50ms,50ms]，50 个 sinc 瓣
+  const X = (f) => { let re = 0, im = 0; for (let i = 0; i < N; i++) { const tau = -T + (i + 0.5) * h; const s = 2 * Math.sin(Math.PI * 2000 * tau) / (Math.PI * 2000 * tau); re += s * Math.cos(2 * Math.PI * f * tau) * h; im -= s * Math.sin(2 * Math.PI * f * tau) * h; } return re * re + im * im; };
+  const inb = X(500);
+  // 测点别贴着带边（1000 Hz）：截断积分在跳变处有 Gibbs 振荡，X(999) 只有 3.6e-7 的假象。
+  // 取带内 500 Hz 验平台值 ≈1e-6，取带外 1100 Hz 验泄漏确实掉下去了。
+  t.push(['2020(6) 带内 |X(500)|²≈1e-6、带外 |X(1100)|²<1e-3·带内', approx(inb, 1e-6, 2e-7) && X(1100) < 1e-3 * inb]);
+})();
+// (9) AM 调制效率 η=Pm/2 /(1/2+Pm/2)=1/6
+t.push(['2020(9) η=1/6', approx(0.1 / 0.6, 1 / 6)]);
+// (10) 差分编解码 + BSC 蒙特卡洛：P=2p(1-p)
+(function () {
+  let err = 0; const N = 200000, p = 0.1;
+  let b = 0, prevB = 0, prevE = 0;
+  for (let i = 0; i < N; i++) {
+    const a = Math.random() < 0.5 ? 0 : 1;
+    b = a ^ b;
+    const e = Math.random() < p ? 1 : 0;
+    const bt = b ^ e;
+    const at = bt ^ prevB;
+    if (at !== a) err++;
+    prevB = bt; prevE = e;
+  }
+  t.push(['2020(10) 蒙特卡洛 ≈2p(1-p)=0.18', Math.abs(err / N - 2 * p * (1 - p)) < 0.005]);
+})();
+// (14) 16QAM = 两路独立 4ASK：1-(1-p)² ≈ 0.008
+t.push(['2020(14) 1-(1-0.004)²≈0.008', Math.abs(1 - Math.pow(1 - 0.004, 2) - 0.008) < 1e-4]);
+// (18) A 律第 8 段译码：1024+(15+0.5)×64
+t.push(['2020(18) +2016 mV', approx(1024 + 15.5 * 64, 2016)]);
+// (27) 带通采样：谱副本（周期 fs）两两不重叠 → fs=6 可行、fs=5.9 混叠
+(function () {
+  const clash = (fs) => {
+    const iv = [];
+    for (let k = -15; k <= 15; k++) { iv.push([9.5 + k * fs, 12 + k * fs, k]); iv.push([-12 + k * fs, -9.5 + k * fs, k]); }
+    for (let i = 0; i < iv.length; i++) for (let j = i + 1; j < iv.length; j++) {
+      if (iv[i][2] === iv[j][2]) continue;
+      if (iv[i][0] < iv[j][1] - 1e-9 && iv[j][0] < iv[i][1] - 1e-9) return true;
+    }
+    return false;
+  };
+  t.push(['2020(27) fs=6 不混叠、fs=5.9 混叠', !clash(6) && clash(5.9)]);
+})();
+// 二：方差 ∫2N0cos²(πf/2B)df=2N0B；3dB 点 cos²(π/4)=1/2
+(function () {
+  const N = 200000, B = 1, N0 = 1, h = 2 * B / N;
+  let s = 0;
+  for (let i = 0; i < N; i++) { const f = -B + (i + 0.5) * h; s += 2 * N0 * Math.pow(Math.cos(Math.PI * f / (2 * B)), 2) * h; }
+  t.push(['2020二 D[n]=2N0B', approx(s, 2 * N0 * B, 1e-6)]);
+  t.push(['2020二 3dB 带宽 B/2', approx(2 * Math.pow(Math.cos(Math.PI * (B / 2) / (2 * B)), 2), N0)]);
+})();
+// 三：B 点噪声功率 = 200N0+100N0=300N0，信噪比 1000
+t.push(['2020三 PnB=300N0、SNR=1000', approx(200 * 1e-5 + 100 * 1e-5, 3e-3) && approx(3 / 3e-3, 1000)]);
+// 四：Eb=∫s1²dt=2Tb、E12=0（数值积分）；噪声方差 N0/2+N0/2
+(function () {
+  const N = 400000, Tb = 1, h = Tb / N;
+  let e1 = 0, e12 = 0;
+  for (let i = 0; i < N; i++) {
+    const t0 = (i + 0.5) * h;
+    const s1 = 2 * Math.cos(22 * Math.PI * t0 / Tb), s2 = 2 * Math.cos(20 * Math.PI * t0 / Tb);
+    e1 += s1 * s1 * h; e12 += s1 * s2 * h;
+  }
+  t.push(['2020四 Eb=2Tb、E12=0', approx(e1, 2 * Tb, 1e-6) && Math.abs(e12) < 1e-6]);
+  t.push(['2020四 D[Z]=N0', approx(0.5 + 0.5, 1)]);
+})();
+// 五：16 点枚举 Es=10、dmin=2
+(function () {
+  const P = [];
+  for (const a of [-1, 1]) for (const b of [-1, 1]) for (const c of [-1, 1]) for (const d of [-1, 1]) P.push([2 * a + c, 2 * b + d]);
+  const es = P.reduce((s, p) => s + p[0] * p[0] + p[1] * p[1], 0) / 16;
+  let dm = 1e9;
+  for (let i = 0; i < 16; i++) for (let j = i + 1; j < 16; j++) dm = Math.min(dm, Math.hypot(P[i][0] - P[j][0], P[i][1] - P[j][1]));
+  t.push(['2020五 Es=10、dmin=2', approx(es, 10, 1e-9) && approx(dm, 2, 1e-9)]);
+})();
+// 六：32 个等概结局枚举 → H(Y)=4、H(Y|X)=2、I=2
+(function () {
+  const cnt = {}, cntX = {};
+  let tot = 0;
+  for (let ix = 0; ix < 8; ix++) for (const Z of [1, 2]) for (const th of [0, Math.PI]) {
+    const ang = Math.PI / 4 + ix * Math.PI / 4 + th;
+    const y = Z.toFixed(0) + '|' + Math.round(Math.cos(ang) * 1e6) / 1e6 + ',' + Math.round(Math.sin(ang) * 1e6) / 1e6;
+    cnt[y] = (cnt[y] || 0) + 1; cntX[ix] = (cntX[ix] || {});
+    const kx = ix, ky = y;
+    cntX[ix][ky] = (cntX[ix][ky] || 0) + 1;
+    tot++;
+  }
+  const H = (c, n) => -Object.values(c).reduce((s, v) => s + (v / n) * Math.log2(v / n), 0);
+  const hy = H(cnt, tot);
+  const hyc = Object.values(cntX).reduce((s, c) => s + H(c, Object.values(c).reduce((a, v) => a + v, 0)) * (Object.values(c).reduce((a, v) => a + v, 0) / tot), 0);
+  t.push(['2020六 H(Y)=4、H(Y|X)=2、I=2', approx(hy, 4, 1e-9) && approx(hyc, 2, 1e-9) && approx(hy - hyc, 2, 1e-9)]);
+})();
+// 七：概率、E[X²]、量化噪声（数值积分）、哈夫曼最优码长
+(function () {
+  const P = { 5: 1 / 12, 3: 1 / 6, 1: 1 / 4 };
+  t.push(['2020七(1) 概率 1/12,1/6,1/4(×2 对称)', approx(2 * (P[5] + P[3] + P[1]), 1)]);
+  const N = 600000, h = 12 / N;
+  const pdf = (x) => { const a = Math.abs(x); return a <= 2 ? 1 / 8 : a <= 4 ? 1 / 12 : 1 / 24; };
+  const qy = (x) => [ -5, -3, -1, 1, 3, 5 ][Math.min(5, Math.max(0, Math.floor((x + 6) / 2)))];
+  let ex2 = 0, en = 0;
+  for (let i = 0; i < N; i++) { const x = -6 + (i + 0.5) * h, w = pdf(x) * h; ex2 += x * x * w; en += (x - qy(x)) * (x - qy(x)) * w; }
+  t.push(['2020七(2) E[X²]=8、噪声=1/3', approx(ex2, 8, 1e-6) && approx(en, 1 / 3, 1e-6)]);
+  // 哈夫曼：每次合并最小两枝，平均码长 = 各次合并时子树概率之和
+  const nodes = [[1 / 12, 0], [1 / 12, 0], [1 / 6, 0], [1 / 6, 0], [1 / 4, 0], [1 / 4, 0]];
+  let L = 0;
+  while (nodes.length > 1) {
+    nodes.sort((a, b) => a[0] - b[0]);
+    const A = nodes.shift(), B = nodes.shift();
+    L += A[0] + B[0];
+    nodes.push([A[0] + B[0], Math.max(A[1], B[1]) + 1]);
+  }
+  t.push(['2020七(3) 平均码长 5/2', approx(L, 2.5, 1e-9)]);
+})();
+// 八：GF(2) 卷积编码复核四个码字 + 生成矩阵行线性性
+(function () {
+  const enc = (bits) => { const out = []; for (let n = 0; n < 4; n++) { const b = (i) => (n - i >= 0 && bits[n - i]) || 0; const c1 = b(0) ^ b(1) ^ b(2), c2 = b(0) ^ b(1); out.push(c1, c2); } return out.join(''); };
+  const got = { 1000: enc([1, 0, 0, 0]), 1100: enc([1, 1, 0, 0]), 1110: enc([1, 1, 1, 0]), 1111: enc([1, 1, 1, 1]) };
+  t.push(['2020八(2) 四个码字', got[1000] === '11111000' && got[1100] === '11000110' && got[1110] === '11001001' && got[1111] === '11001010']);
+  const rows = ['11111000', '00111110', '00001111', '00000011'];
+  const xor = (a, b) => a.split('').map((c, i) => c ^ b[i]).join('');
+  const all = rows.reduce(xor);
+  t.push(['2020八(3) 行模二和=1111 码字、行4=0001 码字', all === got[1111] && rows[3] === enc([0, 0, 0, 1])]);
+})();
+// 九：Rb=12、α=2W/Rs-1=1/3、η=3
+t.push(['2020九 Rb=12、α=1/3、η=3', approx(1 + 2 + 3 + 6, 12) && approx(2 * 4 / 6 - 1, 1 / 3) && approx(12 / 4, 3)]);
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });
 console.log('\n数值抽查: ' + t.map(([n, ok]) => (ok ? '✓' : '✗') + n).join(' '));

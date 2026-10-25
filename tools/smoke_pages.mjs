@@ -20,7 +20,15 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const APP = path.join(ROOT, 'app')
 const DIST = path.join(APP, 'dist')
 const require = createRequire(path.join(APP, 'package.json'))
-const { JSDOM } = require('/home/xiuming/.workbuddy/binaries/node/workspace/node_modules/jsdom')
+// jsdom 先按普通依赖找（CI 里 npm i jsdom 即可），找不到再退回本机固定路径（沙箱环境）
+function loadJsdom() {
+  for (const p of ['jsdom', '/home/xiuming/.workbuddy/binaries/node/workspace/node_modules/jsdom']) {
+    try { return require(p) } catch (e) { /* 试下一个 */ }
+  }
+  console.error('缺少 jsdom：请先 npm i jsdom（或设 JSDOM_PATH 指向安装位置）')
+  process.exit(1)
+}
+const { JSDOM } = loadJsdom()
 
 const ROUTES = [
   ['/', '首页'],
@@ -45,6 +53,9 @@ const ROUTES = [
   ['/paper/2026', '试卷页2026'],
   ['/practice?y=2026', '练习页2026'],
   ['/exam?y=2026', '考试页2026'],
+  ['/paper/2020', '试卷页2020'],
+  ['/practice?y=2020', '练习页2020'],
+  ['/exam?y=2020', '考试页2020'],
   ['/stats', '统计页'],
   ['/figures', '图库页'],
   ['/review', '复习页'],
@@ -92,6 +103,13 @@ function globalsFor(w) {
   w.scrollTo = () => {}
   w.Element.prototype.scrollIntoView = () => {}
   w.confirm = () => true
+  // fetch：jsdom 不提供，缺了会解析到 Node 全局 fetch（undici），
+  // 在受限沙箱里初始化 Wasm 会直接 OOM 崩进程。试卷页用 fetch 探测排版服务可用性，
+  // 这里统一拒绝，等价于「静态托管、无后端」的真实场景。
+  const noFetch = async () => { throw new Error('fetch disabled in smoke') }
+  w.fetch = noFetch
+  // bundle 跑在 Node 的 ESM 作用域里，裸 fetch 解析到 globalThis，不是 jsdom 的 window
+  globalThis.fetch = noFetch
   // jsdom 没有这两个 API，导出/下载功能会用到；补桩让流程能走通
   if (!w.URL.createObjectURL) w.URL.createObjectURL = () => 'blob:mock'
   if (!w.URL.revokeObjectURL) w.URL.revokeObjectURL = () => {}
@@ -262,6 +280,23 @@ await step('练习页2024：选选项 → 查看解析', async () => {
 
 await step('练习页2026：选选项 → 查看解析', async () => {
   const w = await openPage('/practice?y=2026', 'prac26')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2020：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2020', 'prac20')
   const opt = w.document.querySelector('td[data-k]')
   if (!opt) throw new Error('找不到选项单元格 td[data-k]')
   click(w, opt)
