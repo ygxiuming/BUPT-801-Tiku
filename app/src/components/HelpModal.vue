@@ -46,10 +46,31 @@
             </section>
 
             <section class="help-sec">
+              <h4><Icon name="search" :size="15" /> 全站搜索</h4>
+              <dl class="keylist">
+                <dt><kbd>⌘</kbd>/<kbd>Ctrl</kbd> + <kbd>K</kbd></dt><dd>打开搜索面板</dd>
+                <dt><kbd>↑</kbd><kbd>↓</kbd> / <kbd>Enter</kbd></dt><dd>选择结果 / 直接打开</dd>
+                <dt><kbd>Esc</kbd></dt><dd>关闭</dd>
+              </dl>
+              <p class="help-tip">索引覆盖题干、选项、答案解析、易错点标签、知识点与图库；支持多个关键词（空格分隔，全部命中才算）。</p>
+            </section>
+
+            <section class="help-sec">
+              <h4><Icon name="refresh" :size="15" /> 间隔复习</h4>
+              <dl class="keylist">
+                <dt><kbd>Enter</kbd></dt><dd>显示答案</dd>
+                <dt><kbd>1</kbd>~<kbd>4</kbd></dt><dd>不会 / 模糊 / 会 / 很熟</dd>
+                <dt><kbd>←</kbd><kbd>→</kbd></dt><dd>切题</dd>
+              </dl>
+              <p class="help-tip">做过的题会按 FSRS 简化模型自动排期：不会 → 隔天再来；会 → 间隔按稳定度放大；很熟 → 再拉长 60%。</p>
+            </section>
+
+            <section class="help-sec">
               <h4><Icon name="layers" :size="15" /> 数据与记录</h4>
               <ul class="help-list">
-                <li>做题记录、收藏、模考进度全部存在浏览器本地（键 <code>bupt801-records-v1</code>），不上传服务器。</li>
-                <li>换浏览器或清缓存会丢失，可用「做题统计 → 清空记录」重置。</li>
+                <li>做题记录、复习排期、笔记、模考成绩全部存在浏览器本地，不上传服务器。</li>
+                <li><b>换设备 / 清缓存前，先去「做题统计 → 数据备份与恢复」导出 JSON</b>；新设备导入即续上（按 id 逐字段合并）。</li>
+                <li>存储键：记录 <code>bupt801-records-v1</code>、活动 <code>bupt801-activity-v1</code>、笔记 <code>bupt801-notes-v1</code>、模考 <code>bupt801-exams-v1</code>、计划 <code>bupt801-plan-v1</code>。</li>
                 <li>答案与解析经 AI 独立推导 + 参考解析 + 手写批注三重核对；与参考资料不一致处以严格推导为准并注明。</li>
               </ul>
             </section>

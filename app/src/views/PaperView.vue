@@ -1,5 +1,7 @@
 <template>
   <div class="wrap">
+    <h1 class="sr-only">{{ year }} 年真题试卷</h1>
+
     <!-- 工具条 -->
     <div class="paper-toolbar no-print" v-if="p">
       <router-link class="btn ghost sm" to="/">
@@ -9,7 +11,11 @@
       <button class="btn sm" :class="{ soft: showAns }" @click="toggleAns">
         <Icon :name="showAns ? 'check' : 'paper'" :size="14" />{{ showAns ? '已显示解析' : '显示解析' }}
       </button>
+      <div class="seg mode-seg" role="group" aria-label="卷面显示模式">
+        <span v-for="m in modes" :key="m.v" :class="{ on: mode === m.v }" @click="setMode(m.v)">{{ m.n }}</span>
+      </div>
       <span class="sep"></span>
+      <router-link class="btn sm ghost" :to="'/practice?y=' + year"><Icon name="target" :size="14" />刷这份卷</router-link>
       <button class="btn sm ghost" @click="printPaper"><Icon name="print" :size="14" />打印</button>
       <a class="btn sm" :href="pdfUrl(false)" target="_blank"><Icon name="download" :size="14" />试卷 PDF</a>
       <a class="btn sm primary" :href="pdfUrl(true)" target="_blank"><Icon name="download" :size="14" />含解析 PDF</a>
@@ -37,12 +43,12 @@
       </nav>
 
       <!-- 卷面 -->
-      <div class="paper-sheet" :class="{ 'hide-ans': !showAns }">
-        <div class="paper-head">
+      <div class="paper-sheet" :class="sheetClass">
+        <header class="paper-head">
           <div class="t1">北京邮电大学</div>
           <div class="t2">{{ year }} 年硕士研究生招生考试试题</div>
           <div class="t3">考试科目：{{ p.subject }}</div>
-        </div>
+        </header>
         <div class="paper-note">{{ p.note }}</div>
         <div v-html="bodyHtml" ref="bodyEl"></div>
       </div>
@@ -55,25 +61,41 @@ import Icon from '../components/Icon.vue'
 import { papers, escHtml } from '../lib/data.js'
 import { renderMath, figureSvg } from '../lib/render.js'
 
-const HAN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
-
 export default {
   name: 'PaperView',
   components: { Icon },
   props: { year: { type: String, required: true } },
-  data: () => ({ showAns: false, active: '' }),
+  data: () => ({
+    showAns: false,
+    mode: 'both',
+    active: '',
+    ansRendered: false,
+    modes: [
+      { v: 'both', n: '题 + 解析' },
+      { v: 'q', n: '只看题' },
+      { v: 'a', n: '只看解析' }
+    ]
+  }),
   computed: {
     p() { return papers()[this.year] || null },
     yearList() { return Object.keys(papers()).sort().reverse() },
+    sheetClass() {
+      return {
+        'hide-ans': !this.showAns,
+        'only-q': this.mode === 'q',
+        'only-a': this.mode === 'a'
+      }
+    },
     toc() {
       const p = this.p
       if (!p) return []
       const out = []
       const choice = p.questions.filter((q) => q.type === 'choice')
       const big = p.questions.filter((q) => q.type === 'big')
-      out.push({ id: 'sec-choice', label: '一、' + p.sections[0].name, note: choice.length + ' 题' })
+      out.push({ id: 'sec-choice', label: '一、' + p.sections[0].name, note: choice.length + ' 空' })
       out.push({ id: 'sec-big', label: '二、' + p.sections[1].name, note: big.length + ' 题' })
-      big.forEach((q, i) => out.push({ id: 'q-' + q.num, label: HAN[i] + '．第 ' + q.num + ' 题', note: q.score + ' 分', sub: true }))
+      // 大题序号直接用数据里的 q.num（中文数字），不再按数组下标推 —— 否则会整体错一位
+      big.forEach((q) => out.push({ id: 'q-' + q.num, label: '第 ' + q.num + ' 题', note: q.score + ' 分', sub: true }))
       return out
     },
     bodyHtml() {
@@ -89,14 +111,14 @@ export default {
       }
       const exp = (q) => {
         const keys = ['A', 'B', 'C', 'D'].filter((k) => q.exp.opts && q.exp.opts[k])
-        return `<div class="ans"><div class="ans-title">答案：<span class="ans-letter">${q.answer}</span><span class="ans-meta">${B.chapters.find((c) => c.id === q.chapter)?.name || ''}</span></div>` +
+        return `<div class="ans" id="ans-${q.id}"><div class="ans-title">答案：<span class="ans-letter">${q.answer}</span><span class="ans-meta">${B.chapters.find((c) => c.id === q.chapter)?.name || ''}</span></div>` +
           `<div class="ans-concl">${escHtml(q.exp.concl)}</div><div class="ans-opts">` +
           keys.map((k) => `<div class="opt-exp${k === q.answer ? ' right' : ''}"><b>(${k})</b>${escHtml(q.exp.opts[k])}</div>`).join('') +
           `</div>${q.exp.note ? `<div class="ans-note"><b>💡 提示：</b>${escHtml(q.exp.note)}</div>` : ''}</div>`
       }
       const bigSol = (q) => {
         const steps = (q.sol.steps || []).map((st) =>
-          `<details class="sol-step" open><summary class="math-zone">${escHtml(st.q)}</summary><div class="step-body">` +
+          `<details class="sol-step" open><summary>${escHtml(st.q)}</summary><div class="step-body">` +
           (st.body || []).map((x) => `<div class="step-line">${escHtml(x)}</div>`).join('') +
           (st.fig ? `<figure class="figblock">${figureSvg(this.year, st.fig)}</figure>` : '') +
           (st.ans ? `<div class="step-ans">${escHtml(st.ans)}</div>` : '') +
@@ -120,7 +142,7 @@ export default {
         let j = i + 1
         while (j < choice.length && choice[j].group === q.group) { cluster.push(choice[j]); j++ }
         // 一组选项覆盖多个空时按 optionSets 顺序展示（旧数据无 optionSets，沿用 options12/13/25/26 约定）
-        let multi = g.optionSets && g.optionSets.length
+        const multi = g.optionSets && g.optionSets.length
           ? g.optionSets.map((k) => g[k]).filter(Boolean)
           : [g.options12, g.options13, g.options25, g.options26].filter(Boolean)
         if (!multi.length && g.options) multi.push(g.options)
@@ -132,11 +154,12 @@ export default {
       }
       const big = p.questions.filter((q) => q.type === 'big')
       const s1 = p.sections[1]
-      // 大题分值不一定均匀（如2026第二题20分、其余15分），标题只报总分，明细交给 sections.intro
+      // 大题分值不一定均匀（如 2026 第二题 20 分、其余 15 分），标题只报总分
       html += `<div class="sec-title" id="sec-big">二、${s1.name}（共${s1.score}分）</div>`
       if (s1.intro) html += `<div class="sec-intro">${escHtml(s1.intro)}</div>`
-      big.forEach((q, idx) => {
-        html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${HAN[idx]}．（${q.score}分）</div><div class="stem">${blank(q.stem)}</div>`
+      big.forEach((q) => {
+        html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．（${q.score}分）<a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
+          `<div class="stem">${blank(q.stem)}</div>`
         if (q.fig) html += fig(q.fig)
         if (q.subs && q.subs.length) html += `<div class="subs">${q.subs.map((s) => `<div>${blank(s)}</div>`).join('')}</div>`
         html += bigSol(q) + `</div>`
@@ -152,15 +175,37 @@ export default {
     window.removeEventListener('scroll', this.onScroll)
   },
   watch: {
-    bodyHtml() { this.$nextTick(() => this.postRender()) },
-    year() { this.showAns = false }
+    bodyHtml() {
+      this.ansRendered = false
+      this.$nextTick(() => this.postRender())
+    },
+    year() { this.showAns = false; this.mode = 'both'; this.ansRendered = false },
+    showAns() { this.$nextTick(() => this.postRender()) }
   },
   methods: {
-    // 只对 v-html 容器渲染 KaTeX：避免 auto-render 改写 Vue 管理的文本节点导致 patch 崩溃
-    postRender() { if (this.$refs.bodyEl) renderMath(this.$refs.bodyEl) },
+    // 懒渲染：题面必渲染；解析区只在实际显示时渲染一次。
+    // 2024 年全卷 1,271 处公式，首屏不渲染解析可省掉大半 KaTeX 开销。
+    postRender() {
+      const el = this.$refs.bodyEl
+      if (!el) return
+      el.querySelectorAll('.qline, .opt-table, .bigq > .stem, .bigq > .subs, .sec-intro, .paper-note')
+        .forEach((node) => renderMath(node))
+      if (this.showAns && !this.ansRendered) {
+        el.querySelectorAll('.ans').forEach((node) => renderMath(node))
+        this.ansRendered = true
+      }
+    },
+    setMode(v) {
+      this.mode = v
+      this.showAns = v !== 'q'
+      this.$nextTick(() => this.postRender())
+    },
+    toggleAns() {
+      this.showAns = !this.showAns
+      this.mode = this.showAns ? (this.mode === 'q' ? 'both' : this.mode) : 'q'
+    },
     printPaper() { window.print() },
     pdfUrl(withAns) { return '/api/pdf/' + this.year + (withAns ? '/ans' : '/paper') },
-    toggleAns() { this.showAns = !this.showAns },
     goto(id) {
       const el = document.getElementById(id)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })

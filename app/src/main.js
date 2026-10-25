@@ -11,6 +11,9 @@ const app = createApp(App)
 app.config.errorHandler = function (err, instance, info) {
   window.__vueErrors = window.__vueErrors || []
   window.__vueErrors.push(String((err && err.message) || err) + ' @ ' + info)
+  // 保留堆栈，便于在无浏览器环境下定位到具体组件/计算属性
+  window.__vueStacks = window.__vueStacks || []
+  window.__vueStacks.push(String((err && err.stack) || err))
   console.error(err)
 }
 app.use(router).mount('#app')

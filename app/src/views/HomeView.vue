@@ -39,6 +39,20 @@
       </router-link>
     </div>
 
+    <!-- ============ 计划条 ============ -->
+    <div class="plan-strip" v-if="plan.weekly || plan.examDate">
+      <div class="ps-main">
+        <b v-if="daysLeft !== null">距考试 {{ daysLeft }} 天</b>
+        <b v-else>本周计划</b>
+        <span>本周 {{ week.cur }} / {{ plan.weekly }} 题 · 累计 {{ answeredAll }} / {{ qTotal }}</span>
+      </div>
+      <div class="pline thin ps-bar"><i :style="{ width: weekPct + '%' }"></i></div>
+      <router-link class="btn sm" :class="{ soft: due > 0 }" to="/review">
+        <Icon name="refresh" :size="14" />今日复习 {{ due }} 题
+      </router-link>
+      <router-link class="btn sm ghost" to="/stats">看数据</router-link>
+    </div>
+
     <!-- ============ 历年真题 ============ -->
     <div class="section-head" id="years">
       <div>
@@ -138,6 +152,22 @@
         <span class="go">查看数据 <Icon name="arrowRight" :size="13" /></span>
       </router-link>
 
+      <router-link class="feature-card" to="/review">
+        <div class="feature-ico"><Icon name="refresh" :size="19" /></div>
+        <h4>间隔复习</h4>
+        <p>FSRS 简化调度：按稳定度排出下次到期日</p>
+        <p>到期队列 + 四档评分 + 未来 14 天负荷</p>
+        <span class="go">开始复习 <Icon name="arrowRight" :size="13" /></span>
+      </router-link>
+
+      <router-link class="feature-card" to="/editor">
+        <div class="feature-ico"><Icon name="layers" :size="19" /></div>
+        <h4>录入编辑器</h4>
+        <p>表单化录题，KaTeX 实时预览与结构校验</p>
+        <p>一键导出 paper.js / answer.js 片段</p>
+        <span class="go">打开编辑器 <Icon name="arrowRight" :size="13" /></span>
+      </router-link>
+
       <router-link class="feature-card" to="/figures">
         <div class="feature-ico"><Icon name="image" :size="19" /></div>
         <h4>矢量图库</h4>
@@ -152,12 +182,22 @@
 <script>
 import Icon from '../components/Icon.vue'
 import { papers, chapters, chapterLabel, paperStat, chapterCoverage, totalPoints, shortTitle, findItem } from '../lib/data.js'
-import { progressOf, touchedIds, lastTouched } from '../lib/records.js'
+import { progressOf, touchedIds, lastTouched, rec, weekStats } from '../lib/records.js'
+import { plan, daysToExam } from '../lib/plan.js'
+import { dueIds } from '../lib/srs.js'
 
 export default {
   name: 'HomeView',
   components: { Icon },
   computed: {
+    plan() { return plan },
+    daysLeft() { return daysToExam() },
+    week() { return weekStats() },
+    weekPct() {
+      const g = plan.weekly || 0
+      return g ? Math.min(100, Math.round(this.week.cur / g * 100)) : 0
+    },
+    due() { return dueIds(rec, Date.now()).length },
     years() { return Object.keys(papers()).sort().reverse() },
     chapters() { return chapters() },
     pointTotal() { return totalPoints() },

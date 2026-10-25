@@ -18,9 +18,57 @@ export function renderMathZones(root) {
   scope.querySelectorAll('.math-zone').forEach(function (el) { renderMath(el) })
 }
 
+// 生成器给 marker / clipPath 起的 id 是按图内容算出来的短名（a241、a24c…），
+// 一张图单独看没问题，但同一页会同时挂上十几张图，撞 id 时 url(#a241) 会指向别的图的箭头，
+// getElementById 也只会拿到第一个。这里按「年-图名」给 id 加前缀，并把引用一起改掉。
+export function scopeIds(svgStr, prefix) {
+  let s = String(svgStr || '')
+  const p = String(prefix || 'f')
+  if (!s) return s
+  const ids = []
+  const re = /\sid\s*=\s*["']([^"']+)["']/g
+  let m
+  while ((m = re.exec(s))) ids.push(m[1])
+  if (!ids.length) return s
+  for (const id of ids) {
+    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const to = p + '-' + id
+    s = s.replace(new RegExp('url\\(["\']?#' + esc + '["\']?\\)', 'g'), 'url(#' + to + ')')
+    s = s.replace(new RegExp('(["\'])#' + esc + '\\1', 'g'), '$1#' + to + '$1')
+  }
+  // 最后改定义本身，避免刚改好的引用被再改一次
+  return s.replace(/\sid\s*=\s*["']([^"']+)["']/g, (mm, id) => ' id="' + p + '-' + id + '"')
+}
+
+// 同一张图可能在一页里出现多次（例如两个小问引用同一张配图），
+// 只按「年-图名」加前缀仍会撞，所以再叠上这张图本次渲染的序号。
+const figSeq = {}
+let figIssued = 0
+
+function nextFigPrefix(year, key) {
+  const k = String(year) + '/' + key
+  const n = (figSeq[k] = (figSeq[k] || 0) + 1)
+  // 页面反复重渲染会让计数一直涨，超量时清一次表，避免字符串与内存无上限增长
+  if (++figIssued > 5000) { for (const p in figSeq) delete figSeq[p]; figIssued = 0 }
+  return 'f' + year + '-' + key + '-' + n
+}
+
 export function figureSvg(year, key) {
   const f = (window.BUPT801.figures || {})[String(year)]
-  return (f && f[key]) || ''
+  const s = (f && f[key]) || ''
+  if (!s) return s
+  const meta = (window.BUPT801.figureMeta || {})[String(year)] || {}
+  const desc = (meta[key] && meta[key].desc) || key
+  return withTitle(scopeIds(s, nextFigPrefix(year, key)), desc)
+}
+
+// 给 SVG 注入 <title>：读屏与浏览器悬浮提示都能拿到图的语义名称。
+// 生成器输出的 SVG 没有 <title>，这里统一补，避免 42 张图全是「无名称图形」。
+export function withTitle(svgStr, text) {
+  const s = String(svgStr || '')
+  if (!s || /<title[\s>]/i.test(s)) return s
+  const t = String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return s.replace(/<svg\b[^>]*>/i, (m) => m + '<title>' + t + '</title>')
 }
 
 // viewBox-only 的 svg 没有固有尺寸，在 flex/受限容器里会塌缩成 0：

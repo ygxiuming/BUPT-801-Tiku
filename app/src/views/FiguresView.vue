@@ -13,7 +13,8 @@
     <div class="fig-toolbar">
       <div class="search-box">
         <Icon name="search" :size="16" />
-        <input v-model="kw" type="search" placeholder="搜索图名 / 题号 / 说明，如 眼图、q3recv、第五题" />
+        <input v-model="kw" type="search" aria-label="搜索图库"
+          placeholder="搜索图名 / 题号 / 说明，如 题五、星座、q3recv" />
       </div>
       <span class="chip" v-for="y in years" :key="y" :class="{ on: fYear === y }" @click="fYear = fYear === y ? '' : y">{{ y }}</span>
       <button class="btn sm ghost" v-if="kw || fYear" @click="kw = ''; fYear = ''">清除</button>
@@ -34,7 +35,7 @@
               <span class="badge" :class="g.kind === 'answer' ? 'warn' : 'brand'">{{ it.meta.q || '—' }}</span>
               <span class="fig-desc">{{ it.meta.desc }}</span>
             </div>
-            <figure class="figblock"><div v-html="fitted(it.svg)"></div></figure>
+            <figure class="figblock"><div v-html="fitted(it)"></div></figure>
             <div class="fig-file">{{ fileName(y, it) }}</div>
           </div>
         </div>
@@ -51,12 +52,15 @@
 <script>
 import Icon from '../components/Icon.vue'
 import { papers, figuresOf } from '../lib/data.js'
-import { fitSvg } from '../lib/render.js'
+import { fitSvg, withTitle, scopeIds } from '../lib/render.js'
 
 export default {
   name: 'FiguresView',
   components: { Icon },
-  data: () => ({ kw: '', fYear: '' }),
+  data() {
+    const q = new URLSearchParams(location.search)
+    return { kw: q.get('q') || '', fYear: q.get('y') || '' }
+  },
   computed: {
     years() { return Object.keys(papers()).sort().reverse() },
     allGroups() {
@@ -88,7 +92,10 @@ export default {
   },
   methods: {
     // 卡片内限高 176px、基准宽 560px 注入显式尺寸（viewBox-only 的 svg 无固有尺寸）
-    fitted(svg) { return fitSvg(svg, 560, 176) },
+    fitted(it) {
+      const s = scopeIds(it.svg, 'f' + it.year + '-' + it.key)
+      return withTitle(fitSvg(s, 560, 176), it.meta.desc || it.key)
+    },
     itemsOf(y) { return this.filtered.filter((it) => it.year === y) },
     groupsOf(y) {
       const items = this.itemsOf(y)
