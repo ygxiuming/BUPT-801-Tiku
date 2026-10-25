@@ -101,7 +101,7 @@ app/src/
 - [x] 2026 图库 5 张 viewBox 已复核并收边：q3recv → `0 56 470 126`、q5const → `20 0 440 450`；其余三张留白已在 30px 内。另修 q2psd 的幅度轴（f=0 处细灰线不带箭头，避免被误读成谱线）。
 - [x] SVG 文本下标：`gen_figures_<年>.py` 的 `text()` 支持 `x_c` / `T_{b}` / `y^2` 迷你标记（用 tspan 排上下标），不再出现 `T_b`、`V_T` 这种下划线写法。
 - [ ] **2024 数据是半成品**：`data/questions/2024/{paper,answer}.js` 已写完（51 个 id、9 段 `sol`），`data/figures/2024/` 10 张图且被题目全部引用，但 `app/index.html` 与 `tools/validate_data.js` 都没登记 2024 —— 未校验、未冒烟。补登记后跑 `validate_data.js` + `smoke_pages.mjs` 即可收尾（详见 `解析日志.md` 待办）。
-- [ ] `待解析/` 里 2020、2021、2022 三份 PDF 未入库。
+- [ ] `待解析/` 里 2020、2021 两份 PDF 未入库（2022 已于 2026-10-25 入库，见 `解析日志.md`）。
 
 ## 七、版本管理（2026-10-25 起）
 
