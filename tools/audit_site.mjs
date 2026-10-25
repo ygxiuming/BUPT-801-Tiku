@@ -91,6 +91,17 @@ function bindGlobals(w) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// 入口文件名随构建器而变：vite 产出 assets/index-<hash>.js，esbuild 回退构建产出 assets/app.js。
+// 从 dist/index.html 解析真实路径，换构建器不用改脚本。
+function bundleEntry() {
+  const html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8')
+  const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/)
+  if (!m) throw new Error('dist/index.html 里找不到 type="module" 入口脚本')
+  const url = m[1]
+  const i = url.indexOf('assets/')
+  return path.join(DIST, i >= 0 ? url.slice(i) : url.replace(/^\/+/, ''))
+}
 let seq = 0
 
 async function openPage(route, { seed } = {}) {
@@ -108,7 +119,7 @@ async function openPage(route, { seed } = {}) {
     if (!fs.existsSync(f)) throw new Error('缺少脚本 ' + src)
     w.eval(fs.readFileSync(f, 'utf8'))
   }
-  await import(pathToFileURL(path.join(DIST, 'assets', 'app.js')).href + '?a=' + seq++)
+  await import(pathToFileURL(bundleEntry()).href + '?a=' + seq++)
   await sleep(140)
   return w
 }

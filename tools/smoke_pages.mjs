@@ -6,7 +6,7 @@
  * 也拦截了 fs.copyFileSync（npm run sync 报 EPERM）。这里改成纯文件通道：
  *   1) 读 app/dist/index.html，按顺序取出所有 <script src>（数据脚本 + katex）；
  *   2) 在 jsdom 的 window 里 window.eval 它们（数据脚本必须早于 bundle）；
- *   3) 以唯一 query 动态 import dist/assets/app.js（bundle 自带 mount）。
+ *   3) 以唯一 query 动态 import dist 里的入口 bundle（从 index.html 解析，bundle 自带 mount）。
  *
  * 用法：node tools/smoke_pages.mjs
  * 退出码非 0 表示有断言失败。
@@ -129,6 +129,17 @@ function globalsFor(w) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// 入口文件名随构建器而变：vite 产出 assets/index-<hash>.js，esbuild 回退构建产出 assets/app.js。
+// 从 dist/index.html 解析真实路径，不要硬编码 —— 否则换个构建器 CI 就整片红。
+function bundleEntry() {
+  const html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8')
+  const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]+)"/)
+  if (!m) throw new Error('dist/index.html 里找不到 type="module" 入口脚本')
+  const url = m[1]
+  const i = url.indexOf('assets/')
+  return path.join(DIST, i >= 0 ? url.slice(i) : url.replace(/^\/+/, ''))
+}
+
 const report = []
 let failed = 0
 
@@ -158,7 +169,7 @@ for (let i = 0; i < ROUTES.length; i++) {
   }
 
   try {
-    await import(pathToFileURL(path.join(DIST, 'assets', 'app.js')).href + '?r=' + i)
+    await import(pathToFileURL(bundleEntry()).href + '?r=' + i)
   } catch (e) {
     errs.push('bundle 加载失败: ' + (e && e.message))
   }
@@ -195,7 +206,7 @@ async function openPage(route, tag) {
   globalsFor(w)
   for (const src of scripts) w.eval(fs.readFileSync(localFile(src), 'utf8'))
   // 缓存参数必须每次唯一：ESM 模块只执行一次，tag 重复会让 app 不重新 mount（页面空白）
-  await import(pathToFileURL(path.join(DIST, 'assets', 'app.js')).href + '?tag=' + tag + '-' + (++pageSeq))
+  await import(pathToFileURL(bundleEntry()).href + '?tag=' + tag + '-' + (++pageSeq))
   await sleep(140)
   return w
 }
