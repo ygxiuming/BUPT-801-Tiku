@@ -19,6 +19,14 @@ def poly(pts, stroke='#1a1a1a', width=1.6, dash=None, fill='none', close=False, 
     return f"<path d='M{d}{dd}' fill='{fill}' stroke='{stroke}' stroke-width='{width}'{da}{mk}/>"
 
 
+def path_c(p0, c1, c2, p1, marker=None, width=1.6, color='#1a1a1a'):
+    """三次贝塞尔（状态转移图的弧线）"""
+    mk = f" marker-end='url(#{marker})'" if marker else ''
+    return (f"<path d='M{p0[0]:.1f},{p0[1]:.1f} C{c1[0]:.1f},{c1[1]:.1f} "
+            f"{c2[0]:.1f},{c2[1]:.1f} {p1[0]:.1f},{p1[1]:.1f}' fill='none' "
+            f"stroke='{color}' stroke-width='{width}'{mk}/>")
+
+
 def line(x1, y1, x2, y2, width=1.6, dash=None, color='#1a1a1a', marker=None):
     da = f" stroke-dasharray='{dash}'" if dash else ''
     mk = f" marker-end='url(#{marker})'" if marker else ''
@@ -27,7 +35,7 @@ def line(x1, y1, x2, y2, width=1.6, dash=None, color='#1a1a1a', marker=None):
 
 
 def _tokens(s):
-    """把 'x_c' / 'T_{b}' / 'y^2' 这类迷你标记切成 [(文字, 'n'|'sub'|'sup'), ...]"""
+    """把 'x_c' / 'T_{b}' / 'P_{n_A}' 这类迷你标记切成 [(文字, 'n'|'sub'|'sup'), ...]（支持嵌套）"""
     out, i = [], 0
     while i < len(s):
         c = s[i]
@@ -35,39 +43,48 @@ def _tokens(s):
             kind = 'sub' if c == '_' else 'sup'
             i += 1
             if i < len(s) and s[i] == '{':
-                j = s.index('}', i)
-                out.append((s[i + 1:j], kind)); i = j + 1
+                depth, j = 1, i + 1
+                while j < len(s) and depth:
+                    if s[j] == '{':
+                        depth += 1
+                    elif s[j] == '}':
+                        depth -= 1
+                    j += 1
+                out.append((s[i + 1:j - 1], kind))
+                i = j
             elif i < len(s):
-                out.append((s[i], kind)); i += 1
+                out.append((s[i], kind))
+                i += 1
         else:
             j = i
             while j < len(s) and s[j] not in '_^':
                 j += 1
-            out.append((s[i:j], 'n')); i = j
+            out.append((s[i:j], 'n'))
+            i = j
     return out
 
 
+def _flatten(tokens, size, dy, out):
+    for t, k in tokens:
+        if k == 'n':
+            out.append((t, dy, size))
+        elif k == 'sub':
+            _flatten(_tokens(t), size * 0.72, dy + size * 0.30, out)
+        else:
+            _flatten(_tokens(t), size * 0.72, dy - size * 0.42, out)
+
+
 def text(x, y, s, size=14, anchor='middle', style='', color='#1a1a1a'):
-    """文字；'_x'/'_{xx}' 排成下标、'^x'/'^{xx}' 排成上标（用 tspan，不用 T_b 这种下划线写法）"""
+    """文字；'_x'/'_{xx}' 排成下标、'^x'/'^{xx}' 排成上标（支持嵌套下标，如 P_{n_A}）"""
     st = " font-style='italic'" if 'i' in style else ''
     wt = " font-weight='bold'" if 'b' in style else ''
     small = f" font-size='{size}'" if size != 14 else ''
-    toks = _tokens(s)
-    if len(toks) == 1:
-        return f"<text x='{x:.1f}' y='{y:.1f}' text-anchor='{anchor}'{small}{st}{wt} fill='{color}'>{s}</text>"
-    body, shift = '', 0
-    for t, k in toks:
-        if k == 'n':
-            body += f"<tspan dy='{-shift}' font-size='{size}'>{t}</tspan>"
-            shift = 0
-        elif k == 'sub':
-            d = round(size * 0.30)
-            body += f"<tspan dy='{d}' font-size='{round(size * 0.72)}'>{t}</tspan>"
-            shift += d
-        else:
-            d = -round(size * 0.42)
-            body += f"<tspan dy='{d}' font-size='{round(size * 0.72)}'>{t}</tspan>"
-            shift += d
+    leaves = []
+    _flatten(_tokens(s), size, 0, leaves)
+    body, cur = '', 0
+    for t, ady, fs in leaves:
+        body += f"<tspan dy='{ady - cur:.1f}' font-size='{round(fs)}'>{t}</tspan>"
+        cur = ady
     return f"<text x='{x:.1f}' y='{y:.1f}' text-anchor='{anchor}'{small}{st}{wt} fill='{color}'>{body}</text>"
 
 
@@ -101,316 +118,359 @@ def adder(cx, cy, r=13):
             + line(cx, cy - r * .77, cx, cy + r * .77))
 
 
+def tick(x, y, vertical=False, h=5):
+    """坐标轴刻度短线"""
+    if vertical:
+        return line(x - h, y, x + h, y, width=1.2)
+    return line(x, y - h, x, y + h, width=1.2)
+
+
+def switch(x, y, mk):
+    """采样开关（原卷画法）：两个空心端子 + 交叉的斜杆与带箭头触点"""
+    return (circle(x - 14, y, 4, fill='white')
+            + circle(x + 14, y, 4, fill='white')
+            + line(x + 11, y - 3, x - 24, y - 30)
+            + line(x + 7, y - 31, x - 14, y - 6, marker=mk))
+
+
 HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
         "font-family=\"Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif\" font-size='14'>")
 
 
 # ---------------------------------------------------------------- 三（题图）：SSB 调制与相干解调框图
 def fig_q3block():
-    s = HEAD.format(w=560, h=195) + marker('m20a')
-    Y1, Y2, Ym = 70, 130, 100
-    # m(t) 输入与上/下支路
-    s += text(10, Y1 + 5, 'm(t)', anchor='start', style='i')
-    s += line(44, Y1, 160, Y1)
-    s += line(100, Y1, 100, Y2 - 19)
-    s += rect(68, Y2 - 19, 64, 38)
-    s += text(100, Y2 - 4, '希尔伯特', size=12)
-    s += text(100, Y2 + 12, '变换', size=12)
-    s += line(132, Y2, 160, Y2)
-    # 两个乘法器
-    s += mul(160, Y1)
-    s += text(160, Y1 - 30, 'cos(2πf_c t)', size=13)
-    s += line(160, Y1 - 24, 160, Y1 - 16, marker='m20a')
-    s += mul(160, Y2)
-    s += text(160, Y2 + 40, '−sin(2πf_c t)', size=13)
-    s += line(160, Y2 + 28, 160, Y2 + 16, marker='m20a')
-    # 汇总到相加器
-    s += line(174, Y1, 196, Y1) + line(196, Y1, 196, Ym) + line(196, Ym, 209, Ym)
-    s += line(174, Y2, 204, Y2) + line(204, Y2, 204, Ym)
-    s += adder(224, Ym)
-    s += line(237, Ym, 271, Ym)
-    s += text(252, Ym - 9, 's(t)', size=13, style='i')
-    # 信道噪声相加
-    s += adder(286, Ym)
-    s += text(286, Ym + 66, 'n_w(t)', size=13)
-    s += line(286, Ym + 52, 286, Ym + 15, marker='m20a')
-    # BPF
-    s += line(299, Ym, 314, Ym)
-    s += rect(314, Ym - 15, 56, 30) + text(342, Ym + 5, 'BPF')
-    s += line(370, Ym, 409, Ym)
-    s += text(388, Ym + 22, 'A', size=13, style='i')
-    # 相干乘法器
-    s += mul(424, Ym)
-    s += text(424, Ym - 42, '2cos(2πf_c t)', size=13)
-    s += line(424, Ym - 36, 424, Ym - 16, marker='m20a')
-    # LPF
-    s += line(437, Ym, 454, Ym)
-    s += rect(454, Ym - 15, 52, 30) + text(480, Ym + 5, 'LPF')
-    s += line(506, Ym, 544, Ym, marker='m20a')
-    s += text(522, Ym + 22, 'B', size=13, style='i')
+    s = HEAD.format(w=1100, h=300) + marker('m20a')
+    Y1, Ym, Y2 = 80, 150, 220
+    # m(t) 输入、抽头与希尔伯特变换
+    s += text(12, Y1 + 5, 'm(t)', anchor='start', style='i')
+    s += line(58, Y1, 312, Y1, marker='m20a')
+    s += dot(110, Y1, 3.5)
+    s += line(110, Y1, 110, 125, marker='m20a')
+    s += rect(130, 125, 140, 80)
+    s += text(200, 168, '希尔伯')
+    s += text(200, 190, '特变换')
+    s += line(200, 205, 200, Y2)
+    s += line(200, Y2, 312, Y2, marker='m20a')
+    # 两路乘法器
+    s += mul(330, Y1, 18) + mul(330, Y2, 18)
+    s += text(330, 34, 'cos(2πf_c t)', size=13)
+    s += line(330, 42, 330, Y1 - 18, marker='m20a')
+    s += text(330, 274, '−sin(2πf_c t)', size=13)
+    s += line(330, 254, 330, Y2 + 18, marker='m20a')
+    # 合路到相加器（上支路从上方进、下支路从下方进）
+    s += line(348, Y1, 430, Y1) + line(430, Y1, 430, 132, marker='m20a')
+    s += line(348, Y2, 430, Y2) + line(430, Y2, 430, 168, marker='m20a')
+    s += adder(430, Ym, 18)
+    s += line(448, Ym, 522, Ym)
+    s += text(496, Ym - 9, 's(t)', size=13, style='i')
+    # 信道噪声
+    s += adder(540, Ym, 18)
+    s += text(540, 216, 'n_w(t)', size=13)
+    s += line(540, 198, 540, 168, marker='m20a')
+    s += line(558, Ym, 600, Ym)
+    # BPF、A 点、相干乘法器、LPF、B 点
+    s += rect(600, Ym - 24, 120, 48)
+    s += text(660, Ym + 5, 'BPF', style='i')
+    s += line(720, Ym, 748, Ym)
+    s += dot(752, Ym, 4)
+    s += text(752, Ym + 24, 'A', size=13, style='i')
+    s += line(756, Ym, 800, Ym)
+    s += mul(818, Ym, 18)
+    s += text(818, 98, '2cos(2πf_c t)', size=13)
+    s += line(818, 104, 818, Ym - 18, marker='m20a')
+    s += line(836, Ym, 868, Ym)
+    s += rect(868, Ym - 24, 120, 48)
+    s += text(928, Ym + 5, 'LPF', style='i')
+    s += line(988, Ym, 1036, Ym)
+    s += dot(1040, Ym, 4)
+    s += text(1050, Ym + 24, 'B', size=13, style='i')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 四（题图）：匹配滤波接收框图
 def fig_q4rx():
-    s = HEAD.format(w=550, h=190) + marker('m20b')
-    Ym, Y1, Y2 = 90, 55, 125
-    # 输入与噪声
-    s += text(8, Ym + 5, 's_1(t)或s_2(t)', anchor='start', size=13)
-    s += line(106, Ym, 131, Ym)
-    s += adder(146, Ym)
-    s += text(146, Ym + 80, 'n_w(t)', size=13)
-    s += line(146, Ym + 68, 146, Ym + 15, marker='m20b')
-    s += line(159, Ym, 204, Ym)
-    s += text(180, Ym - 10, 'r(t)', size=13, style='i')
+    s = HEAD.format(w=1060, h=210) + marker('m20b')
+    Y1, Ym, Y2 = 60, 110, 160
+    s += text(10, Ym + 5, 's_1(t)或s_2(t)', anchor='start', size=13)
+    s += line(120, Ym, 157, Ym)
+    s += adder(175, Ym, 18)
+    s += text(175, 178, 'n_w(t)', size=13)
+    s += line(175, 160, 175, 128, marker='m20b')
+    s += line(193, Ym, 290, Ym)
+    s += text(245, Ym - 9, 'r(t)', size=13, style='i')
     # 分两路
-    s += line(204, Y1, 204, Y2)
-    s += line(204, Y1, 232, Y1)
-    s += line(204, Y2, 232, Y2)
+    s += line(290, Y1, 290, Y2)
+    s += line(290, Y1, 340, Y1, marker='m20b')
+    s += line(290, Y2, 340, Y2, marker='m20b')
     # 匹配滤波器
-    s += rect(232, Y1 - 15, 96, 30) + text(280, Y1 + 5, '匹配滤波器1', size=13)
-    s += text(280, Y1 - 25, 'h_1(t)', size=13)
-    s += rect(232, Y2 - 15, 96, 30) + text(280, Y2 + 5, '匹配滤波器2', size=13)
-    s += text(280, Ym + 4, 'h_2(t)', size=13)
-    # 采样开关（刀触点画法）
-    for yy, ly in ((Y1, Y1 - 24), (Y2, Y2 + 26)):
-        s += line(328, yy, 344, yy)
-        s += dot(346, yy, 2.6)
-        s += line(346, yy, 357, yy - 8)
-        s += dot(359, yy, 2.6)
-        s += line(359, yy, 414, yy)
-        s += text(353, ly, 't=t_0', size=12, style='i')
-    # 求和与判决
-    s += line(414, Y1, 430, Y1) + line(430, Y1, 430, Ym - 13)
-    s += text(438, Y1 - 6, 'y_1', size=12, style='i')
-    s += line(414, Y2, 430, Y2) + line(430, Y2, 430, Ym + 13)
-    s += text(438, Y2 + 18, 'y_2', size=12, style='i')
-    s += adder(444, Ym)
-    s += text(424, Y1 + 13, '+', size=12, anchor='end')
-    s += text(424, Y2 - 9, '−', size=12, anchor='end')
-    s += line(457, Ym, 480, Ym)
-    s += text(468, Ym - 10, 'y', size=13, style='i')
-    s += rect(480, Ym - 15, 52, 30) + text(506, Ym + 5, '判决')
-    s += line(532, Ym, 546, Ym, marker='m20b')
-    s += text(506, Ym + 82, 'V_T', size=13)
-    s += line(506, Ym + 68, 506, Ym + 17, marker='m20b')
+    s += rect(340, Y1 - 24, 270, 48) + text(475, Y1 + 5, '匹配滤波器1')
+    s += text(475, 26, 'h_1(t)', size=13)
+    s += rect(340, Y2 - 24, 270, 48) + text(475, Y2 + 5, '匹配滤波器2')
+    s += text(475, 126, 'h_2(t)', size=13)
+    # 采样开关（两个空心触点 + 交叉斜杆）
+    for yy in (Y1, Y2):
+        s += line(610, yy, 642, yy, marker='m20b')
+        s += switch(663, yy, 'm20b')
+        s += text(663, yy - 40, 't=t_0', size=12)
+        s += line(681, yy, 800, yy)
+    s += text(740, 49, 'y_1', size=13, style='i')
+    s += text(740, 179, 'y_2', size=13, style='i')
+    # 求和（上 + 下 −）与判决
+    s += line(800, Y1, 800, Ym - 18, marker='m20b')
+    s += line(800, Y2, 800, Ym + 18, marker='m20b')
+    s += text(790, Ym - 20, '+', size=13, anchor='end')
+    s += text(790, Ym + 26, '−', size=13, anchor='end')
+    s += adder(818, Ym, 18)
+    s += line(836, Ym, 880, Ym)
+    s += text(866, Ym - 9, 'y', size=13, style='i')
+    s += rect(900, Ym - 24, 100, 48) + text(950, Ym + 5, '判决')
+    s += line(1000, Ym, 1040, Ym, marker='m20b')
+    s += text(950, 186, 'V_T', size=13)
+    s += line(950, 174, 950, Ym + 24, marker='m20b')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 七（题图）：p(x) 阶梯形概率密度
 def fig_q7pdf():
-    s = HEAD.format(w=560, h=175) + marker('m20c')
-    BASE, OX = 122, 300
-    U, H8, H12, H24 = 30, 40, 30, 15  # 1单位=30px；高度 1/8,1/12,1/24
+    s = HEAD.format(w=660, h=300) + marker('m20c')
+    BASE, OX, U = 250, 330, 40
+    H8, H12, H24 = 72, 50, 30  # 原卷阶梯高度约 2.4 : 1.7 : 1，按卷面比例而非严格 3:2:1
     X = lambda v: OX + v * U
-    # 坐标轴在密度图下方断开，避免与阶梯线重合：x 轴左右两段，y 轴上下两段
-    s += line(80, BASE, 118, BASE)
-    s += line(482, BASE, 536, BASE, marker='m20c')
-    s += line(OX, BASE - 2.5, OX, 30, marker='m20c')
-    s += line(OX, BASE, OX, BASE - H8 - 2.5)
-    s += text(546, BASE + 5, 'x', style='i', anchor='start')
-    s += text(OX + 12, 36, 'p(x)', anchor='start')
-    # 阶梯轮廓（填充 + 顶部描边，不画与轴重合的底边）
+    # 连续坐标轴
+    s += line(X(-7.2), BASE, X(7.2), BASE, marker='m20c')
+    s += line(OX, BASE, OX, 112, marker='m20c')
+    s += text(OX + 12, 110, 'p(x)', anchor='start', style='i')
+    s += text(X(7.2) + 10, BASE + 22, 'x', anchor='start', style='i')
+    # 阶梯轮廓
     outline = [(X(-6), BASE), (X(-6), BASE - H24), (X(-4), BASE - H24), (X(-4), BASE - H12),
                (X(-2), BASE - H12), (X(-2), BASE - H8), (X(2), BASE - H8), (X(2), BASE - H12),
                (X(4), BASE - H12), (X(4), BASE - H24), (X(6), BASE - H24), (X(6), BASE)]
-    s += poly(outline, fill='#f4f4f4', stroke='none', close=True)
-    s += poly(outline)
-    s += text(OX + 12, BASE - H8 - 6, '1/8', size=12, anchor='start')
-    s += text(X(3), BASE - H12 - 7, '1/12', size=12)
-    s += text(X(5), BASE - H24 - 7, '1/24', size=12)
+    s += poly(outline, width=1.8)
+    # 区间内的辅助虚线（台阶跳变处延伸到坐标轴）
+    for v, h in ((-4, H24), (-2, H12), (2, H12), (4, H24)):
+        s += line(X(v), BASE, X(v), BASE - h, width=1.1, dash='3,4', color='#999')
+    # 电平标注
+    s += text(OX + 10, BASE - H8 - 8, '1/8', size=12, anchor='start')
+    s += text(X(2) + 10, BASE - H12 - 8, '1/12', size=12, anchor='start')
+    s += text(X(4) + 10, BASE - H24 - 8, '1/24', size=12, anchor='start')
+    # 横轴刻度
     for v in (-6, -4, -2, 2, 4, 6):
-        s += text(X(v), BASE + 18, str(v), size=12)
-    s += text(OX - 8, BASE + 18, 'O', size=12)
+        s += text(X(v), BASE + 22, str(v), size=12)
+    s += text(OX, BASE + 22, 'O', size=12)
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 三（解析）：A 点噪声功率谱
 def fig_q3psdA():
-    s = HEAD.format(w=470, h=180) + marker('m20d')
-    BASE, OX, U = 120, 235, 85  # 1 kHz = 85px
-    X = lambda khz: OX + khz * U
-    s += line(120, BASE, 386, BASE, marker='m20d')
-    H = 42
-    for a, b in ((-1.2, -0.9), (0.9, 1.2)):
-        s += line(X(a), BASE, X(a), BASE - H) + line(X(b), BASE, X(b), BASE - H)
-        s += line(X(a), BASE - H, X(b), BASE - H, width=1.8)
-    s += text(X(-1.05), BASE - H - 8, 'N_0/2', size=12)
-    s += text(X(1.05), BASE - H - 8, 'N_0/2', size=12)
-    # 外侧频率一行、内侧一行，避免刻度文字互相挤压
-    for v, lbl in ((-1.2, '-1.2'), (1.2, '1.2')):
-        s += text(X(v), BASE + 18, lbl, size=12)
-    for v, lbl in ((-0.9, '-0.9'), (0.9, '0.9')):
-        s += text(X(v), BASE + 34, lbl, size=12)
-    s += text(OX - 8, BASE + 18, 'O', size=12)
-    s += text(398, BASE + 5, 'f/kHz', anchor='start', size=12)
+    s = HEAD.format(w=600, h=230) + marker('m20d')
+    BASE, OX, U, H = 180, 300, 0.2, 55  # 1 Hz = 0.2px
+    X = lambda hz: OX + hz * U
+    s += line(20, BASE, 585, BASE, marker='m20d')
+    s += line(OX, BASE, OX, 95, marker='m20d')
+    s += text(OX + 10, 102, 'P_{n_A}(f)', anchor='start', style='i')
+    # 双侧矩形谱
+    for a, b in ((900, 1200), (-1200, -900)):
+        s += poly([(X(a), BASE), (X(a), BASE - H), (X(b), BASE - H), (X(b), BASE)], width=1.8)
+    # y 轴上的 N0/2 电平
+    s += tick(OX, BASE - H, vertical=True, h=5)
+    s += text(OX + 10, BASE - H + 5, 'N_0/2', size=13, anchor='start')
+    for v in (-1200, -900, 900, 1200):
+        s += text(X(v), BASE + 22, str(v), size=12)
+    s += text(OX - 8, BASE + 22, 'O', size=12)
+    s += text(592, BASE + 22, 'f', anchor='start', style='i')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 三（解析）：B 点噪声功率谱
 def fig_q3psdB():
-    s = HEAD.format(w=500, h=180) + marker('m20e')
-    BASE, OX, U = 125, 245, 55  # 1（百 Hz）= 55px
-    X = lambda u: OX + u * U    # u 以 100 Hz 为单位
-    s += line(110, BASE, 133, BASE)
-    s += line(357, BASE, 390, BASE, marker='m20e')
-    H2, H1 = 42, 58  # N0/2 与 N0 高度
-    # 阶梯轮廓：±[100,200] 高 N0/2，|f|≤100 高 N0（不画与轴重合的底边）
-    pts = [(X(-2), BASE), (X(-2), BASE - H2), (X(-1), BASE - H2), (X(-1), BASE - H1),
-           (X(1), BASE - H1), (X(1), BASE - H2), (X(2), BASE - H2), (X(2), BASE)]
-    s += poly(pts, fill='#f4f4f4', stroke='none', close=True)
-    s += poly(pts)
-    s += text(X(0), BASE - H1 - 8, 'N_0', size=12)
-    s += text(X(-1.5), BASE - H2 - 8, 'N_0/2', size=11)
-    s += text(X(1.5), BASE - H2 - 8, 'N_0/2', size=11)
-    for v, lbl in ((-2, '-200'), (-1, '-100'), (1, '100'), (2, '200')):
-        s += text(X(v), BASE + 18, lbl, size=12)
-    s += text(OX - 8, BASE + 18, 'O', size=12)
-    s += text(402, BASE + 5, 'f', style='i', anchor='start')
+    s = HEAD.format(w=440, h=230) + marker('m20e')
+    BASE, OX, U = 180, 230, 0.45  # 1 Hz = 0.45px
+    X = lambda hz: OX + hz * U
+    H2, H1 = 40, 56
+    s += line(80, BASE, 410, BASE, marker='m20e')
+    s += line(OX, BASE, OX, 95, marker='m20e')
+    s += text(OX + 10, 92, 'P_{n_B}(f)', anchor='start', style='i')
+    pts = [(X(-200), BASE), (X(-200), BASE - H2), (X(-100), BASE - H2), (X(-100), BASE - H1),
+           (X(100), BASE - H1), (X(100), BASE - H2), (X(200), BASE - H2), (X(200), BASE)]
+    s += poly(pts, width=1.8)
+    s += text(OX + 8, BASE - H1 - 10, 'N_0', size=13, anchor='start')
+    # N0/2 用箭头指到 y 轴上的电平
+    s += tick(OX, BASE - H2, vertical=True, h=5)
+    s += text(292, BASE - H2 - 18, 'N_0/2', size=13, anchor='start')
+    s += line(288, BASE - H2 - 12, OX + 5, BASE - H2 - 1, width=1.2, marker='m20e')
+    for v, lbl in ((-200, '-200'), (200, '200')):
+        s += text(X(v), BASE + 22, lbl, size=12)
+    s += text(OX - 8, BASE + 22, 'O', size=12)
+    s += text(414, BASE + 22, 'f', anchor='start', style='i')
     return s + '</svg>'
 
 
-# ---------------------------------------------------------------- 五（解析）：16QAM 星座底图
+# ---------------------------------------------------------------- 五（解析）：16QAM 星座公用底图
 def q5_grid(s, mid):
-    """公用 4×4 网格：坐标轴 + 16 个点，返回坐标表"""
-    cx, cy, U = 200, 200, 45
-    s += line(38, cy, 372, cy, marker=mid)
-    s += line(cx, 375, cx, 30, marker=mid)
+    """4×4 星座：坐标轴 + 刻度 + 16 个点；正半轴标 1、3，负半轴只画刻度"""
+    cx, cy, U = 210, 210, 48
+    s += line(30, cy, 402, cy, marker=mid)
+    s += line(cx, 402, cx, 18, marker=mid)
     P = {}
     for i in (-3, -1, 1, 3):
         for j in (-3, -1, 1, 3):
             P[(i, j)] = (cx + i * U, cy - j * U)
-            s += dot(cx + i * U, cy - j * U, 4.2)
+            s += dot(cx + i * U, cy - j * U, 4.5)
     for v in (-3, -1, 1, 3):
-        s += text(cx + v * U, cy + 20, str(v), size=12)
-        s += text(cx - 12, cy - v * U + 4, str(v), size=12, anchor='end')
+        s += tick(cx + v * U, cy)
+        s += tick(cx, cy - v * U, vertical=True)
+    for v in (1, 3):
+        s += text(cx + v * U, cy + 22, str(v), size=12)
+        s += text(cx + 10, cy - v * U + 5, str(v), size=12, anchor='start')
     return P, s
 
 
 def fig_q5const():
-    s = HEAD.format(w=400, h=410) + marker('m20f')
+    s = HEAD.format(w=430, h=430) + marker('m20f')
     _, s = q5_grid(s, 'm20f')
     return s + '</svg>'
 
 
+def hatch_rect(x0, y0, x1, y1, step=9):
+    """在矩形内画 45° 斜线阴影（右下方向），避免用 pattern 影响几何自查"""
+    out = []
+    c = x0 - y1
+    while c <= x1 - y0:
+        xa, xb = c + y0, c + y1
+        xa = min(max(xa, x0), x1)
+        xb = min(max(xb, x0), x1)
+        if xa < xb:
+            out.append(line(xa, xa - c, xb, xb - c, width=1.0))
+        c += step
+    return ''.join(out)
+
+
 def fig_q5region():
-    s = HEAD.format(w=400, h=410) + marker('m20g')
+    s = HEAD.format(w=430, h=430) + marker('m20g')
     P, s = q5_grid(s, 'm20g')
-    px, py = P[(-3, -3)]
-    # ML 判决域：Re ≤ −2 且 Im ≤ −2（阴影 1/4 平面，边界箭头示意无限延伸）
-    bx, by = 110, 290
-    s += poly([(24, by), (bx, by), (bx, 378), (24, 378)], fill='#e8e8e8', stroke='none', close=True)
-    s += line(bx, by, bx, 378, dash='5,4', color='#888', width=1.2, marker='m20g')
-    s += line(bx, by, 24, by, dash='5,4', color='#888', width=1.2, marker='m20g')
-    s += dot(px, py, 5.5)
-    s += text(50, py + 22, 's', size=13, style='i')
-    s += text(96, by - 12, 'D', size=13, style='i', color='#555')
+    cx, cy, U = 210, 210, 48
+    bx, by = cx - 2 * U, cy + 2 * U  # (-2, -2)
+    x0, y0, x1, y1 = 30, by, bx, 402
+    s += hatch_rect(x0, y0, x1, y1)
+    s += line(bx, by, bx, y1, dash='5,4', color='#1a1a1a', width=1.4)
+    s += line(bx, by, x0, by, dash='5,4', color='#1a1a1a', width=1.4)
+    s += text(bx - 6, cy - 8, '-2', size=12, anchor='end')
+    s += text(cx + 10, by + 5, '-2', size=12, anchor='start')
     return s + '</svg>'
 
 
 def fig_q5gray():
-    s = HEAD.format(w=400, h=410) + marker('m20h')
+    s = HEAD.format(w=430, h=430) + marker('m20h')
     P, s = q5_grid(s, 'm20h')
-    # 行、列各取格雷序；与参考答案一致：(-3,-3)=0001（红色标出）
     GX = {-3: '00', -1: '01', 1: '11', 3: '10'}   # 实部 → 高 2 位
     GY = {3: '00', 1: '10', -1: '11', -3: '01'}   # 虚部 → 低 2 位
     for (i, j), (px, py) in P.items():
-        bits = GX[i] + GY[j]
-        col = '#c00' if bits == '0001' else '#1a1a1a'
-        s += text(px, py - 10, bits, size=11, color=col)
+        s += text(px, py + 20, GX[i] + GY[j], size=12)
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 八（题图）：卷积码编码器框图
 def fig_q8enc():
-    """与原卷一致：两级移位寄存器，上路三抽头（1+x+x²）、下路两抽头（1+x），
-    ⊕ 悬在 D₁/D₂ 之间正上方/正下方，输出分别向右上/右下引出。"""
-    s = HEAD.format(w=530, h=210) + marker('m20k')
-    YS = 105                        # 信号线 / D 框中心
-    YT, YB = 45, 165                # 上、下 ⊕ 中心
-    R = 15
-    AX = 250                        # ⊕ 中心（对准 D₁/D₂ 之间的抽头）
-    BX = 180                        # 输入抽头位置
-    D0, DW = 200, 50                # D₁ 左缘 / 框宽
-    RX = D0 + 2 * DW + 20           # 右抽头拐点（D₂ 后）
-    # 主线与两个 D 框
-    s += text(14, YS + 5, 'b_0b_1b_2b_3', anchor='start', size=13)
-    s += line(112, YS, D0, YS)
-    s += rect(D0, YS - 15, DW, 30) + text(D0 + DW / 2, YS + 5, 'D', style='i')
+    """与原卷一致：两个空移位寄存器、上路三抽头（1+x+x²）、下路两抽头（1+x），
+    ⊕ 悬在 D₁/D₂ 之间正上方/正下方，输出分别由顶部/右侧引出。"""
+    s = HEAD.format(w=720, h=260) + marker('m20k')
+    YS, YT, YB, R = 130, 48, 212, 26
+    AX = 340
+    D0, DW, BH = 200, 120, 64
+    s += text(12, YS + 5, 'b_0b_1b_2b_3', anchor='start', style='i')
+    s += line(130, YS, D0, YS, marker='m20k')
+    s += dot(160, YS, 3.5)
+    # 输入侧上、下抽头
+    s += line(160, YS, 160, YT)
+    s += line(160, YT, AX - R, YT, marker='m20k')
+    s += line(160, YS, 160, YB)
+    s += line(160, YB, AX - R, YB, marker='m20k')
+    # 两个空寄存器
+    s += rect(D0, YS - BH / 2, DW, BH)
     s += line(D0 + DW, YS, D0 + DW + 20, YS)
-    s += rect(D0 + DW + 20, YS - 15, DW, 30) + text(D0 + DW + 20 + DW / 2, YS + 5, 'D', style='i')
-    s += line(D0 + 2 * DW + 20, YS, RX + 30, YS)
-    # 上路：三抽头（输入、D₁ 后、D₂ 后）→ ⊕ → 顶部输出
-    s += line(BX, YS, BX, YT)
-    s += line(BX, YT, AX - R - 2, YT)
-    s += line(AX, YS - 15, AX, YT + R + 2, marker='m20k')
-    s += line(RX, YS, RX, YT)
-    s += line(RX, YT, AX + R + 2, YT)
-    s += adder(AX, YT, R)
-    s += line(AX, YT - R, AX, 26, marker='m20k')
-    s += line(AX, 26, 372, 26)
-    s += text(380, 31, 'c_10c_11c_12c_13', anchor='start', size=13)
-    # 下路：两抽头（输入、D₁ 后）→ ⊕ → 底部输出
-    s += line(BX, YS, BX, YB)
-    s += line(BX, YB, AX - R - 2, YB)
-    s += line(AX, YS + 15, AX, YB - R - 2, marker='m20k')
-    s += adder(AX, YB, R)
-    s += line(AX + R, YB, 372, YB)
-    s += text(380, YB + 5, 'c_20c_21c_22c_23', anchor='start', size=13)
+    s += rect(D0 + DW + 60, YS - BH / 2, DW, BH)
+    # D₁、D₂ 之间抽头
+    s += dot(AX, YS, 3.5)
+    s += line(AX, YS - BH / 2, AX, YT + R, marker='m20k')
+    s += line(AX, YS + BH / 2, AX, YB - R, marker='m20k')
+    # 上、下相加器
+    s += adder(AX, YT, R) + adder(AX, YB, R)
+    # D₂ 输出反馈到上相加器（右侧）
+    RX = D0 + 2 * DW + 60
+    s += line(RX, YS, 545, YS) + line(545, YS, 545, YT)
+    s += line(545, YT, AX + R, YT, marker='m20k')
+    # 两路输出
+    s += line(AX, YT - R, AX, 10) + line(AX, 10, 600, 10, marker='m20k')
+    s += text(610, 15, 'c_10c_11c_12c_13', anchor='start', style='i')
+    s += line(AX + R, YB, 600, YB, marker='m20k')
+    s += text(610, YB + 5, 'c_20c_21c_22c_23', anchor='start', style='i')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 八（解析）：状态转移图
 def fig_q8state():
-    s = HEAD.format(w=580, h=300) + marker('m20i')
-    A, B, C, D = (80, 150), (280, 60), (280, 240), (480, 150)
-    R = 16
-    # 自环（a 上方、d 下方）
-    s += poly([(88, 136), (110, 92), (50, 92), (74, 135)], marker='m20i', width=1.4)
-    s += text(80, 82, '00(0)', size=12)
-    s += poly([(472, 164), (450, 208), (510, 208), (486, 165)], marker='m20i', width=1.4)
-    s += text(480, 226, '10(1)', size=12)
+    s = HEAD.format(w=720, h=340) + marker('m20i')
+    A, B, C, D = (140, 180), (350, 84), (350, 276), (560, 180)
+    BW, BH = 70, 46
 
-    def edge(p, q, lbl, lx, ly):
-        dx, dy = q[0] - p[0], q[1] - p[1]
-        n = math.hypot(dx, dy)
-        ux, uy = dx / n, dy / n
-        x1, y1 = p[0] + ux * R, p[1] + uy * R
-        x2, y2 = q[0] - ux * (R + 6), q[1] - uy * (R + 6)
-        return line(x1, y1, x2, y2, marker='m20i') + text(lx, ly, lbl, size=12)
+    def box(p, val):
+        x, y = p
+        return rect(x - BW / 2, y - BH / 2, BW, BH) + text(x, y + 6, val)
 
-    s += edge(A, B, '11(1)', 158, 92)
-    s += edge(B, D, '00(1)', 372, 90)
-    s += edge(C, A, '10(0)', 156, 218)
-    s += edge(D, C, '01(0)', 376, 234)
-    # 竖直双向：b→c（左）与 c→b（右）
-    s += line(272, 78, 272, 220, marker='m20i')
-    s += text(258, 154, '11(0)', size=12, anchor='end')
-    s += line(288, 222, 288, 80, marker='m20i')
-    s += text(302, 154, '01(1)', size=12, anchor='start')
-    for (cx, cy), nm in ((A, 'a'), (B, 'b'), (C, 'c'), (D, 'd')):
-        s += circle(cx, cy, R) + text(cx, cy + 5, nm, style='i')
+    s += box(A, '00') + box(B, '10') + box(C, '01') + box(D, '11')
+    s += text(A[0] - 32, A[1] - 36, 'a', style='i')
+    s += text(B[0], B[1] - 36, 'b', style='i')
+    s += text(C[0], C[1] + 54, 'c', style='i')
+    s += text(D[0] + 32, D[1] - 36, 'd', style='i')
+    # 左右自环
+    s += path_c((A[0] - BW / 2, A[1] + 12), (A[0] - BW / 2 - 38, A[1] + 36),
+                (A[0] - BW / 2 - 38, A[1] - 36), (A[0] - BW / 2, A[1] - 12), marker='m20i')
+    s += text(12, A[1] + 5, '00(0)', size=13, anchor='start')
+    s += path_c((D[0] + BW / 2, D[1] - 12), (D[0] + BW / 2 + 38, D[1] - 36),
+                (D[0] + BW / 2 + 38, D[1] + 36), (D[0] + BW / 2, D[1] + 12), marker='m20i')
+    s += text(645, D[1] + 5, '10(1)', size=13, anchor='start')
+    # 外围四条弧
+    s += path_c((A[0] + 20, A[1] - 21), (A[0] + 45, 62), (B[0] - 45, 62),
+                (B[0] - BW / 2, B[1]), marker='m20i')
+    s += text(215, 58, '11(1)', size=13)
+    s += path_c((B[0] + BW / 2, B[1] + 8), (B[0] + 80, 70), (D[0] - 45, 120),
+                (D[0] - 6, D[1] - BH / 2), marker='m20i')
+    s += text(458, 52, '00(1)', size=13)
+    s += path_c((D[0], D[1] + BH / 2), (D[0], 300), (C[0] + 80, 300),
+                (C[0] + BW / 2, C[1]), marker='m20i')
+    s += text(474, 314, '01(0)', size=13)
+    s += path_c((C[0] - BW / 2, C[1]), (C[0] - 80, 300), (A[0] + 60, 300),
+                (A[0], A[1] + BH / 2), marker='m20i')
+    s += text(196, 314, '10(0)', size=13)
+    # 中间 c→b / b→c 两条弧
+    s += path_c((C[0] - 15, C[1] - BH / 2), (C[0] - 48, 190), (B[0] - 48, 170),
+                (B[0] - 15, B[1] + BH / 2), marker='m20i')
+    s += text(278, 187, '01(1)', size=13, anchor='end')
+    s += path_c((B[0] + 15, B[1] + BH / 2), (B[0] + 48, 170), (C[0] + 48, 190),
+                (C[0] + 15, C[1] - BH / 2), marker='m20i')
+    s += text(422, 187, '11(0)', size=13, anchor='start')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 九（解析）：升余弦发送功率谱
 def fig_q9psd():
-    s = HEAD.format(w=620, h=205) + marker('m20j')
-    BASE, OX, U, H = 155, 280, 55, 70  # 1 kHz = 55px
+    s = HEAD.format(w=640, h=240) + marker('m20j')
+    BASE, OX, U, H = 180, 300, 45, 60  # 1 kHz = 45px
     X = lambda khz: OX + khz * U
     Y = lambda khz: BASE - H / 2 * (1 + math.cos(math.pi * (khz - 2) / 2))
-    s += line(30, BASE, 540, BASE, marker='m20j')
-    s += line(OX, BASE, OX, 38, marker='m20j')
-    s += text(OX + 10, 46, 'P_s(f)', anchor='start', style='i')
+    s += line(80, BASE, 560, BASE, marker='m20j')
+    s += line(OX, BASE, OX, 62, marker='m20j')
+    s += text(OX + 10, 70, 'P_s(f)', anchor='start', style='i')
     # 左滚降(-4→-2) + 平顶(-2→2) + 右滚降(2→4)
-    roll = [2 + k * 0.25 for k in range(0, 9)]
+    roll = [2 + k * 0.125 for k in range(0, 17)]
     pts = [(X(-f), Y(f)) for f in reversed(roll)] + [(X(f), Y(f)) for f in roll]
     s += poly(pts, width=1.8)
-    s += text(X(3), BASE - H - 8, '滚降 α=1/3', size=12, color='#555')
+    for v in (-3, 3):
+        s += line(X(v), BASE, X(v), Y(v), width=1.1, dash='3,4', color='#999')
     for v in (-4, -3, -2, 2, 3, 4):
-        s += text(X(v), BASE + 18, str(v), size=12)
-    s += text(OX - 8, BASE + 18, 'O', size=12)
-    s += text(552, BASE + 5, 'f/kHz', anchor='start', size=12)
+        s += text(X(v), BASE + 22, str(v), size=12)
+    s += text(OX - 8, BASE + 22, 'O', size=12)
+    s += text(566, BASE + 22, 'f/kHz', anchor='start', style='i')
     return s + '</svg>'
 
 

@@ -476,7 +476,7 @@ window.BUPT801.papers["2020"] = {
       "num": "六",
       "type": "big",
       "score": 14,
-      "stem": "某信道的输入 $X$ 等概取值于 8PSK 星座图 $\\left\\{\\mathrm{e}^{\\mathrm{j}\\left(\\frac{\\pi}{4}+\\frac{i\\pi}{4}\\right)},\\ i=0,1,\\cdots,7\\right\\}$，信道输出为 $Y=X\\cdot Ze^{\\mathrm{j}\\theta}$，其中 $Z$ 等概取值于 1 或 2，$\\theta$ 等概取值于 0 或 $\\pi$，$Z$、$\\theta$、$X$ 三者彼此独立。试求：",
+      "stem": "某信道的输入 $X$ 等概取值于 8PSK 星座图 $\\left\\{\\mathrm{e}^{\\mathrm{j}\\frac{i\\pi}{4}},\\ i=0,1,\\cdots,7\\right\\}$，信道输出为 $Y=X\\cdot Ze^{\\mathrm{j}\\theta}$，其中 $Z$ 等概取值于 1 或 2，$\\theta$ 等概取值于 0 或 $\\pi$，$Z$、$\\theta$、$X$ 三者彼此独立。试求：",
       "subs": [
         "(1) 熵 $H(X)$、$H(Y)$、$H(X,Y)$、$H(Y|X)$；",
         "(2) 信道输入输出的互信息 $I(X;Y)$。"
