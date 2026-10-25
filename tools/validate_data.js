@@ -17,10 +17,13 @@ const ROOT = path.join(__dirname, '..');
 // 题目：旧格式 <年>.js/-b.js/-big.js；新格式 <年>/paper.js + <年>/answer.js
 require('../data/chapters.js');
 require('../data/figures/2023/_index.js');
+require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
 require('../data/questions/2023/paper.js');
 require('../data/questions/2023/answer.js');
+require('../data/questions/2024/paper.js');
+require('../data/questions/2024/answer.js');
 require('../data/questions/2025/paper.js');
 require('../data/questions/2025/answer.js');
 require('../data/questions/2026/paper.js');
@@ -52,6 +55,7 @@ const warns = [];
 // ---------------- 期望值（每年） ----------------
 const EXPECT = {
   2023: { choice: 50, big: 8, score: 150 },
+  2024: { choice: 40, big: 9, score: 150 },
   2025: { choice: 30, big: 8, score: 150 },
   2026: { choice: 40, big: 7, score: 150 }
 };
@@ -122,9 +126,9 @@ for (const year of Object.keys(B.papers).sort()) {
   const secChoice = (paper.sections || []).find((s) => s.id === 'choice');
   if (secChoice && secChoice.score !== choice.length) errors.push(`${year}: sections.choice.score=${secChoice.score} 与空数 ${choice.length} 不一致`);
 
-  // 空号连续
-  const nums = choice.map((q) => q.num).sort((a, b) => a - b);
-  for (let i = 1; i <= choice.length; i++) if (nums[i - 1] !== i) { errors.push(`${year}: 选择题空号不连续，第 ${i} 个空号是 ${nums[i - 1]}`); break; }
+  // 题号连续（同一道题可含多个空、共享题号：2024 为 20 题 × 2 空，故先去重）
+  const nums = [...new Set(choice.map((q) => q.num))].sort((a, b) => a - b);
+  for (let i = 1; i <= nums.length; i++) if (nums[i - 1] !== i) { errors.push(`${year}: 选择题题号不连续，第 ${i} 个题号是 ${nums[i - 1]}`); break; }
   const blanks = choice.map((q) => q.blank).sort((a, b) => a - b);
   for (let i = 1; i <= choice.length; i++) if (blanks[i - 1] !== i) { errors.push(`${year}: blank 编号不连续，第 ${i} 个是 ${blanks[i - 1]}`); break; }
 
@@ -405,6 +409,124 @@ t.push(['2026三(3) 门限 -3Tb、Pe=Q(√(E_b/N0))', approx((2 - 8) / 2, -3) &&
     e += g * gt * h; x += g * g * h;
   }
   t.push(['2023四 Eg=3Tb/4、错位相关=Tb/2', approx(x, 0.75, 1e-3) && approx(e, 0.5, 1e-3)]);
+})();
+
+// ---------------- 2024 ----------------
+// 三：1kHz 带通信号按 2kHz 采样、2kHz 基带按 4kHz 采样；k=7 才够 40dB（6.02k）
+(function () {
+  const Rb1 = 2e3 * 7, Rb2 = 2e3 * 7, Rb3 = 4e3 * 7, Rb4 = 4e3 * 7;
+  const Rb = Rb1 + Rb2 + Rb3 + Rb4;
+  const Rs = Rb / 4;                       // 16QAM，4 bit/符号
+  const alpha = 24e3 / Rs - 1;             // 24kHz 带通信道 → Rs(1+α)=24kHz
+  const snr6 = 20 * 6 * Math.log10(2), snr7 = 20 * 7 * Math.log10(2);
+  t.push(['2024三 Rb=84kbit/s、Rs=21kBaud、α=1/7', approx(Rb, 84e3) && approx(Rs, 21e3) && approx(alpha, 1 / 7, 1e-9)]);
+  t.push(['2024三 k=7（6 比特仅 36.1dB）', snr6 < 40 && snr7 >= 40]);
+})();
+// 四：DSB 输入 SNR=S/(N0·2fm)；相干解调增益 2；θ 均匀时对 cos²θ 求均值 = 1/2+1/π
+(function () {
+  const S = 10e-3, N0 = 1e-9, fm = 5e3;
+  const snrIn = S / (N0 * 2 * fm);
+  let avg = 0, N = 200000;
+  for (let i = 0; i < N; i++) { const th = (i + 0.5) / N * Math.PI / 4; avg += Math.cos(th) ** 2 / N; }
+  t.push(['2024四 (S/N)i=1000、θ=0 时 2000', approx(snrIn, 1000, 1e-6) && approx(2 * snrIn, 2000, 1e-6)]);
+  t.push(['2024四(3) 均值=1000+2000/π', approx(avg, 0.5 + 1 / Math.PI, 1e-5) && approx(2000 * avg, 1000 + 2000 / Math.PI, 1e-2)]);
+})();
+// 五：用题给近似 log2 3≈11/7、log2 5≈7/3，逐项算熵
+(function () {
+  const L3 = 11 / 7, L5 = 7 / 3, L6 = 1 + L3, L12 = 2 + L3;
+  const HY = -(2 * (5 / 12) * (L5 - L12) + (1 / 6) * (-L6));
+  const HYX = (2 / 3) * (L3 - 1) + (1 / 3) * L6;   // -Σ P log(2/3 或 1/6)
+  t.push(['2024五 H(Y)=92/63、H(Y|X)=26/21', approx(HY, 92 / 63, 1e-9) && approx(HYX, 26 / 21, 1e-9)]);
+  t.push(['2024五 H(X,Y)=47/21、I=2/9', approx(1 + HYX, 47 / 21, 1e-9) && approx(HY - HYX, 2 / 9, 1e-9)]);
+})();
+// 六：Es、dmin，以及 s8 的胞——三条中垂线距离 0.5 / 0.707 / 0.707
+(function () {
+  const S = [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [0, 2], [-1, -1], [1, -1]];
+  const Es = S.reduce((a, p) => a + p[0] * p[0] + p[1] * p[1], 0) / S.length;
+  let dmin = Infinity;
+  for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) dmin = Math.min(dmin, Math.hypot(S[i][0] - S[j][0], S[i][1] - S[j][1]));
+  const sig = Math.sqrt(0.005);
+  // s8 的胞由 3 条中垂线围成：上方 y=-0.5 距 0.5；两条斜边距 0.7071。
+  // 折算到 erfc 自变量 d/(σ√2)：0.5→5、0.7071→10，即 Pe≈Q(5√2)=½erfc(5)。
+  const u1 = 0.5 / sig, u2 = Math.SQRT1_2 / sig;
+  t.push(['2024六 Es=9/4、dmin=1', approx(Es, 2.25, 1e-12) && approx(dmin, 1, 1e-12)]);
+  t.push(['2024六(3) 三条边距→½erfc(5)', approx(u1, 5 * Math.SQRT2, 1e-9) && approx(u2, 10, 1e-9)]);
+})();
+// 七：(8,4) 系统码——GHᵀ=0、dmin=4、伴随式 1100 的码重 2 图样 4 个
+(function () {
+  const G = [[1, 0, 0, 0, 1, 1, 1, 0], [0, 1, 0, 0, 1, 1, 0, 1], [0, 0, 1, 0, 1, 0, 1, 1], [0, 0, 0, 1, 0, 1, 1, 1]];
+  const H = [[1, 1, 1, 0, 1, 0, 0, 0], [1, 1, 0, 1, 0, 1, 0, 0], [1, 0, 1, 1, 0, 0, 1, 0], [0, 1, 1, 1, 0, 0, 0, 1]];
+  const mul = (v, M) => M.map((r) => r.reduce((s, x, i) => s ^ (x & v[i]), 0));
+  const okG = G.every((r) => mul(r, H).every((x) => x === 0));
+  let dmin = 99;
+  for (let u = 1; u < 16; u++) {
+    const b = [(u >> 3) & 1, (u >> 2) & 1, (u >> 1) & 1, u & 1], c = new Array(8).fill(0);
+    for (let i = 0; i < 4; i++) if (b[i]) for (let j = 0; j < 8; j++) c[j] ^= G[i][j];
+    dmin = Math.min(dmin, c.reduce((s, x) => s + x, 0));
+  }
+  const cols = [0, 1, 2, 3, 4, 5, 6, 7].map((j) => H.map((r) => r[j]));
+  const pats = [];
+  for (let i = 0; i < 8; i++) for (let k = i + 1; k < 8; k++) {
+    if (cols[i].map((v, q) => v ^ cols[k][q]).join('') === '1100') { const e = new Array(8).fill(0); e[i] = 1; e[k] = 1; pats.push(e.join('')); }
+  }
+  t.push(['2024七 GHᵀ=0、dmin=4', okG && dmin === 4]);
+  t.push(['2024七(3) 伴随式1100 → 4 个码重2图样',
+    pats.length === 4 && pats.slice().sort().join() === ['00110000', '00001100', '10000010', '01000001'].sort().join()]);
+})();
+// 八：8 状态 Viterbi——000→100→010→001→000 度量 2 是否为最优，到 100 是否 4
+(function () {
+  const g1 = [1, 0, 1, 1], g2 = [1, 1, 0, 1];   // c1=u⊕D²u⊕D³u，c2=u⊕Du⊕D³u
+  const out = (state, u) => {                    // state: [u_{n-1},u_{n-2},u_{n-3}]
+    const m = [u, state[0], state[1], state[2]];
+    const c1 = g1.reduce((s, x, i) => s ^ (x & m[i]), 0);
+    const c2 = g2.reduce((s, x, i) => s ^ (x & m[i]), 0);
+    return String(c1) + String(c2);
+  };
+  const rx = ['11', '11', '11', '11'];
+  const dist = (a, b) => a.split('').reduce((s, c, i) => s + (c !== b[i] ? 1 : 0), 0);
+  let best = {}; best['000'] = { m: 0, path: ['000'] };
+  for (let step = 0; step < 4; step++) {
+    const nxt = {};
+    for (const [st, v] of Object.entries(best)) {
+      for (const u of [0, 1]) {
+        const to = String(u) + st[0] + st[1];      // 状态 [u_n, u_{n-1}, u_{n-2}]
+        const m = v.m + dist(out(st.split('').map(Number), u), rx[step]);
+        if (!nxt[to] || nxt[to].m > m) nxt[to] = { m, path: v.path.concat(to) };
+      }
+    }
+    best = nxt;
+  }
+  const p000 = best['000'], p100 = best['100'];
+  t.push(['2024八(3) 到000 度量2、到100 度量4', p000.m === 2 && p100.m === 4
+    && p000.path.join('→') === '000→100→010→001→000' && p100.path.join('→') === '000→100→010→001→100']);
+})();
+// 九：Eg=Tb/3、错位相关 Tb/6；匹配时 E[y]=Tb/3
+(function () {
+  const N = 100000, h = 1 / N;
+  let eg = 0, cc = 0;
+  for (let i = 0; i < N; i++) {
+    const x = (i + 0.5) * h;
+    eg += x * x * h;            // ∫(t/Tb)²dt，Tb=1
+    cc += x * (1 - x) * h;      // ∫g(t)g(Tb−t)dt
+  }
+  t.push(['2024九 Eg=Tb/3、非匹配输出=Tb/6', approx(eg, 1 / 3, 1e-6) && approx(cc, 1 / 6, 1e-6)]);
+})();
+// 十：p(x)=x/2 的四电平均匀量化（电平 1/4,3/4,5/4,7/4）—— 数值积分独立复核
+(function () {
+  const N = 800000, a = 0, b = 2, hh = (b - a) / N;
+  const qy = (x) => 0.25 + 0.5 * Math.min(3, Math.floor(x / 0.5));
+  let sx2 = 0, sy2 = 0, sxy = 0, se2 = 0, p = [0, 0, 0, 0];
+  for (let i = 0; i < N; i++) {
+    const x = a + (i + 0.5) * hh, w = (x / 2) * hh, y = qy(x);
+    sx2 += x * x * w; sy2 += y * y * w; sxy += x * y * w; se2 += (x - y) * (x - y) * w;
+    p[Math.min(3, Math.floor(x / 0.5))] += w;
+  }
+  t.push(['2024十(1) E[X²]=2', approx(sx2, 2, 1e-6)]);
+  t.push(['2024十(2) 概率 1/16,3/16,5/16,7/16', p.every((v, i) => approx(v, (2 * i + 1) / 16, 1e-6))]);
+  t.push(['2024十(3) E[Y²]=31/16', approx(sy2, 31 / 16, 1e-6)]);
+  t.push(['2024十(4) E[XY]=47/24', approx(sxy, 47 / 24, 1e-6)]);
+  t.push(['2024十(5) 噪声=1/48', approx(se2, 1 / 48, 1e-6) && approx(sx2 - 2 * sxy + sy2, 1 / 48, 1e-6)]);
+  t.push(['2024十(6) SNR=E[X²]/噪声=96（按提示值 ≈20dB）', approx(sx2 / se2, 96, 1e-3)]);
 })();
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });

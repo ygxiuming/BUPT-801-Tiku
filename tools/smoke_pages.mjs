@@ -27,6 +27,9 @@ const ROUTES = [
   ['/paper/2023', '试卷页'],
   ['/practice?y=2023', '练习页'],
   ['/exam?y=2023', '考试页'],
+  ['/paper/2024', '试卷页2024'],
+  ['/practice?y=2024', '练习页2024'],
+  ['/exam?y=2024', '考试页2024'],
   ['/stats', '统计页'],
   ['/figures', '图库页']
 ]
@@ -182,8 +185,8 @@ await step('考试页：点「开始考试」进入答题态', async () => {
   w.close()
 })
 
-await step('练习页：选选项 → 查看解析', async () => {
-  const w = await openPage('/practice?y=2023', 'prac')
+await step('练习页2024：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2024', 'prac')
   const opt = w.document.querySelector('td[data-k]')
   if (!opt) throw new Error('找不到选项单元格 td[data-k]')
   click(w, opt)

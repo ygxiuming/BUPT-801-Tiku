@@ -143,36 +143,35 @@ def fig_q4recv():
 
 # ---------------------------------------------------------------- 九、最佳接收机框图（题目原图）
 def fig_q9recv():
-    s = HEAD.format(w=720, h=210) + marker('a24b')
-    Y, YN = 86, 152
-    s += text(6, Y + 5, 's_1(t) 或 s_2(t)', anchor='start', style='i')
-    s += line(6, Y - 26, 6, Y + 26, width=1.4)  # 左侧收拢竖线
-    s += line(6, Y, 66, Y, marker='a24b')
-    s += adder(82, Y, 13)
-    s += line(95, Y, 132, Y, marker='a24b')
-    s += rect(134, Y - 24, 88, 48) + text(178, Y + 5, '带通滤波器')
-    s += line(222, Y, 264, Y, marker='a24b')
-    s += mul(280, Y, 14)
-    s += line(294, Y, 334, Y, marker='a24b')
-    s += rect(336, Y - 24, 84, 48)
-    s += text(378, Y - 2, '低通 h(t)')
-    s += line(420, Y, 460, Y, marker='a24b')
+    s = HEAD.format(w=780, h=200) + marker('a24b')
+    Y, YN = 98, 150
+    s += text(8, 58, 's_1(t) 或 s_2(t)', anchor='start', style='i')
+    s += line(8, Y, 126, Y, marker='a24b')
+    s += adder(140, Y, 13)
+    s += line(153, Y, 190, Y, marker='a24b')
+    s += rect(192, Y - 24, 88, 48) + text(236, Y + 5, '带通滤波器')
+    s += line(280, Y, 322, Y, marker='a24b')
+    s += mul(338, Y, 14)
+    s += line(352, Y, 392, Y, marker='a24b')
+    s += rect(394, Y - 24, 84, 48)
+    s += text(436, Y - 2, '低通 h(t)')
+    s += line(478, Y, 518, Y, marker='a24b')
     # 抽样开关
-    s += dot(462, Y, 3.4)
-    s += line(462, Y, 486, Y - 14, marker='a24b')
-    s += text(474, Y + 26, 't=T_b', size=13)
-    s += text(474, Y + 42, '(抽样)', size=12)
-    s += dot(492, Y, 3.4)
-    s += line(492, Y, 540, Y, marker='a24b')
-    s += text(516, Y - 10, 'y', style='i')
-    s += rect(542, Y - 24, 60, 48) + text(572, Y + 5, '判决')
-    s += line(602, Y, 660, Y, marker='a24b')
+    s += dot(520, Y, 3.4)
+    s += line(520, Y, 544, Y - 14, marker='a24b')
+    s += text(532, Y + 26, 't=T_b', size=13)
+    s += text(532, Y + 42, '(抽样)', size=12)
+    s += dot(550, Y, 3.4)
+    s += line(550, Y, 598, Y, marker='a24b')
+    s += text(574, Y - 10, 'y', style='i')
+    s += rect(600, Y - 24, 60, 48) + text(630, Y + 5, '判决')
+    s += line(660, Y, 718, Y, marker='a24b')
     # 噪声
-    s += text(82, YN + 18, 'n_w(t)', style='i')
-    s += line(82, YN + 2, 82, Y + 14, marker='a24b')
+    s += text(140, YN + 18, 'n_w(t)', style='i')
+    s += line(140, YN + 2, 140, Y + 14, marker='a24b')
     # 本地载波
-    s += text(280, 166, '2cos(2πf_c t)', size=13)
-    s += line(280, 150, 280, Y + 15, marker='a24b')
+    s += text(338, 168, '2cos(2πf_c t)', size=13)
+    s += line(338, 152, 338, Y + 15, marker='a24b')
     return s + '</svg>'
 
 
@@ -237,9 +236,9 @@ def fig_q2psd():
     X0, X1 = 44, 320          # 左：|G(f)|^2
     x1, x2 = 424, 700         # 右：P_s1 与 P_s2 / P_s3
     s += line(X0, BASE, X1, BASE, marker='a24e')
-    s += line(X0, BASE, X0, 60, marker='a24e')
+    s += line(X0, BASE, X0, 62, marker='a24e')
     s += text(X1 + 4, BASE + 5, 'f', size=13, anchor='start', style='i')
-    s += text(X0 - 26, 62, '|G(f)|²', size=12, anchor='start')
+    s += text(X0 - 26, 50, '|G(f)|²', size=12, anchor='start')
     # |G|^2 的归一化包络：零点在 f = n/Ts
     pts = []
     for i in range(0, 181):
@@ -251,13 +250,13 @@ def fig_q2psd():
         s += line(xx, BASE, xx, BASE - 4, width=1.2)
         s += text(xx, BASE + 17, ('1/T_s' if n == 1 else ('2/T_s' if n == 2 else '3/T_s')), size=11)
     s += text(X0 - 8, BASE + 5, '0', size=12)
-    s += text((X0 + X1) / 2, 40, 'g(t) 的能量谱密度：T_s²Sa²(πfT_s)', size=12, color='#666')
+    s += text((X0 + X1) / 2, 26, 'g(t) 的能量谱密度：T_s²Sa²(πfT_s)', size=12, color='#666')
 
     # 右：P_s1（实线）与 P_s2（粗虚线）对比，再叠一条 P_s3 的直流线谱
     s += line(x1, BASE, x2, BASE, marker='a24e')
-    s += line(x1, BASE, x1, 60, marker='a24e')
+    s += line(x1, BASE, x1, 62, marker='a24e')
     s += text(x2 + 4, BASE + 5, 'f', size=13, anchor='start', style='i')
-    s += text(x1 - 30, 62, 'P_s(f)', size=12, anchor='start')
+    s += text(x1 - 30, 50, 'P_s(f)', size=12, anchor='start')
     W = x2 - x1 - 20
     p1, p2 = [], []
     for i in range(0, 181):
@@ -275,42 +274,43 @@ def fig_q2psd():
     # 图例
     s += line(x1 + 8, 76, x1 + 46, 76, width=1.8) + text(x1 + 54, 80, 'P_s1 = T_sSa²', size=11, anchor='start')
     s += line(x1 + 8, 96, x1 + 46, 96, width=1.6, dash='6,4') + text(x1 + 54, 100, 'P_s2（差分后，f=0 处为零）', size=11, anchor='start')
-    s += text((x1 + x2) / 2 + 30, 40, 's_1 与 s_2 的功率谱', size=12, color='#666')
+    s += text((x1 + x2) / 2 + 30, 26, 's_1 与 s_2 的功率谱', size=12, color='#666')
     return s + '</svg>'
 
 
 # ---------------------------------------------------------------- 三、16QAM 发端框图（解析配图）
 def fig_q3tx():
-    s = HEAD.format(w=700, h=250) + marker('a24f')
+    s = HEAD.format(w=760, h=250) + marker('a24f')
+    DX = 44
     YC, YI, YQ = 126, 74, 178
-    s += text(6, YC + 5, '84 kbps', size=13, anchor='start')
-    s += line(6, YC, 40, YC, marker='a24f')
-    s += rect(42, YC - 26, 66, 52) + text(75, YC - 3, '串并') + text(75, YC + 15, '变换', size=12)
-    s += line(108, YC, 140, YC)
-    s += line(140, YI, 140, YQ)
-    s += dot(140, YC, 3.2)
-    s += line(140, YI, 168, YI, marker='a24f')
-    s += line(140, YQ, 168, YQ, marker='a24f')
-    s += rect(170, YI - 20, 70, 40) + text(205, YI + 5, '2/4 电平')
-    s += rect(170, YQ - 20, 70, 40) + text(205, YQ + 5, '2/4 电平')
-    s += line(240, YI, 272, YI, marker='a24f')
-    s += line(240, YQ, 272, YQ, marker='a24f')
-    s += rect(274, YI - 22, 88, 44) + text(318, YI - 3, '根升余弦', size=13) + text(318, YI + 13, 'α = 1/7', size=11)
-    s += rect(274, YQ - 22, 88, 44) + text(318, YQ - 3, '根升余弦', size=13) + text(318, YQ + 13, 'α = 1/7', size=11)
-    s += line(362, YI, 392, YI, marker='a24f')
-    s += line(362, YQ, 392, YQ, marker='a24f')
-    s += mul(406, YI, 13) + mul(406, YQ, 13)
+    s += text(6, YC - 10, '84 kbps', size=13, anchor='start')
+    s += line(8, YC, 40 + DX, YC, marker='a24f')
+    s += rect(42 + DX, YC - 26, 66, 52) + text(75 + DX, YC - 3, '串并') + text(75 + DX, YC + 15, '变换', size=12)
+    s += line(108 + DX, YC, 140 + DX, YC)
+    s += line(140 + DX, YI, 140 + DX, YQ)
+    s += dot(140 + DX, YC, 3.2)
+    s += line(140 + DX, YI, 168 + DX, YI, marker='a24f')
+    s += line(140 + DX, YQ, 168 + DX, YQ, marker='a24f')
+    s += rect(170 + DX, YI - 20, 70, 40) + text(205 + DX, YI + 5, '2/4 电平')
+    s += rect(170 + DX, YQ - 20, 70, 40) + text(205 + DX, YQ + 5, '2/4 电平')
+    s += line(240 + DX, YI, 272 + DX, YI, marker='a24f')
+    s += line(240 + DX, YQ, 272 + DX, YQ, marker='a24f')
+    s += rect(274 + DX, YI - 22, 88, 44) + text(318 + DX, YI - 3, '根升余弦', size=13) + text(318 + DX, YI + 13, 'α = 1/7', size=11)
+    s += rect(274 + DX, YQ - 22, 88, 44) + text(318 + DX, YQ - 3, '根升余弦', size=13) + text(318 + DX, YQ + 13, 'α = 1/7', size=11)
+    s += line(362 + DX, YI, 392 + DX, YI, marker='a24f')
+    s += line(362 + DX, YQ, 392 + DX, YQ, marker='a24f')
+    s += mul(406 + DX, YI, 13) + mul(406 + DX, YQ, 13)
     # 载波
-    s += text(406, 30, 'cos(2πf_c t)', size=12)
-    s += line(406, 36, 406, YI - 14, marker='a24f')
-    s += text(406, 232, '−sin(2πf_c t)', size=12)
-    s += line(406, 220, 406, YQ + 14, marker='a24f')
+    s += text(406 + DX, 30, 'cos(2πf_c t)', size=12)
+    s += line(406 + DX, 36, 406 + DX, YI - 14, marker='a24f')
+    s += text(406 + DX, 232, '−sin(2πf_c t)', size=12)
+    s += line(406 + DX, 220, 406 + DX, YQ + 14, marker='a24f')
     # 合路
-    s += line(419, YI, 486, YI) + line(486, YI, 486, YC - 13, marker='a24f')
-    s += line(419, YQ, 486, YQ) + line(486, YQ, 486, YC + 13, marker='a24f')
-    s += adder(486, YC, 13)
-    s += line(499, YC, 546, YC, marker='a24f')
-    s += text(552, YC + 5, 's_16QAM(t)', size=13, anchor='start')
+    s += line(419 + DX, YI, 486 + DX, YI) + line(486 + DX, YI, 486 + DX, YC - 13, marker='a24f')
+    s += line(419 + DX, YQ, 486 + DX, YQ) + line(486 + DX, YQ, 486 + DX, YC + 13, marker='a24f')
+    s += adder(486 + DX, YC, 13)
+    s += line(499 + DX, YC, 546 + DX, YC, marker='a24f')
+    s += text(552 + DX, YC + 5, 's_16QAM(t)', size=13, anchor='start')
     return s + '</svg>'
 
 
@@ -389,7 +389,7 @@ def fig_q6const():
 # ---------------------------------------------------------------- 六、判决域（解析配图）
 def fig_q6voronoi():
     cx, cy, U = 340, 200, 72
-    s = head_at(402, 322, 159, 0) + marker('a241')
+    s = head_at(402, 372, 159, 0) + marker('a241')
     X = lambda x: cx + x * U
     Y = lambda y: cy - y * U
     D = '#8e97a3'
@@ -425,8 +425,8 @@ def fig_q6voronoi():
                   color='#2563eb' if k == 's_8' else '#1a1a1a')
     # 标注 s8 胞的三条边距
     s += text(X(1.0), Y(-0.82), 'D_8', size=13, color='#2563eb')
-    s += text(X(-2.28), 292, '虚线：各中垂线；浅蓝：s_8 的判决域', size=11, color='#2563eb', anchor='start')
-    s += text(X(-2.28), 308, '三条边距 0.5（上）/ 0.707（左）/ 0.707（右）', size=11, color='#2563eb', anchor='start')
+    s += text(170, 332, '虚线：各中垂线；浅蓝：s_8 的判决域', size=11, color='#2563eb', anchor='start')
+    s += text(170, 350, '三条边距 0.5（上）/ 0.707（左）/ 0.707（右）', size=11, color='#2563eb', anchor='start')
     return s + '</svg>'
 
 
