@@ -11,11 +11,56 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       # Google 官方的自动化发版：按 Conventional Commits 判定版本号、
       # 生成 CHANGELOG、开 Release PR；PR 合并后自动打 tag 并发布 Release
-      - uses: googleapis/release-please-action@v4
+      - id: release
+        uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # 把根路径版的静态站点打成附件挂到 Release。
+  # 不能写成 `on: release` 的独立 workflow —— Release 是 GITHUB_TOKEN 创建的，
+  # GitHub 不允许 token 触发的事件再拉起新 workflow（防递归），那边会一直不执行。
+  attach-dist:
+    name: 打包静态站点并挂到 Release
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装前端依赖
+        working-directory: app
+        run: npm ci
+
+      - name: 安装 server 依赖（提供 KaTeX）
+        working-directory: server
+        run: npm ci
+
+      # 不打 VITE_BASE：这个包用于根路径部署（nginx / 任意静态托管），
+      # 与 Pages 那份（带子路径）分开构建
+      - name: 构建
+        working-directory: app
+        run: npm run build
+
+      - name: 打包
+        run: |
+          cd app/dist
+          zip -qr "../../bupt801-web-${{ needs.release-please.outputs.tag_name }}.zip" .
+
+      - name: 上传到 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ needs.release-please.outputs.tag_name }}" "bupt801-web-${{ needs.release-please.outputs.tag_name }}.zip" --clobber
