@@ -98,6 +98,8 @@ const res = await esbuild.build({
   logLevel: 'info',
   plugins: [vuePlugin],
   define: {
+    // 与 vite.config.js 的 base 同源：GitHub Pages 子路径部署由 VITE_BASE 注入
+    'import.meta.env.BASE_URL': JSON.stringify(process.env.VITE_BASE || '/'),
     __VUE_OPTIONS_API__: 'true',
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION__: 'false',
@@ -112,10 +114,16 @@ if (res.errors.length) {
 
 // dist/index.html 由 app/index.html 派生：数据脚本列表始终与源文件一致，
 // 只把入口换成打包产物并补上样式表。
-const html = fs.readFileSync(path.join(APP, 'index.html'), 'utf8')
+const rawHtml = fs.readFileSync(path.join(APP, 'index.html'), 'utf8')
   .replace('</head>', '  <link rel="stylesheet" href="/assets/app.css">\n</head>')
   .replace('<script type="module" src="/src/main.js"></script>',
     '<script type="module" src="/assets/app.js"></script>')
+// 子路径部署（GitHub Pages）时，public 资源与打包产物的绝对路径要补上 base。
+// 规则与 app/vite.config.js 的 publicBaseRewrite 保持一致，改一处要改两处。
+const base = process.env.VITE_BASE || '/'
+const html = base === '/'
+  ? rawHtml
+  : rawHtml.replace(/(href|src)="\/(data|vendor|assets)\//g, (_m, attr, dir) => `${attr}="${base}${dir}/`)
 fs.writeFileSync(path.join(APP, 'dist', 'index.html'), html, 'utf8')
 
 console.log('前端产物已更新：app/dist/index.html + app/dist/assets/app.{js,css}')

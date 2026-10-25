@@ -17,8 +17,11 @@
       <span class="sep"></span>
       <router-link class="btn sm ghost" :to="'/practice?y=' + year"><Icon name="target" :size="14" />刷这份卷</router-link>
       <button class="btn sm ghost" @click="printPaper"><Icon name="print" :size="14" />打印</button>
-      <a class="btn sm" :href="pdfUrl(false)" target="_blank"><Icon name="download" :size="14" />试卷 PDF</a>
-      <a class="btn sm primary" :href="pdfUrl(true)" target="_blank"><Icon name="download" :size="14" />含解析 PDF</a>
+      <template v-if="pdfReady">
+        <a class="btn sm" :href="pdfUrl(false)" target="_blank"><Icon name="download" :size="14" />试卷 PDF</a>
+        <a class="btn sm primary" :href="pdfUrl(true)" target="_blank"><Icon name="download" :size="14" />含解析 PDF</a>
+      </template>
+      <span v-else class="btn sm ghost" title="静态托管下没有排版服务；用浏览器打印同样可存为 PDF，或自建 server/ 以获得服务端排版">PDF 需自建服务</span>
     </div>
 
     <div v-if="!p" class="card pad empty" style="max-width:900px;margin:0 auto">
@@ -60,6 +63,7 @@
 import Icon from '../components/Icon.vue'
 import { papers, escHtml } from '../lib/data.js'
 import { renderMath, figureSvg } from '../lib/render.js'
+import { APP_BASE } from '../router.js'
 
 export default {
   name: 'PaperView',
@@ -70,6 +74,8 @@ export default {
     mode: 'both',
     active: '',
     ansRendered: false,
+    // 服务端排版（Puppeteer）只在自建服务上存在；GitHub Pages 是纯静态，探测失败就隐藏 PDF 按钮
+    pdfReady: false,
     modes: [
       { v: 'both', n: '题 + 解析' },
       { v: 'q', n: '只看题' },
@@ -171,6 +177,7 @@ export default {
   },
   mounted() {
     this.postRender()
+    this.probePdf()
     window.addEventListener('scroll', this.onScroll, { passive: true })
   },
   beforeUnmount() {
@@ -207,7 +214,18 @@ export default {
       this.mode = this.showAns ? (this.mode === 'q' ? 'both' : this.mode) : 'q'
     },
     printPaper() { window.print() },
-    pdfUrl(withAns) { return '/api/pdf/' + this.year + (withAns ? '/ans' : '/paper') },
+    pdfUrl(withAns) { return APP_BASE + 'api/pdf/' + this.year + (withAns ? '/ans' : '/paper') },
+    // 静态托管（GitHub Pages）下没有后端，探测 /api/health 失败即降级为浏览器打印。
+    // 失败是预期内的，静默处理，不弹 toast。
+    async probePdf() {
+      try {
+        const r = await fetch(APP_BASE + 'api/health', { cache: 'no-store' })
+        const j = await r.json()
+        this.pdfReady = !!(r.ok && j && j.ok)
+      } catch (e) {
+        this.pdfReady = false
+      }
+    },
     goto(id) {
       const el = document.getElementById(id)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })

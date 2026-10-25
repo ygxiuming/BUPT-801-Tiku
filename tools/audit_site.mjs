@@ -20,7 +20,15 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const APP = path.join(ROOT, 'app')
 const DIST = path.join(APP, 'dist')
 const require = createRequire(path.join(APP, 'package.json'))
-const { JSDOM } = require('/home/xiuming/.workbuddy/binaries/node/workspace/node_modules/jsdom')
+// jsdom 先按普通依赖找（CI 里 npm i jsdom 即可），找不到再退回本机固定路径（沙箱环境）
+function loadJsdom() {
+  for (const p of ['jsdom', '/home/xiuming/.workbuddy/binaries/node/workspace/node_modules/jsdom']) {
+    try { return require(p) } catch (e) { /* 试下一个 */ }
+  }
+  console.error('缺少 jsdom：请先 npm i jsdom（或设 JSDOM_PATH 指向安装位置）')
+  process.exit(1)
+}
+const { JSDOM } = loadJsdom()
 
 const JSON_OUT = process.argv.includes('--json')
 const html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8')
@@ -61,6 +69,12 @@ function bindGlobals(w) {
   w.scrollTo = () => {}
   w.Element.prototype.scrollIntoView = () => {}
   w.confirm = () => true
+  // fetch：jsdom 不提供，缺了会解析到 Node 全局 fetch（undici），受限沙箱里初始化
+  // Wasm 会 OOM 崩进程。这里统一拒绝，等价于静态托管（无排版服务）的真实场景。
+  const noFetch = async () => { throw new Error('fetch disabled in audit') }
+  w.fetch = noFetch
+  // bundle 跑在 Node 的 ESM 作用域里，裸 fetch 解析到 globalThis，不是 jsdom 的 window
+  globalThis.fetch = noFetch
   if (!w.URL.createObjectURL) w.URL.createObjectURL = () => 'blob:mock'
   if (!w.URL.revokeObjectURL) w.URL.revokeObjectURL = () => {}
   // 记录下载行为：真浏览器会弹保存框，jsdom 里只需知道它点下了、文件名对不对

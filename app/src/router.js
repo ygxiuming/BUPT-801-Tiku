@@ -20,8 +20,12 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
+// 部署基路径：跟随构建时的 base（GitHub Pages 部署在 /<Repo>/ 下；本地与 nginx 根部署为 /）
+// 名字与文件末尾的标题常量 BASE 区分开
+export const APP_BASE = import.meta.env.BASE_URL || '/'
+
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(APP_BASE),
   routes,
   scrollBehavior() { return { top: 0 } }
 })
