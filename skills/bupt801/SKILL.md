@@ -1,6 +1,6 @@
 ---
 name: bupt801
-description: "北邮801通信原理真题库入库技能。把待解析/里的新年份试卷 PDF + 答案图片，加工成结构化题库（题干/选项/答案/逐项解析/分步推导）+ 重绘 SVG 图库 + 可打印试卷页，并跑通校验与页面实测。当用户说『解析20XX年801真题』『把新试卷入库』『加一年真题』『801真题解析』『重画这道题的图』『题库校验/修复』时使用。"
+description: "北邮801通信原理真题库入库技能。把待解析/里的新年份试卷 PDF + 答案图片，加工成结构化题库（题干/选项/答案/逐项解析/分步推导）+ 重绘 SVG 图库 + 可打印试卷页，并跑通校验与页面实测。当用户说『解析20XX年801真题』『把新试卷入库』『加一年真题』『801真题解析』『重画这道题的图』『检查/统一图件格式规范』『题库校验/修复』时使用。"
 agent_created: true
 ---
 
@@ -19,7 +19,7 @@ agent_created: true
 | 2027 的答案到了，补解析 | 已有 paper.js，只补 answer.js |
 | 重画 2025 第九题的图 | 只改 `tools/gen_figures_2025.py` + emit + 预览核验 |
 
-**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘；④框图/线段自查遮挡；⑤`node tools/validate_data.js` 零错误零警告；⑥页面冒烟通过；⑦**追加 `解析日志.md`**；⑧**git 提交**。
+**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘并按第 5 节格式规范统一（四边留白 18px）；④框图/线段自查遮挡（0 交叠）；⑤`node tools/validate_data.js` 零错误零警告；⑥页面冒烟通过；⑦**追加 `解析日志.md`**；⑧**git 提交**。
 
 ---
 
@@ -40,8 +40,10 @@ tools/gen_figures_<年>.py   SVG 生成器（stdout 输出 ###FILE: 分隔的多
 tools/emit_figures.mjs      把生成器输出落盘
 tools/validate_data.js      数据+KaTeX+数值 校验
 tools/smoke_pages.mjs       页面冒烟（jsdom + dist，无需浏览器/网络）
-tools/svg_fit.py            viewBox 粗收（生成器内调用）
-tools/fit_figures_render.py viewBox 按渲染墨迹精收（emit 后调用）
+tools/svgkit.py             **统一收边**：tighten(svg, PAD=18)，2025/2026 起每张图必用
+tools/preview_figures.py    **预览**：整年图件渲染并拼成带图名的网格（省上下文）
+tools/svg_fit.py            旧方案：viewBox 粗收（2023/2024 的生成器在用，新图不要再用）
+tools/fit_figures_render.py 旧方案：按渲染墨迹精收（emit 后调用，2023/2024 在用）
 解析日志.md                 每年入库/改题后追加，写完即提交
 app/                        Vue3 前端（index.html 登记数据 script）
 server/                     Express + Puppeteer（试卷 PDF 生成）
@@ -111,7 +113,7 @@ pdftoppm -r 300 -png "待解析/<年>xxx.pdf" /tmp/w801/<年>/p   # 300dpi 够�
 
 ### ⑤ 画图（一张都不能省）
 
-1. 写 `tools/gen_figures_<年>.py`：从 `gen_figures_2026.py` 复制脚手架（`HEAD/marker/line/poly/text/dot/circle/rect/mul/adder/head_at` 画笔齐备）。
+1. 写 `tools/gen_figures_<年>.py`：从 `gen_figures_2026.py` 复制脚手架（`HEAD/marker/line/poly/text/dot/circle/rect/mul/adder` 画笔齐备）。**先 `grep` 去年的同类图函数，照抄它的框高/标签间距/字号**，不要从零拍坐标——两年的同类图必须长一个样。
 2. 在 `FIGS = [(key, 题号, 是否解析图, 描述)]` 登记；输出走 stdout，用 `###FILE:<路径>` 分隔。
 3. 落盘：
 
@@ -119,53 +121,51 @@ pdftoppm -r 300 -png "待解析/<年>xxx.pdf" /tmp/w801/<年>/p   # 300dpi 够�
 node tools/emit_figures.mjs <年>     # 生成 data/figures/<年>/*.js + answer/*.js + _index.js
 ```
 
-4. 关键约定：
-   - 文件名 `年份-题号-图名.js` 只给人看，数据里永远用 `fig:"key"` 引用。
-   - `viewBox` 贴内容边界，**各边留白 ≤30px**（否则全宽渲染时图偏左/被裁切）；不贴 (0,0) 就用 `head_at(w,h,x0,y0)` 收边，别用 `HEAD.format`。
-   - 上下标用 `text()` 的迷你标记：`x_c`、`T_{b}`、`u^2` → tspan 真上下标。**绝不写 `T_b`、`G₁` 这种字面下划线/Unicode 下标。**
-   - 线宽 1.6、色 `#1a1a1a`；辅助线 `#555` 虚线 `4 3`；箭头用 `marker('arC')`。
-   - 幅度谱的 f=0 处画细灰线**不要带箭头**（会被误读成谱线）。
+4. 收边**只有一种写法**（2025/2026 已是这个范式，新图照抄）：
+
+```python
+from svgkit import PAD, tighten          # tools/svgkit.py
+...
+SVGS = { 'q2psd': fig_q2psd(), ... }
+SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}   # 四边各留 18px
+```
+
+- 画布尺寸随便给（`HEAD.format(w=..., h=...)`），只要内容装得下；**不要手调 viewBox，也不要用 `head_at()`**（已弃用：它要求所有坐标 ≥ x0，一不留神就左侧溢出）。
+- 文件名 `年份-题号-图名.js` 只给人看，数据里永远用 `fig:"key"` 引用。
+- 上下标用 `text()` 的迷你标记：`x_c`、`T_{b}`、`u^2` → tspan 真上下标。**绝不写 `T_b`、`G₁` 这种字面下划线/Unicode 下标。**
+- 颜色、线宽、虚线、字号、间距、框高**一律按下表第 5 节《图件格式规范》**，那张表是唯一口径，别在图里另发明写法。
 
 ### ⑥ 自查遮挡（必做，不能只靠肉眼扫一眼）
 
 ```bash
-# 导出 SVG（把字体整体换成 CJK，否则 cairosvg 里中文渲染成空白）
-node -e "
-const fs=require('fs');global.window={};
-require('./data/figures/<年>/_index.js');
-for(const [k,svg] of Object.entries(window.BUPT801.figures['<年>']))
-  fs.writeFileSync('/tmp/w801/prev/p-'+k+'.svg',
-    svg.replace(/font-family=\"[^\"]*\"/,'font-family=\"Noto Sans CJK SC\"'));
-"
-/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python -c "
-import cairosvg, glob, os
-for f in sorted(glob.glob('/tmp/w801/prev/p-*.svg')):
-    cairosvg.svg2png(url=f, write_to=f.replace('.svg','.png'), scale=2.0, background_color='white')
-"
+PY=/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python
+$PY tools/preview_figures.py <年> --cols 3 --cell 520x400       # -> /tmp/w801/figures-<年>.png
+$PY tools/preview_figures.py <年> --only q7quant,psk8new --cell 760x470 --out /tmp/x.png   # 可疑的单看
 ```
 
-然后逐张 Read PNG，**重点看四件事**：
-- 标签压线 / 压在箭头头上（文字与线段的 y 差 < 8px 就危险）
+一条命令搞定"导出 SVG（自动换 `Noto Sans CJK SC`）→ cairosvg 渲染 → PIL 拼带图名的网格"。
+**整年一次 Read 网格图，不要逐张 Read**（11 张图逐张看=11 次图像输入，够把上下文吃掉一半）；只有格子太小看不清的才用 `--only` 单独放大。
+
+**重点看四件事**：
+- 标签压线 / 压在箭头头上（文字包围盒到线的净距 < 6px 就算危险）
 - 抽头竖线穿过方框里的文字（如 `G₂`）
 - 圆加号画成"圆圈里再一个 ⊕"双重圆（应该只画 `<circle>` + 一竖一横两条短线）
-- 内容溢出画布 / 单边留白 >30px
+- 内容溢出画布 / 四边留白不均（四边差 > 4px 就说明这张图没走统一收边）
 
 再跑几何自查（文字包围盒 vs 线段 vs viewBox）：
 
 ```bash
-node tools/check_figure_overlap.js <年>     # 逐图报 线交叠/字交叠/四边留白；0 交叠 + 留白≤30 才算过
+node tools/check_figure_overlap.js <年>     # 判过标准：0 线交叠 + 0 字交叠 + 四边留白 18±2（四边差 ≤4px）
 ```
 
-**viewBox 贴边分两步，别手调**（手调最容易把中文标签裁掉）：
+**收边走 `svgkit.tighten()` 一步到位，别手调 viewBox**：
 
-1. 生成器末尾调 `tools/svg_fit.py` 的 `fit_svg()`：按 line/rect/circle/poly/path/text 的包围盒粗收。它**会先剔除 `<defs>`**——否则箭头 marker 的 `M0,0` 会被当成墨迹，把包围盒拉满整张画布，裁完等于没裁。
-2. emit 之后再按真实渲染墨迹精收：
+- 生成器末尾 `SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}`，PAD=18（见第 5 节）。
+- 它按 line/rect/circle/polygon/path(M)/text 的包围盒收边，**不扫 `<defs>`**，所以箭头 marker 的 `M0,0` 不会把框拉满；文字盒口径（上 0.8em / 下 0.2em，CJK 1.0em、大写数字 0.62em）与 `check_figure_overlap.js` 完全一致，收边与检测不会互相打架。
+- 收完四边必然是同一个数（18）。若 `check` 报出 8/30 这种不均匀值，说明这张图没走 `tighten()`，回去补，别去手调 margin。
+- 中文在预览里要能画出来：预览前把根 `font-family` 换成 `Noto Sans CJK SC`（上面的导出命令已带）。
 
-```bash
-/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python tools/fit_figures_render.py <年>
-```
-
-cairosvg 1:1 渲染 → PIL 取非白像素包围盒 → 四周补 16px 写回 viewBox。**量墨迹前必须把 font-family 换成 `Noto Sans CJK SC`**，否则中文整段不画、包围盒偏小，左边的"输入""r(t)"这类标签会被裁掉（脚本里已处理，手写命令时要自己记得）。
+> 2023/2024 还在旧两步（`svg_fit.fit_svg()` 粗收 + `fit_figures_render.py` 按墨迹精收，留白 6~23）。**只有维护这两年时才用旧链路**，动到它们就顺手改成 `svgkit.tighten()`，别再新增旧写法。
 
 > cairosvg 的已知假象：`text-anchor='middle'` 的 tspan 会按 chunk 各自居中，下标被拉开成空隙（显示成 `2cos(2πf c t)`）。**浏览器正常，不要为这个改图。** 只看线条/方框是否真的相交。
 
@@ -215,12 +215,14 @@ cp -f data/chapters.js app/public/data/chapters.js
 
 ```bash
 node tools/build-frontend.mjs      # 没改 app/src 可跳过
-node tools/smoke_pages.mjs         # 6 条路由 + 3 个交互，全绿才算过
+node tools/smoke_pages.mjs         # 全绿才算过（当前 14 条路由 + 4 个交互）
 ```
 
 它用 jsdom 打开 `app/dist/index.html`，先 `window.eval` 所有数据脚本（**顺序不能反**，数据脚本必须早于 bundle），再 `import('dist/assets/app.js?r=N')` 让应用自己 mount，逐页断言"文字量正常 + `.katex-error` 为 0 + `window.__vueErrors` 为空"，最后跑三段交互：首页→试卷页、考试页点「开始考试」、练习页选选项→查看解析。新增/改版的页面要在 `ROUTES` 和交互块里补断言。
 
-**新入库的年份记得在 `ROUTES` 里加三条**（`/paper/<年>`、`/practice?y=<年>`、`/exam?y=<年>`），并把「练习页选选项→查看解析」这段交互的年份换成最新一年——否则新数据只被 `validate_data.js` 覆盖，前端渲染问题会漏过去。改了 `app/index.html` 后必须先 `node tools/build-frontend.mjs`，冒烟读的是 `dist/index.html` 里的 script 清单。
+**新入库的年份记得在 `ROUTES` 里加三条**（`/paper/<年>`、`/practice?y=<年>`、`/exam?y=<年>`），并给「练习页选选项→查看解析」再补一条该年份的交互（老年份那条保留）——否则新数据只被 `validate_data.js` 覆盖，前端渲染问题会漏过去。改了 `app/index.html` 后必须先 `node tools/build-frontend.mjs`，冒烟读的是 `dist/index.html` 里的 script 清单。
+
+> **`openPage(route, tag)` 的 tag 不用手工区分**：它被拼进 `import('app.js?tag=...')` 当缓存参数，ESM 模块只执行一次，tag 重复会让第二次调用拿到缓存的 bundle、app 不挂载，页面空白（表现为"找不到 td[data-k]"这种假失败）。脚本现在会自动追加递增序号，加交互步骤时直接写可读前缀即可。
 
 > 沙箱内 `curl 127.0.0.1:3000` 返回 502、`npm run sync` 报 `EPERM copyfile`，**别指望起 dev server 用 curl 验**。
 
@@ -272,11 +274,11 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 - [ ] 选择题 N 题 / 大题 M 题 / 总分 150（以原卷为准，同步 `sections` 分值）
 - [ ] 每道选择题有 `concl + A~D 逐项 + note`；每道大题有 `intro + 分步 + 每问 ans + summary + pitfalls`
 - [ ] 与参考答案不一致处，解析里写明差异和理由
-- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡，`check_figure_overlap.js <年>` 0 交叠、留白 ≤30
+- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡，`check_figure_overlap.js <年>` 0 交叠、**四边留白 18/18/18/18（±2）**，版式符合第 5 节规范
 - [ ] `node tools/validate_data.js` → 0 错误 0 警告
 - [ ] `app/index.html` / `validate_data.js` / `chapters.js` 三处登记齐全
 - [ ] `public/data/` 与 `data/` 内容一致（`diff` 过，或确认走 server 实时映射不需要快照）
-- [ ] 六个页面实测通过（`node tools/smoke_pages.mjs` 全绿）
+- [ ] 六个页面类型全部实测通过（`node tools/smoke_pages.mjs` 全绿，`ROUTES` 已含新年份三条）
 - [ ] `解析日志.md` 已追加本年一节（含纠错与遗留）
 - [ ] `git commit` 完成，`git status --short` 干净
 
@@ -290,7 +292,7 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 题干空号高亮错位 | 用了半角 `(1)`，必须全角 `（1）` |
 | 选项只显示第一套 | 组上没写 `optionSets`，或题上没写 `oKey` |
 | 图里出现 `f_c` 字面下划线 | `text()` 没走迷你标记（`x_c` → tspan） |
-| 图整体偏左/被裁 | viewBox 留白过大或内容溢出 |
+| 图整体偏左/被裁 | 没走统一收边（见第 5.1 节）：`tighten(v, PAD)` 收完四边必是 18；若仍偏，看内容是否溢出画布 |
 | Bash 写 `.js` 被拦（EPERM） | Mimosa 安全 Hook；改用 Write 工具或项目内 node 脚本 |
 | `require(app/...)` 报 ESM 错 | `app/` 是 `type:module`，KaTeX 一律从 `server/node_modules` require |
 | Chrome 截图 EXIT=133 | 本机无 Chrome，走 cairosvg |
@@ -302,8 +304,93 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | `cp` 卡住/命令被转后台 | 本机 `cp` 是交互别名（`cp -i`），会停在"是否覆盖？"；一律用 `/bin/cp -f` |
 | 校验器报"空号不连续"但看不出来 | 一题多空时 `num` 必然重复（2024）。校验现在按去重题号查；若仍报，先看 `blank` 是否 1..N 连续 |
 | `Math.erfc is not a function` | 本机 Node 没有 erfc。数值抽查别直接算 erfc/Q，改核 `d/σ` 比值或 `d/(σ√2)` 是否等于题设整数 |
-| 图件报"留白 L=-1xx"（左侧溢出） | 用了 `head_at(w,h,x0,y0)` 却把元素坐标写在 `x0` 左侧。`head_at` 会把 viewBox 原点搬到 `x0`，**所有绝对坐标必须 ≥ x0** |
+| 图件报"留白 L=-1xx"（左侧溢出） | 旧写法 `head_at(w,h,x0,y0)` 会把 viewBox 原点搬到 `x0`，元素坐标写到 `x0` 左侧就溢出。**已弃用**：改 `HEAD.format` + `tighten` |
+| 四边留白 8/30 不均、图看着偏左 | 这张图没走 `svgkit.tighten()`，或还在用 `svg_fit`/`fit_figures_render` 旧链路；新图统一 `tighten(v, PAD)` |
+| 收紧留白后标签与箭头贴住 | 文字盒是"上 0.8em / 下 0.2em"，箭头起点必须落在文字盒之外 ≥6px；垂直箭头别让文字居中压在箭线上，改成右对齐/左对齐到线侧 |
+| 框里两行字贴框底 | 框高 30 只够单行。双行文字用框高 38、行基线间距 14~15、距上下边各 ≥4px |
+| 同类元素三种画法（`#666`/`#bbb`、`6,4`/`2,3`） | 按第 5 节色表/线型表统一，别在图里自创；改动时用 `grep -n "color='#"` 一次性扫平 |
+| 冒烟报"找不到 td[data-k]"、页面空白 | `openPage(route, tag)` 的 tag 命中 ESM 缓存、app 没重新挂载（见第 ⑨ 步，已自动加序号） |
+| 留白 L/T 30+、R/B 18（图明显偏右下） | 包围盒扫到了 `<defs>` 里箭头 marker 的 `M0,0 L7,3`；`svgkit.content_bbox` 必须先剥 `<defs>` |
+| 收边后闭合折线/箭头被裁掉一截 | path 的 `d` 带小写相对命令（`l9,-4`）或 `Z` 结尾被漏算；`_path_points` 已按相对位移累加 |
+| 改了 `svgkit.py` 或公共画笔，怕波及其它图 | 重新 emit 后看 `git status --short data/figures`：**应当零改动**；有改动就 `git diff` 确认是哪张图、为什么变 |
 
-## 5. 多会话并行
+## 5. 图件格式规范（唯一口径）
+
+> 硬约束：新图照抄这张表，改图按这张表对齐。判断标准一句话——**两年的同类型图摆一起，看不出是分两次画的**。
+
+### 5.1 画布与留白
+
+- 每张图末尾统一 `SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}`（`tools/svgkit.py`，PAD=18），四边各留 18px。
+- 不自调 viewBox，不用 `head_at()`，不用 `svg_fit` / `fit_figures_render`（那两个是 2023/2024 的历史链路）。
+- 画布尺寸只为布局服务，装得下就行；不要为了让"图看着大"去改 margin。
+- 验收：`check_figure_overlap.js` 报 `18/18/18/18`（±2，且四边差 ≤4）。
+- `svgkit.py` 与生成器同在 `tools/`，`emit_figures.mjs` 用 `python3 <绝对路径>` 调用、`sys.path[0]` 就是 `tools/`，所以 `from svgkit import PAD, tighten` 直接可用（手动 `python3 tools/gen_figures_<年>.py` 同样成立）。
+- `content_bbox` 的两条硬规矩（改这个文件时别退回去）：
+  1. **先剔除 `<defs>`**——箭头 marker 的 `M0,0 L7,3 L0,6 z` 是图形定义不是墨迹，混进来会把包围盒拉到原点，收边等于没做（表现为留白 L/T 30+、R/B 18）。
+  2. **path 的 `d` 要按命令解析**，小写 `l/c/q` 是相对位移、`Z` 是闭合；只抓 `M` 后那串数字会漏掉折线拐点和箭头三角，导致收完边把图裁掉一块。
+
+### 5.2 线型与颜色
+
+| 元素 | 颜色 | 线宽 | 虚线 |
+|---|---|---|---|
+| 信号线 / 方框 / 坐标轴 / 箭头 | `#1a1a1a` | 1.6 | — |
+| 判决域、区间边界、星座分区 | `#888` | 1.2 | `5,4` |
+| 参考虚线（抽样时刻、电平参考、辅助网格） | `#999` | 1.1 | `3,4` |
+| 幅度谱 f=0 竖直细线（**不带箭头**） | `#999` | 1.1 | 实线 |
+| 域标签 `D₁…`、次级标注 | `#555` | — | — |
+| 图注 / 说明文字 | `#666` | — | — |
+| 强调数值（判决门限、错误概率） | `#c00` | — | — |
+
+- **禁用**：`#666`/`#bbb` 画边界线；dash 写成 `2,3` / `4,5` / `6,4` / `5 4`（统一用逗号：`5,4`、`3,4`）。
+- 红色只用于"一处关键数值"，同图不超过一处。
+
+### 5.3 字号
+
+- 14（默认正文/框内文字）、13（公式标注，如 `cos(2πf_c t)`）、12（坐标刻度、比特标签）、11（密集星座点标签）。
+- 同图同类元素同字号；跨年份同类图同字号。
+- 上下标只走 `text()` 迷你标记（`x_c` / `T_{b}` / `u^2`），不写 `T_b`、`G₁`。
+
+### 5.4 间距（按文字包围盒算：上 0.8em、下 0.2em）
+
+- 标签在线上方：`y_text ≤ y_line − 0.2*size − 6`。
+- 垂直箭头：**别让文字居中压在箭线上**，把标签右对齐/左对齐到线的侧边（`anchor='end'/'start'`），水平净距 ≥6px。
+- 标签与箭头三角：净距 ≥6px。
+- 框内单行：框高 ≥30；两行：框高 38，行基线差 14~15，距上下边各 ≥4px。
+- 框宽 ≥ 文字宽 + 12；相邻框图元水平净距 ≥24（留得下支路标签）。
+
+### 5.5 图元画法
+
+- 乘法器 ⊗ = `circle` + 两条斜线（0.71r）；加法器 ⊕ = `circle` + 十字（0.77r）。**不用 unicode 字符**，也不会出现"圆里再套一个 ⊕"。
+- 幅度谱 f=0 的细灰线不带箭头（否则被读成谱线）。
+- 星座判决域必须按几何真值画（Voronoi 中垂线），边界淡于信号线。
+- 阶跃/量化特性用折线自身的竖直段表达跳变，**不再叠一条贯穿全高的虚线**（重复且脏）。
+
+### 5.6 同类图对照表（写新图前先打开对应函数）
+
+| 图型 | 参照实现 | 要抄的参数 |
+|---|---|---|
+| 系统框图 / 接收机 | `gen_figures_2026.py: fig_q3recv`、`fig_q6block` | 框高 48、`mul/adder` r=13~14、支路起止留 24~30 |
+| 单边/双边幅度谱 | `fig_q2psd`（2026 / 2025） | 谱线 1.8、脉冲三角 4px、f=0 细线 `#999/1.1` |
+| 星座 + 判决域 | `fig_q5const`（2026）、`fig_psk8/psk8new`（2025） | 点距 U、边界 `#888/5,4`、点标签偏移 `(dx,dy,anchor)` |
+| 量化特性 / PDF | `fig_q7quant`、`fig_ookpdf`（2025） | 电平标签统一"电平线上方 4px"、门限红色一处 |
+| 编码器 / 延迟线 | `fig_encoder`（2025） | 抽头母线在延迟线正上方、⊕ 十字 0.77r |
+
+### 5.7 每年入库后的巡检（3 步）
+
+```bash
+node tools/emit_figures.mjs <年>
+node tools/check_figure_overlap.js <年>      # 0 交叠 + 18/18/18/18
+/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python \
+  tools/preview_figures.py <年> <往年> --cols 3 --cell 520x400
+# 网格图里并排比"同类图是否一个模子"，可疑的用 --only 单张放大
+```
+
+发现"同类图长得不一样"→ 改图，不改规范。
+
+**只动了工具、没打算改图时**，多跑一步回归：`node tools/emit_figures.mjs <年>` 之后
+`git status --short data/figures` 必须是**空**——非空说明你的改动改变了既有图件的收边，
+先 `git diff` 看清是哪张、再把行为改回去，别顺手把 16 张图的 viewBox 一起换掉。
+
+## 6. 多会话并行
 
 本项目常有并行会话改同一批文件（如两年份同时入库）。改 `app/index.html`、`tools/validate_data.js`、`app/src/lib/data.js` 这类公共文件前**先重读**，冲突时以 `HANDOVER.md` 的格式约定为准对齐，不要直接覆盖。
