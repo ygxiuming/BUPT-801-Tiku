@@ -75,6 +75,13 @@ function bindGlobals(w) {
   w.fetch = noFetch
   // bundle 跑在 Node 的 ESM 作用域里，裸 fetch 解析到 globalThis，不是 jsdom 的 window
   globalThis.fetch = noFetch
+  // 浏览器独有的 Observer：jsdom 有 MutationObserver 但不在 globalThis 上，
+  // Intersection/Resize 干脆没有。依赖库碰到就整页 ReferenceError，统一补上。
+  for (const k of ['MutationObserver', 'IntersectionObserver', 'ResizeObserver']) {
+    const v = w[k] || class { observe() {} unobserve() {} disconnect() {} takeRecords() { return [] } }
+    w[k] = v
+    globalThis[k] = v
+  }
   if (!w.URL.createObjectURL) w.URL.createObjectURL = () => 'blob:mock'
   if (!w.URL.revokeObjectURL) w.URL.revokeObjectURL = () => {}
   // 记录下载行为：真浏览器会弹保存框，jsdom 里只需知道它点下了、文件名对不对

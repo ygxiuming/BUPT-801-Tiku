@@ -110,6 +110,14 @@ function globalsFor(w) {
   w.fetch = noFetch
   // bundle 跑在 Node 的 ESM 作用域里，裸 fetch 解析到 globalThis，不是 jsdom 的 window
   globalThis.fetch = noFetch
+  // 浏览器独有的 Observer：jsdom 有 MutationObserver 但不在 globalThis 上，
+  // Intersection/Resize 干脆没有。依赖库（Vue / KaTeX）里任一分支碰到就整页 ReferenceError，
+  // 所以统一补上——有就用 jsdom 的，没有给个空实现。
+  for (const k of ['MutationObserver', 'IntersectionObserver', 'ResizeObserver']) {
+    const v = w[k] || class { observe() {} unobserve() {} disconnect() {} takeRecords() { return [] } }
+    w[k] = v
+    globalThis[k] = v
+  }
   // jsdom 没有这两个 API，导出/下载功能会用到；补桩让流程能走通
   if (!w.URL.createObjectURL) w.URL.createObjectURL = () => 'blob:mock'
   if (!w.URL.revokeObjectURL) w.URL.revokeObjectURL = () => {}
