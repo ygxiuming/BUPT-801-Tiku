@@ -107,27 +107,37 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 
 # ------------------------------------------------------------------ 选择题 14：升余弦滚降谱
 def fig_q14rc():
-    """双边谱：中心 10 MHz，平顶 7~13 MHz，余弦过渡到 6/14 MHz（滚降系数 1/3）"""
-    s = HEAD.format(w=640, h=220) + marker('m21a')
-    X = lambda f: 100 + (f - 5) * 50
-    Y0, YT = 170, 90
+    """升余弦滚降谱（原卷实测）：中心 10 MHz，平顶 8~12 MHz，余弦滚降到 6/14 MHz，
+    半幅点恰好落在 7/13 MHz——原卷的虚线（半幅横线 + 两条竖虚线落到轴）标的就是它。"""
+    s = HEAD.format(w=820, h=300) + marker('m21a')
+    X = lambda f: 190 + (f - 6) * 50
+    Y0, HH = 250, 125                 # 横轴 y / 平顶幅度（px）
+    FC, ALPHA, FN = 10.0, 1 / 3, 3.0  # 中心频率 / 滚降系数 / 奈奎斯特半带宽（=半幅点，MHz）
+    FB = FN * (1 + ALPHA)             # 滚降截止半带宽 = 4 MHz
+    FTOP = FN * (1 - ALPHA)           # 平顶半宽 = 2 MHz（平顶 8~12 MHz）
 
-    def rise(f0, f1, y_from, y_to, n=24):
-        return [(X(f0 + (f1 - f0) * i / n),
-                 y_from + (y_to - y_from) * 0.5 * (1 - math.cos(math.pi * i / n)))
-                for i in range(n + 1)]
+    def P(f):
+        d = abs(f - FC)
+        if d <= FTOP:
+            return 1.0
+        if d >= FB:
+            return 0.0
+        return 0.5 * (1 + math.cos(math.pi * (d - FTOP) / (FB - FTOP)))
 
-    pts = rise(6, 7, Y0, YT) + [(X(13), YT)] + rise(13, 14, YT, Y0)
+    n = 160
+    pts = [(X(FC - FB + (2 * FB) * i / n), Y0 - HH * P(FC - FB + (2 * FB) * i / n))
+           for i in range(n + 1)]
     s += poly(pts)
-    s += line(80, Y0, 600, Y0, marker='m21a')                 # 频率轴
-    s += line(X(10), Y0, X(10), 40, marker='m21a')            # 幅度轴（不带箭头会像谱线）
-    # 半幅参考虚线 + 两个带宽边界的垂线
-    s += line(X(7), 130, X(13), 130, width=1.1, dash='3,4', color='#999')
-    s += line(X(7), 130, X(7), Y0, width=1.1, dash='3,4', color='#999')
-    s += line(X(13), 130, X(13), Y0, width=1.1, dash='3,4', color='#999')
+    s += line(40, Y0, 740, Y0, marker='m21a')              # 频率轴
+    s += line(X(FC), Y0, X(FC), 30, marker='m21a')         # 幅度轴
+    # 半幅参考线：横线在半幅高度（7/13 MHz 处），竖虚线从曲线落到横轴
+    YH = Y0 - HH * 0.5
+    s += line(X(7), YH, X(13), YH, width=1.1, dash='3,4', color='#999')
+    s += line(X(7), YH, X(7), Y0, width=1.1, dash='3,4', color='#999')
+    s += line(X(13), YH, X(13), Y0, width=1.1, dash='3,4', color='#999')
     for f in (6, 7, 10, 13, 14):
-        s += text(X(f), 190, str(f), size=12, color='#555')
-    s += text(575, 190, 'f / MHz', size=13, anchor='start', color='#666')
+        s += text(X(f), 285, str(f), size=12, color='#555')
+    s += text(750, 285, 'f / MHz', size=13, anchor='start', color='#666')
     return s + '</svg>'
 
 
