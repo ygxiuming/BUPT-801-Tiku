@@ -179,7 +179,10 @@ for (let i = 0; i < ROUTES.length; i++) {
   try {
     await import(pathToFileURL(bundleEntry()).href + '?r=' + i)
   } catch (e) {
-    errs.push('bundle 加载失败: ' + (e && e.message))
+    // 首个路由带堆栈，其余只带消息：CI 上产物与本地不同（vite vs esbuild），
+    // 没堆栈根本不知道是哪个依赖炸的
+    const stack = i === 0 ? '\n' + String((e && e.stack) || '').split('\n').slice(0, 8).join('\n') : ''
+    errs.push('bundle 加载失败: ' + (e && e.message) + stack)
   }
   await sleep(120)
 
