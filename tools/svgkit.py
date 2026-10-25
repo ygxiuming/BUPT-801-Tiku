@@ -23,8 +23,55 @@ def _charw(c, size):
     return size * 0.52
 
 
+_SEG = re.compile(r'([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)')
+_NUM = re.compile(r'-?\d*\.?\d+')
+
+
+def _path_points(d):
+    """把 path 的 d 拆成点集（绝对坐标；小写命令按相对位移累加）。
+
+    两个坑都在这里：
+      * 以前只抓 `M` 后的数字，`d='M.. C..'` 会漏掉控制点、曲线鼓包被裁；
+      * `poly` 画的箭头是 `M55,32 l9,-4 l0,8 z`（小写相对命令），当成绝对值
+        会凭空生出 (9,-4) 这种点，把包围盒拉到左上角。
+    """
+    pts, cx, cy = [], 0.0, 0.0
+    for cmd, arg in _SEG.findall(d):
+        u, rel = cmd.upper(), cmd.islower()
+        if u == 'Z':
+            continue
+        nums = [float(v) for v in _NUM.findall(arg)]
+        if u in 'HV':                       # 单轴段：配一个当前坐标
+            for v in nums:
+                if u == 'H':
+                    cx = cx + v if rel else v
+                else:
+                    cy = cy + v if rel else v
+                pts.append((cx, cy))
+            continue
+        if u == 'A':                        # 弧：只取端点，避免 flags 被当成坐标
+            for i in range(0, len(nums) - 6, 7):
+                nx, ny = nums[i + 5], nums[i + 6]
+                cx, cy = (cx + nx, cy + ny) if rel else (nx, ny)
+                pts.append((cx, cy))
+            continue
+        step = {'M': 2, 'L': 2, 'T': 2, 'C': 6, 'S': 4, 'Q': 4}.get(u, 2)
+        for i in range(0, len(nums) - step + 1, step):
+            for j in range(i, i + step, 2):
+                nx, ny = nums[j], nums[j + 1]
+                px, py = (cx + nx, cy + ny) if rel else (nx, ny)
+                pts.append((px, py))
+                cx, cy = px, py
+    return pts
+
+
 def content_bbox(svg):
-    """扫一遍 SVG 基本图元 + 文字（估算字宽），返回 (x0,y0,x1,y1)；无内容返回 None。"""
+    """扫一遍 SVG 基本图元 + 文字（估算字宽），返回 (x0,y0,x1,y1)；无内容返回 None。
+
+    先剔除 `<defs>`：箭头 marker 的 `M0,0 L7,3 L0,6 z` 是"图形定义"不是墨迹，
+    留着会把包围盒拉到原点，收边等于没做（四边留白变成 L/T 远大于 R/B）。
+    """
+    svg = re.sub(r'<defs>.*?</defs>', '', svg, flags=re.S)
     xs, ys = [], []
 
     def put(x, y):
@@ -46,10 +93,9 @@ def content_bbox(svg):
         nums = [float(v) for v in re.split(r'[\s,]+', m.group(1).strip())]
         for i in range(0, len(nums) - 1, 2):
             put(nums[i], nums[i + 1])
-    for m in re.finditer(r"<path d='M([-\d.,\s]+)'", svg):
-        nums = [float(v) for v in re.split(r'[\s,]+', m.group(1).strip())]
-        for i in range(0, len(nums) - 1, 2):
-            put(nums[i], nums[i + 1])
+    for m in re.finditer(r"<path d='([^']+)'", svg):
+        for px, py in _path_points(m.group(1)):
+            put(px, py)
     for m in re.finditer(r"<text x='([-\d.]+)' y='([-\d.]+)' text-anchor='(\w+)'([^>]*)>(.*?)</text>", svg, re.S):
         x, y, anchor, attrs, inner = (float(m.group(1)), float(m.group(2)),
                                       m.group(3), m.group(4), m.group(5))
