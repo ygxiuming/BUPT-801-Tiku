@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.2.0](https://github.com/ygxiuming/BUPT-801-Tiku/compare/bupt-801-tiku-v2.1.0...bupt-801-tiku-v2.2.0) (2026-10-25)
+
+
+### 新功能
+
+* **site:** 顶栏、首页与页脚加入 GitHub Star 和赞助入口 ([f88e0e1](https://github.com/ygxiuming/BUPT-801-Tiku/commit/f88e0e11a0a555fd0e8f55e11dc7ce183c19b239))
+
+
+### 修复
+
+* **2020:** 参照原卷重画第三、八题框图 ([53565f6](https://github.com/ygxiuming/BUPT-801-Tiku/commit/53565f653e5060ec51a22056cdeaa94a22caaf9a))
+* **ci:** Release 附件改在同一 workflow 内打包 ([f075f03](https://github.com/ygxiuming/BUPT-801-Tiku/commit/f075f03a1621987bc5910ca1794b2bdf02824302))
+* **ci:** 冒烟与审计不再把模块入口当经典脚本执行 ([dcf64a2](https://github.com/ygxiuming/BUPT-801-Tiku/commit/dcf64a269eab1f07524e51fe0ff1c290ca682052))
+
+
+### 文档
+
+* README 重写为图文版，补充截图巡览与赞助说明 ([8526106](https://github.com/ygxiuming/BUPT-801-Tiku/commit/852610655a7368edbc8be5329a6b6c784d9c62ed))
+
 ## [2.1.0](https://github.com/ygxiuming/BUPT-801-Tiku/compare/bupt-801-tiku-v2.0.0...bupt-801-tiku-v2.1.0) (2026-10-25)
 
 
