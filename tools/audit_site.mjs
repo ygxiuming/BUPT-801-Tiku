@@ -32,8 +32,11 @@ const { JSDOM } = loadJsdom()
 
 const JSON_OUT = process.argv.includes('--json')
 const html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8')
-const SCRIPTS = [...html.matchAll(/<script[^>]*src="([^"]+)"[^>]*>\s*<\/script>/g)]
-  .map((m) => m[1])
+// 只 eval 经典脚本（数据 + katex）。Vite 的入口是 type="module"，后面的动态 import 会执行它；
+// 若这里再 eval 一次，模块代码会在非模块作用域里跑第二遍，直接报错。
+const SCRIPTS = [...html.matchAll(/<script([^>]*)\ssrc="([^"]+)"([^>]*)>\s*<\/script>/g)]
+  .filter((m) => !/type="module"/.test(m[1] + m[3]))
+  .map((m) => m[2])
   .filter((s) => !/app\.js$/.test(s))
 
 function localFile(src) {
