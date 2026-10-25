@@ -128,7 +128,6 @@ def fig_q14rc():
     for f in (6, 7, 10, 13, 14):
         s += text(X(f), 190, str(f), size=12, color='#555')
     s += text(575, 190, 'f / MHz', size=13, anchor='start', color='#666')
-    s += text(X(10) - 14, 36, 'P(f)', size=13, anchor='end', color='#666')
     return s + '</svg>'
 
 
@@ -140,13 +139,14 @@ def fig_q2block():
     s += line(68, Y, 127, Y, marker='m21b')
     s += adder(140, Y, 13)
     s += line(140, 155, 140, 99, marker='m21b')
-    s += text(140, 176, '加性高斯白噪声', size=13)
+    s += text(140, 176, '加性白高斯噪声', size=13)
     s += line(153, Y, 198, Y, marker='m21b')
     s += rect(200, 66, 80, 38)
     s += text(240, Y + 6, 'BPF', size=13, style='i')
     s += line(280, Y, 386, Y, marker='m21b')
-    s += dot(345, Y, 3.2)
-    s += text(345, 70, 'A', size=13)
+    s += dot(305, Y, 3.2)
+    s += dot(361, Y, 3.2)
+    s += text(333, 70, 'A', size=13)
     s += mul(400, Y, 13)
     s += line(400, 155, 400, 99, marker='m21b')
     s += text(400, 176, '2cos(2πf_c t)', size=13)
@@ -157,6 +157,13 @@ def fig_q2block():
     s += dot(578, Y, 3.2)
     s += text(578, 70, 'B', size=13)
     return s + '</svg>'
+
+
+def switch(x, y, mk):
+    """采样开关（原卷画法）：两个空心端子圆 + 斜杆（右下压向左上，上端带箭头）"""
+    return (circle(x - 14, y, 3.5, fill='white')
+            + circle(x + 14, y, 3.5, fill='white')
+            + line(x + 11, y - 3, x - 15, y - 25, marker=mk))
 
 
 # ------------------------------------------------------------------ 题三：双极性 PAM 系统框图
@@ -170,9 +177,9 @@ def fig_q3block():
     s += text(170, 101, '滤波器', size=13)
     s += text(170, 52, 'g(t)', size=13, style='i', color='#555')
     s += line(220, Y, 255, Y, marker='m21c')
-    s += dot(243, Y, 3.2)
-    s += text(243, 68, 's(t)', size=13, style='i')
-    s += text(243, 108, 'A', size=13)
+    s += dot(234, Y, 3.2)
+    s += text(234, 110, 'A', size=13)
+    s += text(255, 68, 's(t)', size=13, style='i')
     s += adder(270, Y, 13)
     s += line(270, 155, 270, 99, marker='m21c')
     s += text(270, 176, '加性高斯白噪声', size=13)
@@ -181,17 +188,15 @@ def fig_q3block():
     s += text(380, 82, '接收', size=13)
     s += text(380, 101, '滤波器', size=13)
     s += text(380, 52, 'g(t)', size=13, style='i', color='#555')
-    s += line(430, Y, 498, Y, marker='m21c')
-    s += dot(455, Y, 3.2)
-    s += text(455, 68, 'B', size=13)
-    # 采样器（开关符号）
-    s += dot(500, Y, 2.6)
-    s += line(500, Y, 512, 67)
-    s += line(516, 59, 516, 75)
-    s += line(522, Y, 596, Y, marker='m21c')
-    s += dot(560, Y, 3.2)
-    s += text(560, 68, 'C', size=13)
-    s += text(520, 112, '采样', size=12, color='#666')
+    s += line(430, Y, 470, Y, marker='m21c')
+    s += dot(448, Y, 3.2)
+    s += text(448, 110, 'B', size=13)
+    # 采样器（开关符号，原卷样式）
+    s += line(470, Y, 486, Y, marker='m21c')
+    s += switch(502, Y, 'm21c')
+    s += line(518, Y, 596, Y, marker='m21c')
+    s += dot(556, Y, 3.2)
+    s += text(556, 110, 'C', size=13)
     return s + '</svg>'
 
 
@@ -211,11 +216,13 @@ def fig_q4rx():
     s += text(250, 176, '2cos(2πf_c t)', size=13)
     s += line(263, Y, 348, Y, marker='m21d')
     s += text(306, 68, 'y(t)', size=13, style='i')
-    s += rect(350, 63, 120, 44)
-    s += text(410, 82, '积分清洗', size=13)
-    s += text(410, 101, '1/T_s ∫ dt', size=12)
-    s += line(470, Y, 533, Y, marker='m21d')
-    s += text(504, 68, 'l', size=13, style='i')
+    s += rect(350, 66, 64, 38)
+    s += text(382, Y + 6, '积分', size=13)
+    s += line(414, Y, 448, Y, marker='m21d')
+    s += switch(466, Y, 'm21d')
+    s += line(482, Y, 533, Y, marker='m21d')
+    s += dot(508, Y, 3.2)
+    s += text(508, 68, 'l', size=13, style='i')
     s += rect(535, 65, 70, 40)
     s += text(570, Y + 6, '判决', size=13)
     s += line(605, Y, 652, Y, marker='m21d')
