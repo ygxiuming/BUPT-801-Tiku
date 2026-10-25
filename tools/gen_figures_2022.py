@@ -75,18 +75,20 @@ def _tw(s, size):
     return sum(_cw(c, size) for c in s)
 
 
-def text(x, y, s, size=14, anchor='middle', style='', color=INK):
+def text(x, y, s, size=14, anchor='middle', style='', color=INK, family=''):
     """文字；'_x'/'_{xx}' 排成下标、'^x'/'^{xx}' 排成上标。
 
     含上下标的文字一律左对齐输出（x 由估算字宽反推），
     这样 cairosvg 预览不会把每个 tspan 各自居中（浏览器里两者等价）。
+    `family` 用于数学量的印刷体斜体（原卷 X/W/Z 是衬线斜体，不是无衬线）。
     """
     st = " font-style='italic'" if 'i' in style else ''
     wt = " font-weight='bold'" if 'b' in style else ''
+    fm = f" font-family='{family}'" if family else ''
     small = f" font-size='{size}'" if size != 14 else ''
     toks = _tokens(s)
     if len(toks) == 1:
-        return f"<text x='{x:.1f}' y='{y:.1f}' text-anchor='{anchor}'{small}{st}{wt} fill='{color}'>{s}</text>"
+        return f"<text x='{x:.1f}' y='{y:.1f}' text-anchor='{anchor}'{small}{st}{wt}{fm} fill='{color}'>{s}</text>"
     W = sum(_tw(t, size * 0.72 if k != 'n' else size) for t, k in toks)
     xs = x - W / 2 if anchor == 'middle' else (x - W if anchor == 'end' else x)
     body, shift = '', 0
@@ -102,7 +104,7 @@ def text(x, y, s, size=14, anchor='middle', style='', color=INK):
             d = -round(size * 0.42)
             body += f"<tspan dy='{d}' font-size='{round(size * 0.72)}'>{t}</tspan>"
             shift += d
-    return (f"<text x='{xs:.1f}' y='{y:.1f}' text-anchor='start'{small}{st}{wt} "
+    return (f"<text x='{xs:.1f}' y='{y:.1f}' text-anchor='start'{small}{st}{wt}{fm} "
             f"fill='{color}'>{body}</text>")
 
 
@@ -301,21 +303,24 @@ def fig_q5const():
 
 # ---------------------------------------------------------------- 七、量化器框图
 def fig_q7block():
-    """二电平均匀量化器：X →[√(·)]→ W →[Q(·)]→ Z。原卷三段连线均带箭头，
-    W 悬在「√ 框→Q 框」中段线上方留白，量化标在 Q 框上方。"""
-    s = HEAD.format(w=440, h=118) + marker('a72')
-    Y = 76
-    s += text(22, Y + 7, 'X', size=15, style='i')
-    s += line(34, Y, 64, Y, marker='a72')
-    s += rect(64, Y - 23, 96, 46)                    # √ 框 64..160
-    s += text(112, Y + 6, '√(·)', size=15)
-    s += line(160, Y, 228, Y, marker='a72')          # 中段连线（带箭头指向 Q）
-    s += text(190, Y - 12, 'W', size=14, style='i')  # W 悬于线上方、略偏左
-    s += rect(228, Y - 23, 96, 46)                   # Q 框 228..324
-    s += text(276, Y + 6, 'Q(·)', size=15)
-    s += text(276, Y - 40, '量化', size=12)
-    s += line(324, Y, 368, Y, marker='a72')
-    s += text(378, Y + 7, 'Z', size=15, style='i')
+    """二电平均匀量化器：X →[√(·)]→ W →[Q(·)]→ Z。几何按原卷实测比例重排：
+    左线≈0.75 框宽（X 离框远）、中段≈0.85 框宽、右线≈0.22 框宽（Z 贴框）；
+    框 102×48（skill 同类框图口径）；X/W/Z 用印刷体（衬线）斜体，同原卷。
+    W 悬在中段线上方，量化标在 Q 框正上方贴近框顶。"""
+    SERIF = 'Times New Roman,Nimbus Roman,Liberation Serif,serif'
+    s = HEAD.format(w=520, h=160) + marker('a72')
+    Y = 100
+    s += text(35, Y + 5, 'X', size=15, anchor='end', style='i', family=SERIF)
+    s += line(41, Y, 117, Y, marker='a72')                 # 左线（长，X 离框远）
+    s += rect(117, Y - 24, 102, 48)                        # √ 框 117..219
+    s += text(168, Y + 5, '√(·)', size=15)
+    s += line(219, Y, 306, Y, marker='a72')                # 中段连线（箭头指向 Q）
+    s += text(262, Y - 12, 'W', size=15, style='i', family=SERIF)
+    s += rect(306, Y - 24, 102, 48)                        # Q 框 306..408
+    s += text(357, Y + 5, 'Q(·)', size=15)
+    s += text(357, Y - 40, '量化', size=13)
+    s += line(408, Y, 432, Y, marker='a72')                # 右线（短，Z 贴框）
+    s += text(438, Y + 5, 'Z', size=15, anchor='start', style='i', family=SERIF)
     return tighten(s + '</svg>')
 
 
