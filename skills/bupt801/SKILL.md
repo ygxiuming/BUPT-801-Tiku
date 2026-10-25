@@ -161,9 +161,9 @@ node tools/check_figure_overlap.js <年>     # 判过标准：0 线交叠 + 0 �
 **收边走 `svgkit.tighten()` 一步到位，别手调 viewBox**：
 
 - 生成器末尾 `SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}`，PAD=18（见第 5 节）。
-- 它按 line/rect/circle/polygon/path(M)/text 的包围盒收边，**不扫 `<defs>`**，所以箭头 marker 的 `M0,0` 不会把框拉满；文字盒口径（上 0.8em / 下 0.2em，CJK 1.0em、大写数字 0.62em）与 `check_figure_overlap.js` 完全一致，收边与检测不会互相打架。
+- 它按 line/rect/circle/polygon/path/text 的包围盒收边：**先剥 `<defs>`**（箭头 marker 的 `M0,0` 不算墨迹），path 逐个命令取点（含小写相对命令）；文字盒口径（上 0.8em / 下 0.2em，CJK 1.0em、大写数字 0.62em）与 `check_figure_overlap.js` 完全一致，收边与检测不会互相打架。
 - 收完四边必然是同一个数（18）。若 `check` 报出 8/30 这种不均匀值，说明这张图没走 `tighten()`，回去补，别去手调 margin。
-- 中文在预览里要能画出来：预览前把根 `font-family` 换成 `Noto Sans CJK SC`（上面的导出命令已带）。
+- 中文在预览里要能画出来：`preview_figures.py` 会自动把根 `font-family` 换成 `Noto Sans CJK SC`，手写渲染命令时才需要自己记得。
 
 > 2023/2024 还在旧两步（`svg_fit.fit_svg()` 粗收 + `fit_figures_render.py` 按墨迹精收，留白 6~23）。**只有维护这两年时才用旧链路**，动到它们就顺手改成 `svgkit.tighten()`，别再新增旧写法。
 
