@@ -154,14 +154,20 @@ def fig_encoder():
     G／G₂ 两个虚线框左上角标名；⊕ 悬在 D₁、D₂ 之间的正上方，三路抽头分别从
     左（b）、下（D₁ 后）、右（D₃ 后）汇入；输出从 ⊕ 顶部上折再往右穿框出去。
     信号线穿虚线框的位置留 8px 缺口，避免"实线压虚线框"。
+    竖向节奏按原卷比例定（G₂顶→输出→⊕→D链 四层等距感），⊕ 与 D 框比旧版
+    放大一圈（r=17、50×50），标签四周留 ≥10px 净空，不再有贴线/压角。
     """
-    YS = 182                       # 信号线
-    YA = 108                       # ⊕ 与左右抽头母线的水平
-    YO = 58                        # 输出线（⊕ 顶部上折后）
-    AX = 454                       # ⊕ 中心，对准 D₁/D₂ 之间的抽头
-    GX0, GX1, GY0, GY1 = 132, 838, 16, 232       # 外层 G 框（整个编码器）
-    SX0, SX1, SY0, SY1 = 340, 790, 38, 214       # 内层 G₂ 框（bG₂）
-    s = HEAD.format(w=1060, h=258) + marker('arC')
+    YS = 222                       # 信号线 / D 框中心
+    YA = 140                       # ⊕ 中心与左右抽头母线
+    YO = 66                        # 输出线（⊕ 顶部上折后）
+    R = 17                         # ⊕ 半径（原卷 ⊕ 明显大，占外框高一成）
+    AX = 479                       # ⊕ 中心，对准 D₁/D₂ 之间的抽头
+    BX = 378                       # b 抽头位置（g_0=1，D₁ 前）
+    D0, DW, DG = 402, 50, 54       # D₁ 左缘 / 框宽 / 框间距
+    RX = D0 + 3 * DW + 2 * DG + 30               # 右抽头拐点（D₃ 后 30px）
+    GX0, GX1, GY0, GY1 = 140, 748, 0, 280        # 外层 G 框（整个编码器）
+    SX0, SX1, SY0, SY1 = 352, 720, 30, 262       # 内层 G₂ 框（bG₂）
+    s = HEAD.format(w=950, h=300) + marker('arC')
 
     def dashh(y, x1, x2):
         return line(x1, y, x2, y, width=1.2, dash='5,4')
@@ -180,34 +186,37 @@ def fig_encoder():
     s += dashv(GX0, GY0, GY1, gaps=(YS,)) + dashv(GX1, GY0, GY1, gaps=(YO,))
     s += dashh(SY0, SX0, SX1) + dashh(SY1, SX0, SX1)
     s += dashv(SX0, SY0, SY1, gaps=(YS,)) + dashv(SX1, SY0, SY1, gaps=(YO,))
-    s += text(GX0 + 15, GY0 + 31, 'G', anchor='start', style='i')
-    s += text(SX0 + 15, SY0 + 29, 'G_2', anchor='start', style='i')
+    s += text(GX0 + 18, GY0 + 36, 'G', anchor='start', size=15, style='i')
+    s += text(SX0 + 18, SY0 + 28, 'G_2', anchor='start', size=15, style='i')
 
     # ---- u → G₁ → b ----
-    s += text(10, YS - 13, 'u=(u_0u_1u_2u_3)', anchor='start', style='i')
-    s += line(120, YS, 159, YS, marker='arC')
-    s += rect(163, YS - 23, 46, 46) + text(186, YS + 5, 'G_1', style='i')
-    s += text(219, YS - 13, 'b=(b_0b_1b_2b_3)', anchor='start', style='i')
+    s += text(10, YS - 12, 'u=(u_0u_1u_2u_3)', anchor='start', style='ib')
+    s += line(112, YS, 170, YS, marker='arC')
+    s += rect(170, YS - 27, 62, 54) + text(201, YS + 6, 'G_1', size=15, style='i')
+    s += text(246, YS - 12, 'b=(b_0b_1b_2b_3)', anchor='start', style='ib')
 
     # ---- b 母线 + 三级延迟 D ----
-    s += line(209, YS, 400, YS)
-    s += dot(372, YS, 2.6)                                   # 抽头①：b（g_0=1）
-    for x in (400, 470, 540):
-        s += rect(x, YS - 17, 38, 34) + text(x + 19, YS + 5, 'D', style='i')
-    s += line(438, YS, 470, YS) + dot(454, YS, 2.6)          # 抽头②：D₁ 后（g_1=1）
-    s += line(508, YS, 540, YS)
-    s += line(578, YS, 620, YS)                              # 抽头③：D₃ 后（g_4=1）
+    # 抽头①在 D₁ 之前（g_0=1）；D₁ 后抽头②（g_1=1）；D₃ 后抽头③（g_3=1）。
+    # 每级 D 之间补箭头，和原卷的逐级推送一致。
+    s += line(232, YS, D0, YS, marker='arC') + dot(BX, YS, 3)
+    for i in range(3):
+        x = D0 + i * (DW + DG)
+        s += rect(x, YS - 25, DW, 50) + text(x + DW / 2, YS + 6, 'D', style='i')
+        if i < 2:
+            s += line(x + DW, YS, x + DW + DG, YS, marker='arC')
+    s += dot(AX, YS, 3)
+    s += line(D0 + 2 * (DW + DG) + DW, YS, RX, YS)           # D₃ 后折上去
 
     # ---- 三路抽头汇入 ⊕ ----
-    s += line(372, YS, 372, YA) + line(372, YA, 442, YA, marker='arC')   # 左
-    s += line(AX, YS, AX, YA + 12, marker='arC')                          # 下
-    s += line(620, YS, 620, YA) + line(620, YA, 466, YA, marker='arC')   # 右
-    s += circle(AX, YA, 12)
-    s += line(AX - 9, YA, AX + 9, YA) + line(AX, YA - 9, AX, YA + 9)
+    s += line(BX, YS, BX, YA) + line(BX, YA, AX - R, YA, marker='arC')       # 左
+    s += line(AX, YS, AX, YA + R, marker='arC')                              # 下
+    s += line(RX, YS, RX, YA) + line(RX, YA, AX + R, YA, marker='arC')       # 右
+    s += circle(AX, YA, R)
+    s += line(AX - R * .77, YA, AX + R * .77, YA) + line(AX, YA - R * .77, AX, YA + R * .77)
 
     # ---- ⊕ → c（上折后穿两层框的缺口出去） ----
-    s += line(AX, YA - 12, AX, YO) + line(AX, YO, 878, YO, marker='arC')
-    s += text(890, YO + 5, 'c=(c_0c_1c_2c_3c_4c_5c_6)', anchor='start', style='i')
+    s += line(AX, YA - R, AX, YO) + line(AX, YO, 780, YO, marker='arC')
+    s += text(794, YO + 5, 'c=(c_0c_1c_2c_3c_4c_5c_6)', anchor='start', style='ib')
     return s + '</svg>'
 
 
