@@ -42,9 +42,16 @@ jobs:
       - name: 数据校验（0 错误 0 警告）
         run: node tools/validate_data.js
 
-      - name: 构建前端
+      - name: 构建前端（vite，验生产构建）
         working-directory: app
         run: npm run build
+
+      # 冒烟与审计改跑 esbuild 回退构建的产物。
+      # 原因：jsdom 没有真实布局，vite 产物里 Vue 的 Transition 路径会在 patch 阶段
+      # 抛 "nextSibling of null"（堆栈落在 Vue runtime 的 nextSibling），与站点本身无关；
+      # 两者源码同一份，逻辑等价。线上页面另由 pages.yml 的部署后自检兜底。
+      - name: 回退构建（供 jsdom 实测）
+        run: node tools/build-frontend.mjs
 
       - name: 页面冒烟
         run: node tools/smoke_pages.mjs

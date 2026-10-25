@@ -65,3 +65,28 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # 部署完自检：站点能打开、资源前缀正确、题库数据在位。
+      # Pages 刚发布时 CDN 可能有几秒延迟，所以带重试。
+      - name: 部署后自检
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          code=000
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/index.html -w '%{http_code}' "$URL" || echo 000)
+            [ "$code" = "200" ] && break
+            sleep 5
+          done
+          echo "首页状态码: $code"
+          [ "$code" = "200" ] || { echo "::error::站点不可达 $URL"; exit 1; }
+
+          # 资源必须是子路径前缀，否则说明 VITE_BASE 没生效
+          grep -q 'vendor/katex' /tmp/index.html || { echo "::error::index.html 缺少 KaTeX 引用"; exit 1; }
+
+          entry=$(grep -oE '<script[^>]*type="module"[^>]*src="[^"]*"' /tmp/index.html | grep -oE 'src="[^"]*"' | head -1 | cut -d'"' -f2)
+          echo "入口: $entry"
+          origin=$(printf '%s' "$URL" | cut -d'/' -f1-3)
+          curl -sf -o /dev/null "${origin}${entry}" || { echo "::error::入口 bundle 取不到: $entry"; exit 1; }
+          curl -sf -o /dev/null "${URL}data/questions/2026/paper.js" || { echo "::error::题库数据取不到"; exit 1; }
+          echo "自检通过"
