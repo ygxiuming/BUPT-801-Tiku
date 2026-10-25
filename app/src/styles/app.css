@@ -71,6 +71,9 @@
 
   --ease: cubic-bezier(.22, .61, .36, 1);
   --maxw: 1264px;
+  /* 顶栏实际高度：桌面一行 64；平板/手机换行后在媒体查询里抬高。
+     吸顶工具条、目录、锚点都用它算偏移，别在各处再写死 76/148。 */
+  --topbar-h: 64px;
 }
 
 html[data-theme="dark"] {
@@ -181,23 +184,26 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand); }
   max-width: var(--maxw);
   margin: 0 auto;
   padding: 0 22px;
-  height: 64px;
+  height: var(--topbar-h);
   display: flex;
   align-items: center;
   gap: 18px;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16.5px; color: var(--ink); letter-spacing: -.3px; flex: none; }
+.brand { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 16.5px; color: var(--ink); letter-spacing: -.2px; flex: none; }
 .brand:hover { color: var(--ink); }
 .brand .logo {
-  width: 32px; height: 32px; border-radius: 10px;
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
   background: linear-gradient(150deg, var(--brand), #7a52f0);
   color: #fff; display: flex; align-items: center; justify-content: center;
   font-size: 12.5px; font-weight: 800; letter-spacing: -.6px;
   box-shadow: 0 4px 12px -4px rgba(47, 93, 253, .7), inset 0 1px 0 rgba(255, 255, 255, .35);
 }
-.brand .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
-.brand .brand-text small { font-size: 10.5px; font-weight: 600; color: var(--faint); letter-spacing: 1.4px; }
-.brand em { font-style: normal; color: var(--brand); }
+/* 注意：.brand-text 是 column flex，里面的行内元素会被 blockify，
+   标题必须再包一层 .brand-title 才能保持“北邮801真题库”一行。 */
+.brand .brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.brand .brand-title { display: block; white-space: nowrap; }
+.brand .brand-text small { font-size: 10px; font-weight: 600; color: var(--faint); letter-spacing: 1.35px; margin-top: 1px; white-space: nowrap; }
+.brand em { font-style: normal; color: var(--brand); margin: 0 1px; }
 
 .topnav {
   display: flex;
@@ -207,6 +213,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--brand); }
   border-radius: 999px;
   flex: 1;
   min-width: 0;
+  justify-content: center;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -596,7 +603,10 @@ kbd {
 .cover-row .pline { flex: 1; }
 .cover-row .cv { width: 34px; flex: none; text-align: right; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 14px; }
+/* 6 个工具卡：桌面 3×2（auto-fit 会在 1440 下排成 5+1，孤卡很难看） */
+.feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1000px) { .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .feature-grid { grid-template-columns: 1fr; } }
 .feature-card {
   display: block;
   padding: 20px 22px;
@@ -1051,32 +1061,52 @@ html[data-theme="dark"] .paper-sheet { box-shadow: var(--shadow-2); }
 .lb-close:hover { background: #db2b3d; }
 
 /* ---------- 13. 响应式 ---------- */
+/* 平板及以下：顶栏拆两行（品牌/操作 + 整行导航），避免导航被挤到只剩半截。
+   1024/820 这种宽度下 6 个导航项放得下，所以整行展示；手机段再改 3×2 网格。 */
 @media (max-width: 1080px) {
+  :root { --topbar-h: 106px; }
+  .topbar-inner { height: auto; flex-wrap: wrap; padding: 8px 22px 10px; gap: 8px 16px; }
+  .topnav { order: 3; flex: 1 1 100%; margin: 0 -4px; }
+  .topbar-right { margin-left: auto; }
+  .paper-toolbar, .toolrow, .exambar { top: calc(var(--topbar-h) + 8px); }
   .side { position: static; max-height: none; overflow: visible; }
-  .paper-layout { grid-template-columns: 1fr; }
+  /* minmax(0,1fr)：1fr 的最小尺寸是 auto，长公式/宽表格会把卷面撑出屏幕 */
+  .paper-layout { grid-template-columns: minmax(0, 1fr); }
   .toc { display: none; }
+  .section-head { scroll-margin-top: calc(var(--topbar-h) + 20px); }
 }
 
 @media (max-width: 860px) {
   .hero { padding: 32px 26px 28px; }
   .hero h1 { font-size: 27px; }
   .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .topnav { flex: 1 1 100%; }
 }
 
 @media (max-width: 760px) {
-  .topbar-inner { height: auto; flex-wrap: wrap; padding: 8px 14px 10px; gap: 8px 12px; }
-  .topnav { order: 3; margin: 0 -4px; }
+  :root { --topbar-h: 146px; }
+  .topbar-inner { padding: 8px 14px 10px; gap: 8px 12px; }
+  /* 6 个入口固定 3×2，全部可见；横向滚动在手机上很难发现，还会切掉最后一项 */
+  .topnav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 18px; overflow: visible; }
+  .topnav a { justify-content: center; padding: 7px 6px; }
   .brand .brand-text small { display: none; }
   .count-pill { display: none; }
   .topbar-right { margin-left: auto; }
+  /* 手机端工具条本身会折成两三行，再吸顶会吃掉半屏，改成随页面滚动 */
+  .paper-toolbar, .toolrow { position: static; }
+  .exambar { top: calc(var(--topbar-h) + 8px); }
   .wrap { padding: 14px 14px 0; }
   .pad { padding: 18px 16px; }
   .qcard { padding: 18px 16px 16px; }
   .qstem { font-size: 15.5px; }
   .qcard .opt-table td { padding: 9px 11px; font-size: 15px; }
-  .paper-sheet { padding: 26px 18px 22px; border-radius: 10px; }
-  .paper-toolbar, .toolrow, .exambar { top: 8px; }
+  .paper-sheet { padding: 26px 16px 22px; border-radius: 10px; }
+  /* 手机卷面：标题字号和字距收紧，避免长标题折成两三行 */
+  .paper-head .t1 { font-size: 19px; letter-spacing: 2px; }
+  .paper-head .t2 { font-size: 16px; }
+  .paper-head .t3 { font-size: 13.5px; }
+  .paper-note { font-size: 12.5px; }
+  .paper-sheet .opt-table { font-size: 13.5px; }
+  .paper-sheet .opt-table td { padding: 3px 8px; }
   .help-cols { grid-template-columns: 1fr; padding: 16px 18px 22px; }
   .modal-head { padding: 18px 18px 12px; }
   .score-hero .score { font-size: 40px; }

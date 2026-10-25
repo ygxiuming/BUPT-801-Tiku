@@ -17,3 +17,7 @@ Thumbs.db
 
 # Python 运行缓存（gen_figures_*.py 导入 svgkit 时生成）
 __pycache__/
+
+# 编辑器/助手的私有工作目录（含本机路径与技术笔记，不对外）
+.workbuddy/
+.zcode/

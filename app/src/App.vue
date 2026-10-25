@@ -6,7 +6,7 @@
       <router-link class="brand" to="/" title="返回首页">
         <span class="logo">801</span>
         <span class="brand-text">
-          北邮<em>801</em>真题库
+          <span class="brand-title">北邮<em>801</em>真题库</span>
           <small>BUPT · 通信原理</small>
         </span>
       </router-link>
