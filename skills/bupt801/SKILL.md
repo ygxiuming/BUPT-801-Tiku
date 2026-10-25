@@ -74,6 +74,7 @@ pdftoppm -r 300 -png "待解析/<年>xxx.pdf" /tmp/w801/<年>/p   # 300dpi 够�
 - 逐页 Read（图像输入）→ 转成结构化文本；公式先记成 `$...$` 草稿。
 - 填空题式选择题：多个空共用一组 ABCD → `groups` 建模；**组干必须含本组全部空号的 `（n）` 全角标记**，前端靠它匹配。
 - 空号统一 **全角 `（1）`**，公式里的 `g^{(1)}`、`(1011)` 不动。
+- **一题多空（如 2024：20 题 × 2 空 = 40 空）**：`num` 写题号（1..20，同一题的两个空**重复**），`blank` 写空号（1..40），`id` 顺排 `2024-1..40`，两个空的 `oKey` 指同一个 `options`（共用 4 个选项）。校验器已支持这种卷面（题号去重后查连续 + `blank` 查连续），若新卷子是别种组合（3 空共享、部分题独占）先确认 `blank` 能连续排满。
 
 ### ③ 定答案（最关键，别抄）
 
@@ -219,6 +220,8 @@ node tools/smoke_pages.mjs         # 6 条路由 + 3 个交互，全绿才算过
 
 它用 jsdom 打开 `app/dist/index.html`，先 `window.eval` 所有数据脚本（**顺序不能反**，数据脚本必须早于 bundle），再 `import('dist/assets/app.js?r=N')` 让应用自己 mount，逐页断言"文字量正常 + `.katex-error` 为 0 + `window.__vueErrors` 为空"，最后跑三段交互：首页→试卷页、考试页点「开始考试」、练习页选选项→查看解析。新增/改版的页面要在 `ROUTES` 和交互块里补断言。
 
+**新入库的年份记得在 `ROUTES` 里加三条**（`/paper/<年>`、`/practice?y=<年>`、`/exam?y=<年>`），并把「练习页选选项→查看解析」这段交互的年份换成最新一年——否则新数据只被 `validate_data.js` 覆盖，前端渲染问题会漏过去。改了 `app/index.html` 后必须先 `node tools/build-frontend.mjs`，冒烟读的是 `dist/index.html` 里的 script 清单。
+
 > 沙箱内 `curl 127.0.0.1:3000` 返回 502、`npm run sync` 报 `EPERM copyfile`，**别指望起 dev server 用 curl 验**。
 
 有浏览器时再看真页面：
@@ -296,6 +299,10 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 图怎么裁都贴不到边 | `<defs>` 里 marker 路径的 `M0,0` 被当成墨迹，`svg_fit.py` 负责剔除 |
 | `curl 127.0.0.1:3000` 返回 502 | 沙箱禁本地网络；改用 `node tools/smoke_pages.mjs` |
 | `npm run sync` 报 `EPERM copyfile` | 同上，沙箱拦文件复制；走 server 实时映射，或本地再 sync |
+| `cp` 卡住/命令被转后台 | 本机 `cp` 是交互别名（`cp -i`），会停在"是否覆盖？"；一律用 `/bin/cp -f` |
+| 校验器报"空号不连续"但看不出来 | 一题多空时 `num` 必然重复（2024）。校验现在按去重题号查；若仍报，先看 `blank` 是否 1..N 连续 |
+| `Math.erfc is not a function` | 本机 Node 没有 erfc。数值抽查别直接算 erfc/Q，改核 `d/σ` 比值或 `d/(σ√2)` 是否等于题设整数 |
+| 图件报"留白 L=-1xx"（左侧溢出） | 用了 `head_at(w,h,x0,y0)` 却把元素坐标写在 `x0` 左侧。`head_at` 会把 viewBox 原点搬到 `x0`，**所有绝对坐标必须 ≥ x0** |
 
 ## 5. 多会话并行
 
