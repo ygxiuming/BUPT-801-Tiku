@@ -1,0 +1,72 @@
+name: 答案纠错
+description: 某题的答案或解析算错了、与参考资料不一致、推导有跳步
+title: "[答案] "
+labels: ["答案纠错"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢纠错。为了让复核不用来回问，请尽量把**年份 + 题号 + 你的推导**填全。
+        只写「这题答案好像不对」也能提，但会多一轮往返。
+
+  - type: input
+    id: year
+    attributes:
+      label: 年份
+      placeholder: "2025"
+    validations:
+      required: true
+
+  - type: input
+    id: question
+    attributes:
+      label: 题号
+      description: 选择题写「第 12 题」或空号，综合题写「第 七 题 (2)」
+      placeholder: "第 30 题"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 问题类型
+      options:
+        - 答案（选项 / 数值）不对
+        - 答案对，但解析推导有错或跳步
+        - 与参考资料的答案不一致（请说明你用哪份资料）
+        - 题干条件抄漏导致答案不同
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: 当前给出的答案与解析
+      description: 直接从页面复制即可
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你认为正确的答案，以及推导过程
+      description: 有公式直接写 LaTeX；关键步骤别跳，我要照你的路径复算一遍
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 依据（可选）
+      description: 原卷截图、教材页码、参考资料截图都可以，拖进来即可
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已在站内搜索过，这不是别人已经提过的同一个问题
+          required: true

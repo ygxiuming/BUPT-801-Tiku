@@ -1,0 +1,65 @@
+name: 题干 / 图件错误
+description: 题干抄错、选项漏字、框图与原卷不符、公式渲染错乱
+title: "[内容] "
+labels: ["题干或图件"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这类问题的判定标准只有一个：**与原卷一致**。所以原卷截图是最有效的证据。
+
+  - type: input
+    id: year
+    attributes:
+      label: 年份
+      placeholder: "2023"
+    validations:
+      required: true
+
+  - type: input
+    id: question
+    attributes:
+      label: 题号 / 图名
+      description: 图库页的图名也可以（如 `2023-九-q9sys`）
+      placeholder: "第九题 / 2023-九-q9sys"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 问题类型
+      options:
+        - 题干文字或符号抄错
+        - 选项内容 / 顺序不对
+        - 框图结构、连线和原卷不一致
+        - 波形 / 星座图与答案对不上
+        - 公式渲染错乱（KaTeX 报错或显示成源码）
+        - 分值 / 题型标注不对
+        - 页面样式或布局问题
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: 具体错在哪
+      description: 现在显示的是什么、应该是什么
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 原卷截图 / 链接
+      description: 把 PDF 里对应的那一块截下来拖进来最直观
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已对照过原卷（不是凭记忆）
+          required: true

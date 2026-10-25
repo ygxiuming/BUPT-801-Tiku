@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# 同一分支上并发跑没意义，取消旧的那次
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 数据校验 · 构建 · 页面实测
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装前端依赖
+        working-directory: app
+        run: npm ci
+
+      # sync-data 从 server 的 node_modules 取 KaTeX（版本锁定 0.16.11），
+      # 所以构建前必须先把 server 的依赖装上
+      - name: 安装 server 依赖
+        working-directory: server
+        run: npm ci
+
+      - name: 安装 jsdom（页面实测用，不进 lockfile）
+        working-directory: app
+        run: npm i --no-save jsdom
+
+      - name: 数据校验（0 错误 0 警告）
+        run: node tools/validate_data.js
+
+      - name: 构建前端
+        working-directory: app
+        run: npm run build
+
+      - name: 页面冒烟
+        run: node tools/smoke_pages.mjs
+
+      - name: 全站审计
+        run: node tools/audit_site.mjs

@@ -1,0 +1,44 @@
+name: 功能建议
+description: 想要新的刷题/复习方式，或现有流程不好用
+title: "[建议] "
+labels: ["功能建议"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你现在的流程卡在哪
+      description: 描述场景比描述功能更有用——"背肖四式地刷第三遍时，想只看错过的第二遍的题，现在做不到"
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你希望怎么做
+      description: 有具体交互就更好；没有也行，说清目标即可
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及哪部分
+      options:
+        - 刷题 / 筛选
+        - 模考
+        - 间隔复习
+        - 统计 / 数据导出
+        - 试卷页 / 打印 / PDF
+        - 图库 / 图件
+        - 录入编辑器
+        - 部署 / 工程
+        - 其他
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 这是一个「题库内容」以外的问题（内容纠错请用另外两个模板）
+          required: true

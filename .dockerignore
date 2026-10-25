@@ -1,0 +1,17 @@
+# 原始扫描件（体积大，构建不需要）
+待解析/
+
+# 依赖与产物（构建阶段会重新生成）
+node_modules/
+app/dist/
+app/public/data/
+app/public/vendor/
+server/node_modules/
+
+# 版本控制与工具私有目录
+.git/
+.workbuddy/
+.zcode/
+.mimosa/
+__pycache__/
+*.log

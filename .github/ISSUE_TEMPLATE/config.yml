@@ -1,0 +1,10 @@
+# 关掉空白 issue：模板会引导提问者给出年份、题号、依据，省一轮往返
+blank_issues_enabled: false
+
+contact_links:
+  - name: 使用说明与本地部署
+    url: https://github.com/ygxiuming/BUPT-801-Tiku#readme
+    about: 怎么跑起来、怎么部署、数据存在哪里，README 里都有
+  - name: 想加新年份？
+    url: https://github.com/ygxiuming/BUPT-801-Tiku/blob/main/CONTRIBUTING.md
+    about: 先看贡献指南里的「新增年份」一节，按流水线走

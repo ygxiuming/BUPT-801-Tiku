@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  # 只在主干更新时发布；PR 只跑 CI，不发版
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 构建静态站点
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装前端依赖
+        working-directory: app
+        run: npm ci
+
+      - name: 安装 server 依赖（提供 KaTeX）
+        working-directory: server
+        run: npm ci
+
+      # Pages 站点带子路径，必须把资源前缀一并打进去，否则 /data、/vendor 会 404
+      - name: 构建（Pages 子路径）
+        working-directory: app
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      # SPA 直开子路由（如 /practice）时 Pages 找不到对应文件，回退到 404.html，
+      # 这里让它与 index.html 同内容，由 vue-router 接管
+      - name: 生成 SPA 回退页与 .nojekyll
+        working-directory: app/dist
+        run: |
+          cp index.html 404.html
+          touch .nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    name: 发布
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
