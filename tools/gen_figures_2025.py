@@ -116,34 +116,36 @@ def fig_ssb():
 
 # ------------------------------------------------------------------ 题四：PAM 系统
 def fig_pam():
-    s = HEAD.format(w=650, h=195) + marker('arB')
+    s = HEAD.format(w=680, h=195) + marker('arB')
+    AX, BX = 55, 478
     # 顶部 A→B 的双向测量线（原卷是两头带箭头的尺寸线）
-    s += line(55, 32, 462, 32)
-    s += line(55, 32, 55, 44, width=1.2) + line(462, 32, 462, 44, width=1.2)
-    s += "<path d='M55,32 l9,-4 l0,8 z' fill='#1a1a1a'/><path d='M462,32 l-9,-4 l0,8 z' fill='#1a1a1a'/>"
-    s += text(258, 22, 'X(f), x(t)', style='i')
+    s += line(AX, 32, BX, 32)
+    s += line(AX, 32, AX, 44, width=1.2) + line(BX, 32, BX, 44, width=1.2)
+    s += f"<path d='M{AX},32 l9,-4 l0,8 z' fill='#1a1a1a'/><path d='M{BX},32 l-9,-4 l0,8 z' fill='#1a1a1a'/>"
+    s += text((AX + BX) / 2, 22, 'X(f), x(t)', style='i')
     s += text(6, 74, 'd(t)', anchor='start', style='i')
     s += line(38, 70, 64, 70, marker='arB')
-    s += dot(55, 70, 3) + text(55, 94, 'A')
-    s += rect(67, 51, 80, 38) + text(107, 67, '发送滤波器') + text(107, 81, 'G_T(f)', style='i')
-    s += line(147, 70, 180, 70, marker='arB') + text(163, 62, 's(t)', style='i')
-    s += rect(183, 51, 64, 38) + text(215, 67, '信道') + text(215, 81, 'C(f)', style='i')
-    s += line(247, 70, 286, 70, marker='arB') + text(266, 62, 'y(t)', style='i')
-    s += circle(300, 70, 11) + line(294, 70, 306, 70) + line(300, 64, 300, 76)
-    s += line(300, 120, 300, 84, marker='arB') + text(300, 138, 'n_w(t)', style='i')
-    s += line(311, 70, 346, 70, marker='arB') + text(329, 62, 'r(t)', style='i')
-    s += rect(349, 51, 80, 38) + text(389, 67, '接收滤波器') + text(389, 81, 'G_R(f)', style='i')
-    s += line(429, 70, 456, 70, marker='arB') + text(444, 62, 'v(t)', style='i')
-    s += dot(464, 70, 3) + text(464, 94, 'B')
-    s += line(464, 70, 486, 70)
-    # 抽样开关：两个触点小圆圈 + 斜刀（原卷画法）
-    s += dot(490, 70, 2.6, fill='#fff', stroke='#1a1a1a')
-    s += dot(518, 70, 2.6, fill='#fff', stroke='#1a1a1a')
-    s += line(490, 70, 512, 48, width=1.8)
-    s += text(506, 42, 't=kT_s', style='i')
-    s += line(518, 70, 546, 70)
-    s += dot(550, 70, 3) + text(550, 94, 'C')
-    s += line(554, 70, 586, 70, marker='arB') + text(596, 75, 'v_k', anchor='start', style='i')
+    s += dot(AX, 70, 3) + text(AX, 94, 'A')
+    # 滤波器框两行字：框高 38、行基线差 14；框宽 ≥ 文字宽 70 + 12（规范 5.4）
+    s += rect(67, 51, 88, 38) + text(111, 67, '发送滤波器') + text(111, 81, 'G_T(f)', style='i')
+    s += line(155, 70, 186, 70, marker='arB') + text(170, 62, 's(t)', style='i')
+    s += rect(189, 51, 64, 38) + text(221, 67, '信道') + text(221, 81, 'C(f)', style='i')
+    s += line(253, 70, 292, 70, marker='arB') + text(272, 62, 'y(t)', style='i')
+    s += circle(306, 70, 11) + line(300, 70, 312, 70) + line(306, 64, 306, 76)
+    s += line(306, 120, 306, 84, marker='arB') + text(306, 138, 'n_w(t)', style='i')
+    s += line(317, 70, 352, 70, marker='arB') + text(334, 62, 'r(t)', style='i')
+    s += rect(355, 51, 88, 38) + text(399, 67, '接收滤波器') + text(399, 81, 'G_R(f)', style='i')
+    s += line(443, 70, 470, 70, marker='arB') + text(456, 62, 'v(t)', style='i')
+    s += dot(BX, 70, 3) + text(BX, 94, 'B')
+    s += line(BX, 70, 500, 70)
+    # 抽样开关：两个触点小圆圈 + 斜刀（原卷画法）；t=kT_s 抬到刀刃尖上方 ≥6px
+    s += dot(500, 70, 2.6, fill='#fff', stroke='#1a1a1a')
+    s += dot(528, 70, 2.6, fill='#fff', stroke='#1a1a1a')
+    s += line(500, 70, 522, 48, width=1.8)
+    s += text(534, 38, 't=kT_s', style='i')
+    s += line(528, 70, 556, 70)
+    s += dot(560, 70, 3) + text(560, 94, 'C')
+    s += line(564, 70, 596, 70, marker='arB') + text(606, 75, 'v_k', anchor='start', style='i')
     return s + '</svg>'
 
 
@@ -285,10 +287,11 @@ def fig_psk8new():
 
     inner = {1: 45, 3: 135, 5: 225, 7: 315}
     outer = {8: 0, 2: 90, 4: 180, 6: 270}
-    # 点标签的相对偏移（anchor 随象限变），先定位再排字，避免文字压到星座点/虚线
-    off = {
-        8: (14, 5, 'start'), 2: (0, -14, 'middle'), 4: (-14, 5, 'end'), 6: (0, 22, 'middle'),
-    }
+    # 外点标签分层（同图(a)：s_i 在点旁、二进制码再往外一层），偏移量按
+    # "文字盒到点/虚线净距 ≥6px" 定：轴向外点的内-外边界线从 0.58R 处以
+    # ±61.3° 引出，码标签放到 1.42R 才与 s_i、点都拉开。
+    out_s = {8: (14, 5, 'start'), 2: (0, -14, 'middle'),
+             4: (-14, 5, 'end'), 6: (0, 22, 'middle')}
     for i, deg in {**outer, **inner}.items():
         r = R / 2 if i in inner else R
         px, py = pt(cx, cy, r, deg)
@@ -296,10 +299,12 @@ def fig_psk8new():
         if i in inner:
             # 内点住在 28.7°~61.3° 的窄楔形里，标签放楔形中部（0.72R 处）才不压边界线
             lx, ly = pt(cx, cy, R * 0.72, deg)
-            s += text(lx, ly + 5, f's_{i}', size=13)
+            s += text(lx, ly + 5, f's_{i}', style='i')
         else:
-            ox, oy, an = off[i]
-            s += text(px + ox, py + oy, f's_{i} {GRAY[i]}', size=13, anchor=an)
+            ox, oy, an = out_s[i]
+            s += text(px + ox, py + oy, f's_{i}', style='i')
+            bx, by = pt(cx, cy, R * 1.42, deg)
+            s += text(bx, by + 5, GRAY[i], size=13, color='#333')
         # 判决域标签：内点放象限中央；外点沿轴放到轴段外侧（轴段只到 0.58R）
         dr = R * 0.24 if i in inner else R * 0.74
         dx, dy = pt(cx, cy, dr, deg)
@@ -335,11 +340,14 @@ def fig_ookpdf():
     s += text(c0, 222, '0')
     s += text(c1, 222, 'E_1', style='i')
     s += text(512, 222, 'y', anchor='end', style='i')
-    # 两条尾巴的误差概率：标在轴下方 + 引线指到对应尾巴（曲线附近没有空白，硬塞会压线）
-    s += line(250, 236, 250, 206, color='#c0392b', width=1.1, marker='arD')
-    s += line(292, 236, 292, 206, color='#c0392b', width=1.1, marker='arD')
-    s += text(244, 248, 'P(e|s_1)', size=12, color='#c0392b', anchor='end')
-    s += text(298, 248, 'P(e|s_2)', size=12, color='#c0392b', anchor='start')
+    # 两条尾巴的误差概率：标在轴下方 + 引线指到对应尾巴（曲线附近没有空白，硬塞会压线）。
+    # 红只留给门限 V_T 一处；P(e|s) 是次级标注 → #555，引线用灰色细箭头
+    s += "<defs><marker id='arDg' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'>"
+    s += "<path d='M0,0 L7,3 L0,6 z' fill='#999'/></marker></defs>"
+    s += line(250, 236, 250, 206, color='#999', width=1.1, marker='arDg')
+    s += line(292, 236, 292, 206, color='#999', width=1.1, marker='arDg')
+    s += text(244, 248, 'P(e|s_1)', size=12, color='#555', anchor='end')
+    s += text(298, 248, 'P(e|s_2)', size=12, color='#555', anchor='start')
     return s + '</svg>'
 
 
@@ -362,17 +370,17 @@ def fig_q8chan():
     s += text(xR + 96, y3 + 5, '1/2', anchor='start', size=12, color='#555')
 
     for k, y in xy.items():
-        # 直通支路
+        # 直通支路（转移概率不用红色：红只留给全图唯一的关键数值，见规范 5.2）
         s += line(82, y, xR - 8, yy[k], marker='arE')
-        s += text((82 + xR) / 2, y - 9, '1/2', size=12, color='#c0392b')
+        s += text((82 + xR) / 2, y - 9, '1/2', size=12)
     # 擦除支路：不画箭头（三个箭头会在 Y=3 处叠成一团黑），统一收到节点左侧 6px；
-    # 标签各自错开 x 位置，沿线的法向下移 16px
+    # 标签各自错开 x 位置，沿线的法向下移 16px。线色线宽与直通支路一致（信号线 #1a1a1a/1.6）
     lab_x = {'0': 118, '1': 148, '2': 178}
     for k, y in xy.items():
-        s += line(82, y, xR - 6, y3 - 2, color='#777', width=1.3)
+        s += line(82, y, xR - 6, y3 - 2)
         xl = lab_x[k]
         yl = y + (y3 - 2 - y) * (xl - 82) / (xR - 6 - 82)
-        s += text(xl, yl + 21, '1/2', size=12, color='#c0392b')
+        s += text(xl, yl + 21, '1/2', size=12)
     return s + '</svg>'
 
 
@@ -401,8 +409,9 @@ def fig_q7quant():
     s += line(X1 - 12, y_ab, 710, y_ab, marker='arF') + text(716, y_ab + 5, 'x', anchor='start', style='i')
     s += line(mx2(0), y_ab, mx2(0), 55, marker='arF')
     # 电平参考虚线只画在该电平真正出现的半轴：+a 在 0~2、−a 在 −2~0
-    s += line(mx2(0), y_aa, mx2(-2), y_aa, color='#bbb', dash='2,3')
-    s += line(mx2(0), ya, mx2(2), ya, color='#bbb', dash='2,3')
+    # （参考虚线统一 #999 / 1.1 / 3,4，见规范 5.2，别用 #bbb/2,3）
+    s += line(mx2(0), y_aa, mx2(-2), y_aa, color='#999', width=1.1, dash='3,4')
+    s += line(mx2(0), ya, mx2(2), ya, color='#999', width=1.1, dash='3,4')
     s += poly([(mx2(-4), y_ab), (mx2(-2), y_ab), (mx2(-2), y_aa), (mx2(0), y_aa),
                (mx2(0), ya), (mx2(2), ya), (mx2(2), yb), (mx2(4), yb)])
     # ±2 处已由折线的竖跳变表达，不再叠一条贯穿全高的灰虚线（视觉重复）
