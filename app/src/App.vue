@@ -32,6 +32,11 @@
           <Icon name="search" :size="17" />
           <span class="kbd-hint">⌘K</span>
         </button>
+        <a class="gh-star" :href="repoUrl" target="_blank" rel="noopener"
+           title="去 GitHub 给这个仓库点个 Star">
+          <Icon name="star" :size="15" />
+          <span class="gh-star-text">GitHub 求 Star</span>
+        </a>
       </div>
     </div>
   </header>
@@ -53,12 +58,19 @@
       <button class="btn ghost sm" @click="help = true">
         <Icon name="keyboard" :size="14" />快捷键
       </button>
+      <a class="foot-star" :href="repoUrl" target="_blank" rel="noopener">
+        <Icon name="star" :size="14" />GitHub 仓库 · 求个 Star
+      </a>
+      <button class="foot-coffee" @click="openDonate" title="请作者喝杯咖啡">
+        <Icon name="coffee" :size="14" />投喂作者
+      </button>
     </div>
   </footer>
 
   <Lightbox />
   <CommandPalette :open="palette" @close="palette = false" />
   <HelpModal :open="help" @close="help = false" />
+  <DonateModal />
   <Toast />
 </template>
 
@@ -69,14 +81,17 @@ import { theme, toggleTheme } from './lib/theme.js'
 import Lightbox from './components/Lightbox.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import HelpModal from './components/HelpModal.vue'
+import DonateModal from './components/DonateModal.vue'
 import Toast from './components/Toast.vue'
 import Icon from './components/Icon.vue'
 import { openLightbox } from './lib/lightbox.js'
+import { REPO_URL } from './lib/site.js'
+import { openDonate } from './lib/donate.js'
 
 export default {
   name: 'App',
-  components: { Lightbox, CommandPalette, HelpModal, Toast, Icon },
-  data: () => ({ help: false, palette: false, tick: 0 }),
+  components: { Lightbox, CommandPalette, HelpModal, DonateModal, Toast, Icon },
+  data: () => ({ help: false, palette: false, tick: 0, repoUrl: REPO_URL }),
   computed: {
     theme() { return theme.value },
     nav() {
@@ -94,6 +109,7 @@ export default {
   },
   methods: {
     toggleTheme,
+    openDonate,
     onKey(e) {
       const k = (e.key || '').toLowerCase()
       if ((e.metaKey || e.ctrlKey) && k === 'k') {

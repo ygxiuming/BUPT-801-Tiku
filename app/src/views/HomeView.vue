@@ -17,6 +17,9 @@
             <Icon name="timer" :size="16" />模拟测试
           </button>
           <button class="btn lg outline" @click="scrollToYears">浏览历年试卷</button>
+          <a class="btn lg outline star-cta" :href="repoUrl" target="_blank" rel="noopener">
+            <Icon name="star" :size="16" />GitHub 求 Star
+          </a>
         </div>
         <div class="hero-stats">
           <div class="stat"><b>{{ qTotal }}</b><span>真题题目</span></div>
@@ -26,6 +29,17 @@
         </div>
       </div>
     </section>
+
+    <!-- ============ 求 Star ============ -->
+    <a class="star-banner" :href="repoUrl" target="_blank" rel="noopener"
+       aria-label="去 GitHub 为北邮801真题库点 Star">
+      <span class="sb-ico"><Icon name="star" :size="20" /></span>
+      <span class="sb-text">
+        <b>这个题库帮到你了？</b>
+        <span>去 GitHub 点个 Star，让更多通信考研人找到它。</span>
+      </span>
+      <span class="sb-cta">Star on GitHub <Icon name="arrowRight" :size="14" /></span>
+    </a>
 
     <!-- ============ 继续上次 ============ -->
     <div class="resume" v-if="resumeItem">
@@ -176,6 +190,24 @@
         <span class="go">打开图库 <Icon name="arrowRight" :size="13" /></span>
       </router-link>
     </div>
+
+    <!-- ============ 支持作者 ============ -->
+    <div class="support-card" id="support">
+      <div class="sc-ico"><Icon name="coffee" :size="21" /></div>
+      <div class="sc-text">
+        <b>题库免费，咖啡自费</b>
+        <p>
+          一个人维护 7 年真题：逐字转录、逐题推导、逐图重绘，还要跑校验、回 Issue。
+          如果它帮你省下了对答案的夜晚，欢迎请我喝杯咖啡。
+        </p>
+      </div>
+      <div class="sc-actions">
+        <button class="btn primary" @click="openDonate">
+          <Icon name="coffee" :size="15" />请我喝咖啡
+        </button>
+        <a class="btn ghost" :href="repoUrl" target="_blank" rel="noopener">点个 Star（免费）</a>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -185,11 +217,14 @@ import { papers, chapters, chapterLabel, paperStat, chapterCoverage, totalPoints
 import { progressOf, touchedIds, lastTouched, rec, weekStats } from '../lib/records.js'
 import { plan, daysToExam } from '../lib/plan.js'
 import { dueIds } from '../lib/srs.js'
+import { REPO_URL } from '../lib/site.js'
+import { openDonate } from '../lib/donate.js'
 
 export default {
   name: 'HomeView',
   components: { Icon },
   computed: {
+    repoUrl() { return REPO_URL },
     plan() { return plan },
     daysLeft() { return daysToExam() },
     week() { return weekStats() },
@@ -217,6 +252,7 @@ export default {
     }
   },
   methods: {
+    openDonate,
     chapterLabel,
     shortTitle,
     statOf(y) { return paperStat(papers()[y]) },
