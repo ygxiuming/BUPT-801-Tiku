@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="100%" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#c3c9d8"/>
+    </marker>
+    <linearGradient id="step" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f8f9fd"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="300" fill="#ffffff"/>
+
+  <text x="24" y="34" font-size="15" font-weight="700" fill="#1f2430">一份新试卷的入库流水线</text>
+  <text x="24" y="54" font-size="11.5" fill="#8a8f9c">从原始 PDF 到可刷题的页面，六步，每步都有可执行的校验</text>
+
+  <!-- 步骤卡片 -->
+  <g>
+    <rect x="24" y="78" width="148" height="126" rx="10" fill="url(#step)" stroke="#e3e6ef"/>
+    <circle cx="48" cy="102" r="11" fill="#eaf0ff"/>
+    <text x="48" y="106.5" font-size="11" font-weight="700" fill="#2f5dfd" text-anchor="middle">1</text>
+    <text x="66" y="107" font-size="12.5" font-weight="700" fill="#1f2430">待解析 PDF</text>
+    <text x="38" y="132" font-size="11" fill="#5b6172">原卷 + 答案图片</text>
+    <text x="38" y="150" font-size="11" fill="#5b6172">放进 待解析/</text>
+    <text x="38" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">待解析/</text>
+  </g>
+  <g>
+    <rect x="196" y="78" width="148" height="126" rx="10" fill="url(#step)" stroke="#e3e6ef"/>
+    <circle cx="220" cy="102" r="11" fill="#eaf0ff"/>
+    <text x="220" y="106.5" font-size="11" font-weight="700" fill="#2f5dfd" text-anchor="middle">2</text>
+    <text x="238" y="107" font-size="12.5" font-weight="700" fill="#1f2430">转录</text>
+    <text x="210" y="132" font-size="11" fill="#5b6172">题干 / 选项 / 分值</text>
+    <text x="210" y="150" font-size="11" fill="#5b6172">按卷面顺序编排</text>
+    <text x="210" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">paper.js</text>
+  </g>
+  <g>
+    <rect x="368" y="78" width="148" height="126" rx="10" fill="url(#step)" stroke="#e3e6ef"/>
+    <circle cx="392" cy="102" r="11" fill="#eaf0ff"/>
+    <text x="392" y="106.5" font-size="11" font-weight="700" fill="#2f5dfd" text-anchor="middle">3</text>
+    <text x="410" y="107" font-size="12.5" font-weight="700" fill="#1f2430">定答案</text>
+    <text x="382" y="132" font-size="11" fill="#5b6172">独立推导 + 参考解析</text>
+    <text x="382" y="150" font-size="11" fill="#5b6172">+ 手写批注 三路对账</text>
+    <text x="382" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">answer.js</text>
+  </g>
+  <g>
+    <rect x="540" y="78" width="148" height="126" rx="10" fill="url(#step)" stroke="#e3e6ef"/>
+    <circle cx="564" cy="102" r="11" fill="#eaf0ff"/>
+    <text x="564" y="106.5" font-size="11" font-weight="700" fill="#2f5dfd" text-anchor="middle">4</text>
+    <text x="582" y="107" font-size="12.5" font-weight="700" fill="#1f2430">写解析</text>
+    <text x="554" y="132" font-size="11" fill="#5b6172">逐选项判定 + 易错点</text>
+    <text x="554" y="150" font-size="11" fill="#5b6172">大题分步推导</text>
+    <text x="554" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">KaTeX 公式</text>
+  </g>
+  <g>
+    <rect x="712" y="78" width="148" height="126" rx="10" fill="url(#step)" stroke="#e3e6ef"/>
+    <circle cx="736" cy="102" r="11" fill="#eaf0ff"/>
+    <text x="736" y="106.5" font-size="11" font-weight="700" fill="#2f5dfd" text-anchor="middle">5</text>
+    <text x="754" y="107" font-size="12.5" font-weight="700" fill="#1f2430">重绘框图</text>
+    <text x="726" y="132" font-size="11" fill="#5b6172">SVG 按原卷比例</text>
+    <text x="726" y="150" font-size="11" fill="#5b6172">0 交叠 / 四边留白 18</text>
+    <text x="726" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">data/figures/</text>
+  </g>
+  <g>
+    <rect x="884" y="78" width="92" height="126" rx="10" fill="#f4f7ff" stroke="#c9d8ff"/>
+    <circle cx="908" cy="102" r="11" fill="#2f5dfd"/>
+    <text x="908" y="106.5" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">6</text>
+    <text x="926" y="107" font-size="12.5" font-weight="700" fill="#1f2430">校验</text>
+    <text x="896" y="132" font-size="11" fill="#5b6172">0 错 0 警</text>
+    <text x="896" y="150" font-size="11" fill="#5b6172">页面全绿</text>
+    <text x="896" y="184" font-size="10.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">CI</text>
+  </g>
+
+  <!-- 箭头 -->
+  <line x1="174" y1="141" x2="190" y2="141" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="346" y1="141" x2="362" y2="141" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="518" y1="141" x2="534" y2="141" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="690" y1="141" x2="706" y2="141" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="862" y1="141" x2="878" y2="141" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- 底部：命令行链 -->
+  <rect x="24" y="228" width="952" height="48" rx="9" fill="#f7f8fc" stroke="#eceff7"/>
+  <text x="44" y="258" font-size="11.5" fill="#5b6172" font-family="ui-monospace,Menlo,monospace">node tools/validate_data.js</text>
+  <text x="248" y="258" font-size="11.5" fill="#c3c9d8">→</text>
+  <text x="274" y="258" font-size="11.5" fill="#5b6172" font-family="ui-monospace,Menlo,monospace">node tools/smoke_pages.mjs</text>
+  <text x="464" y="258" font-size="11.5" fill="#c3c9d8">→</text>
+  <text x="490" y="258" font-size="11.5" fill="#5b6172" font-family="ui-monospace,Menlo,monospace">node tools/audit_site.mjs</text>
+  <text x="666" y="258" font-size="11.5" fill="#c3c9d8">→</text>
+  <text x="692" y="258" font-size="11.5" fill="#5b6172" font-family="ui-monospace,Menlo,monospace">git commit</text>
+  <text x="790" y="258" font-size="11.5" fill="#c3c9d8">→</text>
+  <text x="816" y="258" font-size="11.5" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">Pages 自动发布</text>
+</svg>

@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 672" width="100%" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <clipPath id="win"><rect x="0" y="0" width="1160" height="672" rx="14"/></clipPath>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f5dfd"/><stop offset="1" stop-color="#7a52f0"/>
+    </linearGradient>
+    <linearGradient id="brandSoft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#eef3ff"/><stop offset="1" stop-color="#f6efff"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#win)">
+    <rect width="1160" height="672" fill="#f6f7fb"/>
+
+    <!-- 浏览器条 -->
+    <rect width="1160" height="42" fill="#eceef6"/>
+    <circle cx="24" cy="21" r="5.5" fill="#ff5f57"/>
+    <circle cx="44" cy="21" r="5.5" fill="#febc2e"/>
+    <circle cx="64" cy="21" r="5.5" fill="#28c840"/>
+    <rect x="94" y="11" width="520" height="21" rx="10.5" fill="#ffffff"/>
+    <text x="108" y="25.5" font-size="11" fill="#9aa0ae">https://ygxiuming.github.io/BUPT-801-Tiku/</text>
+
+    <!-- 站点顶栏 -->
+    <rect y="42" width="1160" height="62" fill="#ffffff"/>
+    <line x1="0" y1="104" x2="1160" y2="104" stroke="#eceff7" stroke-width="1"/>
+    <rect x="28" y="57" width="34" height="34" rx="10" fill="url(#brand)"/>
+    <text x="45" y="79" font-size="12.5" font-weight="800" fill="#ffffff" text-anchor="middle">801</text>
+    <text x="72" y="71" font-size="15" font-weight="800" fill="#1f2430">北邮<tspan fill="#2f5dfd">801</tspan>真题库</text>
+    <text x="72" y="85" font-size="9.5" font-weight="600" fill="#8a8f9c" letter-spacing="1.3">BUPT · 通信原理</text>
+
+    <!-- 导航 -->
+    <rect x="212" y="59" width="54" height="29" rx="14.5" fill="#eaf0ff"/>
+    <text x="239" y="78" font-size="12.5" fill="#2f5dfd" text-anchor="middle">首页</text>
+    <text x="293" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">试卷</text>
+    <text x="347" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">刷题</text>
+    <text x="401" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">模考</text>
+    <text x="455" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">复习</text>
+    <text x="509" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">统计</text>
+    <text x="563" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">图库</text>
+    <text x="624" y="78" font-size="12.5" fill="#5b6172" text-anchor="middle">录入</text>
+
+    <rect x="900" y="59" width="176" height="29" rx="14.5" fill="#f3f5fa"/>
+    <text x="916" y="78" font-size="11.5" fill="#9aa0ae">⌘K  搜题干 / 选项 / 解析…</text>
+    <circle cx="1112" cy="73" r="14" fill="#f3f5fa"/>
+    <text x="1112" y="78" font-size="12" fill="#5b6172" text-anchor="middle">?</text>
+
+    <!-- 继续上次 -->
+    <rect x="28" y="126" width="1104" height="86" rx="12" fill="#ffffff" stroke="#eceff7"/>
+    <text x="52" y="154" font-size="12" fill="#8a8f9c">继续上次</text>
+    <text x="52" y="184" font-size="17" font-weight="700" fill="#1f2430">2025 年 · 第 12 题（单项选择题）</text>
+    <text x="52" y="202" font-size="12" fill="#8a8f9c">上次做到这里 · 已做 138 / 316 题</text>
+    <rect x="964" y="152" width="144" height="34" rx="8" fill="url(#brand)"/>
+    <text x="1036" y="174" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">继续刷题</text>
+
+    <!-- 年份进度卡（3 列 × 2 行） -->
+    <g>
+      <rect x="28" y="230" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="52" y="266" font-size="20" font-weight="800" fill="#1f2430">2026</text>
+      <text x="112" y="266" font-size="12" fill="#8a8f9c">40 空 · 7 大题 · 5 图</text>
+      <text x="52" y="292" font-size="12" fill="#8a8f9c">已掌握 62%</text>
+      <rect x="52" y="304" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="52" y="304" width="191" height="7" rx="3.5" fill="#2f5dfd"/>
+      <rect x="300" y="252" width="80" height="24" rx="12" fill="#eaf0ff"/>
+      <text x="340" y="268" font-size="11.5" fill="#2f5dfd" text-anchor="middle">进行中</text>
+    </g>
+    <g>
+      <rect x="400" y="230" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="424" y="266" font-size="20" font-weight="800" fill="#1f2430">2025</text>
+      <text x="484" y="266" font-size="12" fill="#8a8f9c">30 空 · 8 大题 · 11 图</text>
+      <text x="424" y="292" font-size="12" fill="#8a8f9c">已掌握 88%</text>
+      <rect x="424" y="304" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="424" y="304" width="271" height="7" rx="3.5" fill="#2f5dfd"/>
+      <rect x="672" y="252" width="80" height="24" rx="12" fill="#eaf0ff"/>
+      <text x="712" y="268" font-size="11.5" fill="#2f5dfd" text-anchor="middle">进行中</text>
+    </g>
+    <g>
+      <rect x="772" y="230" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="796" y="266" font-size="20" font-weight="800" fill="#1f2430">2024</text>
+      <text x="856" y="266" font-size="12" fill="#8a8f9c">40 空 · 9 大题 · 10 图</text>
+      <text x="796" y="292" font-size="12" fill="#8a8f9c">已掌握 45%</text>
+      <rect x="796" y="304" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="796" y="304" width="139" height="7" rx="3.5" fill="#2f5dfd"/>
+      <rect x="1044" y="252" width="80" height="24" rx="12" fill="#eaf0ff"/>
+      <text x="1084" y="268" font-size="11.5" fill="#2f5dfd" text-anchor="middle">进行中</text>
+    </g>
+    <g>
+      <rect x="28" y="364" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="52" y="400" font-size="20" font-weight="800" fill="#1f2430">2023</text>
+      <text x="112" y="400" font-size="12" fill="#8a8f9c">50 空 · 8 大题 · 16 图</text>
+      <text x="52" y="426" font-size="12" fill="#8a8f9c">已掌握 100%</text>
+      <rect x="52" y="438" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="52" y="438" width="308" height="7" rx="3.5" fill="#18b06b"/>
+      <rect x="300" y="386" width="80" height="24" rx="12" fill="#e6f7ef"/>
+      <text x="340" y="402" font-size="11.5" fill="#18b06b" text-anchor="middle">已完成</text>
+    </g>
+    <g>
+      <rect x="400" y="364" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="424" y="400" font-size="20" font-weight="800" fill="#1f2430">2022</text>
+      <text x="484" y="400" font-size="12" fill="#8a8f9c">40 空 · 8 大题 · 8 图</text>
+      <text x="424" y="426" font-size="12" fill="#8a8f9c">已掌握 73%</text>
+      <rect x="424" y="438" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="424" y="438" width="225" height="7" rx="3.5" fill="#2f5dfd"/>
+      <rect x="672" y="386" width="80" height="24" rx="12" fill="#eaf0ff"/>
+      <text x="712" y="402" font-size="11.5" fill="#2f5dfd" text-anchor="middle">进行中</text>
+    </g>
+    <g>
+      <rect x="772" y="364" width="356" height="118" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <text x="796" y="400" font-size="20" font-weight="800" fill="#1f2430">2021</text>
+      <text x="856" y="400" font-size="12" fill="#8a8f9c">40 空 · 7 大题 · 12 图</text>
+      <text x="796" y="426" font-size="12" fill="#8a8f9c">已掌握 31%</text>
+      <rect x="796" y="438" width="308" height="7" rx="3.5" fill="#eef0f6"/>
+      <rect x="796" y="438" width="95" height="7" rx="3.5" fill="#2f5dfd"/>
+      <rect x="1044" y="386" width="80" height="24" rx="12" fill="#eaf0ff"/>
+      <text x="1084" y="402" font-size="11.5" fill="#2f5dfd" text-anchor="middle">进行中</text>
+    </g>
+
+    <!-- 功能入口 -->
+    <g>
+      <rect x="28" y="500" width="266" height="144" rx="12" fill="url(#brandSoft)"/>
+      <circle cx="60" cy="536" r="16" fill="#ffffff"/>
+      <circle cx="60" cy="536" r="7" fill="none" stroke="#2f5dfd" stroke-width="1.6"/>
+      <path d="M60 531.5 L60 536 L63.5 538.5" fill="none" stroke="#2f5dfd" stroke-width="1.6" stroke-linecap="round"/>
+      <text x="88" y="541" font-size="14.5" font-weight="700" fill="#1f2430">模拟测试</text>
+      <text x="52" y="572" font-size="12" fill="#5b6172">倒计时 · 答题卡 · 自动判分</text>
+      <text x="52" y="592" font-size="12" fill="#5b6172">交卷出节奏分析，中断可续</text>
+      <text x="52" y="620" font-size="11.5" fill="#2f5dfd">进入模考 →</text>
+    </g>
+    <g>
+      <rect x="310" y="500" width="266" height="144" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <circle cx="342" cy="536" r="16" fill="#f3f5fa"/>
+      <path d="M336 539 a6 6 0 1 1 12 0" fill="none" stroke="#2f5dfd" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M345 532.5 L348.5 532.5 L348.5 536" fill="none" stroke="#2f5dfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="370" y="541" font-size="14.5" font-weight="700" fill="#1f2430">间隔复习</text>
+      <text x="334" y="572" font-size="12" fill="#5b6172">FSRS 排期 · 四档评分</text>
+      <text x="334" y="592" font-size="12" fill="#5b6172">今日到期 24 题</text>
+      <text x="334" y="620" font-size="11.5" fill="#2f5dfd">开始复习 →</text>
+    </g>
+    <g>
+      <rect x="592" y="500" width="266" height="144" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <circle cx="624" cy="536" r="16" fill="#f3f5fa"/>
+      <rect x="617" y="536" width="3" height="7" rx="1" fill="#2f5dfd"/>
+      <rect x="622.5" y="532" width="3" height="11" rx="1" fill="#2f5dfd"/>
+      <rect x="628" y="534" width="3" height="9" rx="1" fill="#7a52f0"/>
+      <text x="652" y="541" font-size="14.5" font-weight="700" fill="#1f2430">做题统计</text>
+      <text x="616" y="572" font-size="12" fill="#5b6172">分章正确率 · 考点热度矩阵</text>
+      <text x="616" y="592" font-size="12" fill="#5b6172">错题本 / 收藏一键重练</text>
+      <text x="616" y="620" font-size="11.5" fill="#2f5dfd">看统计 →</text>
+    </g>
+    <g>
+      <rect x="874" y="500" width="266" height="144" rx="12" fill="#ffffff" stroke="#eceff7"/>
+      <circle cx="906" cy="536" r="16" fill="#f3f5fa"/>
+      <rect x="899" y="529" width="6" height="6" rx="1.5" fill="#2f5dfd"/>
+      <rect x="907" y="529" width="6" height="6" rx="1.5" fill="#2f5dfd" opacity=".45"/>
+      <rect x="899" y="537" width="6" height="6" rx="1.5" fill="#2f5dfd" opacity=".45"/>
+      <rect x="907" y="537" width="6" height="6" rx="1.5" fill="#7a52f0"/>
+      <text x="934" y="541" font-size="14.5" font-weight="700" fill="#1f2430">图库</text>
+      <text x="898" y="572" font-size="12" fill="#5b6172">62 张按原卷重绘的 SVG 框图</text>
+      <text x="898" y="592" font-size="12" fill="#5b6172">题图 + 解析配图，可搜索</text>
+      <text x="898" y="620" font-size="11.5" fill="#2f5dfd">浏览图库 →</text>
+    </g>
+  </g>
+  <rect x="0.5" y="0.5" width="1159" height="671" rx="14" fill="none" stroke="#e3e6ef"/>
+</svg>

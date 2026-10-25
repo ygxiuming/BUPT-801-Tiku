@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 428" width="100%" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <marker id="d1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#c3c9d8"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="428" fill="#ffffff"/>
+
+  <!-- 左：GitHub Pages -->
+  <text x="24" y="36" font-size="14" font-weight="700" fill="#1f2430">方案 A · GitHub Pages</text>
+  <text x="24" y="54" font-size="11" fill="#8a8f9c">公开仓库 + Actions 构建，推上去就有线上地址</text>
+
+  <g>
+    <rect x="24" y="72" width="460" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="44" y="97" font-size="12.5" font-weight="600" fill="#1f2430">git push origin main</text>
+    <text x="44" y="116" font-size="11" fill="#8a8f9c" font-family="ui-monospace,Menlo,monospace">一行 push 触发整条流水线</text>
+  </g>
+  <line x1="254" y1="130" x2="254" y2="146" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="24" y="150" width="460" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="44" y="175" font-size="12.5" font-weight="600" fill="#1f2430">GitHub Actions 构建</text>
+    <text x="44" y="194" font-size="10.5" fill="#8a8f9c" font-family="ui-monospace,Menlo,monospace">npm ci → vite build（VITE_BASE=/BUPT-801-Tiku/）</text>
+  </g>
+  <line x1="254" y1="208" x2="254" y2="224" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="24" y="228" width="460" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="44" y="253" font-size="12.5" font-weight="600" fill="#1f2430">发布 app/dist 到 Pages</text>
+    <text x="44" y="272" font-size="11" fill="#8a8f9c">自动生成 404.html 做 SPA 回退 + .nojekyll</text>
+  </g>
+  <line x1="254" y1="286" x2="254" y2="302" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="24" y="306" width="460" height="58" rx="10" fill="#eef3ff" stroke="#c9d8ff"/>
+    <text x="44" y="331" font-size="12" font-weight="700" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">ygxiuming.github.io/BUPT-801-Tiku/</text>
+    <text x="44" y="350" font-size="11" fill="#5b6172">HTTPS 免费 · 纯静态 · 无后端（PDF 自动降级为打印）</text>
+  </g>
+
+  <!-- 分隔 -->
+  <line x1="500" y1="24" x2="500" y2="382" stroke="#eceff7" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- 右：自建 -->
+  <text x="524" y="36" font-size="14" font-weight="700" fill="#1f2430">方案 B · 自建服务器 + nginx</text>
+  <text x="524" y="54" font-size="11" fill="#8a8f9c">拿到打包版本，容器里跑，可挂自己的域名与证书</text>
+
+  <g>
+    <rect x="524" y="72" width="452" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="544" y="97" font-size="12.5" font-weight="600" fill="#1f2430">docker compose up -d --build</text>
+    <text x="544" y="116" font-size="10.5" fill="#8a8f9c" font-family="ui-monospace,Menlo,monospace">deploy/docker-compose.yml</text>
+  </g>
+  <line x1="750" y1="130" x2="750" y2="146" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="524" y="150" width="452" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="544" y="175" font-size="12.5" font-weight="600" fill="#1f2430">多阶段构建</text>
+    <text x="544" y="194" font-size="10.5" fill="#8a8f9c" font-family="ui-monospace,Menlo,monospace">node:20-alpine → npm run build → app/dist</text>
+  </g>
+  <line x1="750" y1="208" x2="750" y2="224" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="524" y="228" width="452" height="58" rx="10" fill="#f7f8fc" stroke="#e3e6ef"/>
+    <text x="544" y="253" font-size="12.5" font-weight="600" fill="#1f2430">nginx:alpine 托管</text>
+    <text x="544" y="272" font-size="11" fill="#8a8f9c">try_files 回退 · assets 长缓存 · gzip · 安全头</text>
+  </g>
+  <line x1="750" y1="286" x2="750" y2="302" stroke="#c3c9d8" stroke-width="1.6" marker-end="url(#d1)"/>
+  <g>
+    <rect x="524" y="306" width="452" height="58" rx="10" fill="#eef3ff" stroke="#c9d8ff"/>
+    <text x="544" y="331" font-size="12" font-weight="700" fill="#2f5dfd" font-family="ui-monospace,Menlo,monospace">http://your-host:8080</text>
+    <text x="544" y="350" font-size="11" fill="#5b6172">另起 server/ 并反代 /api/ 即可用在线 PDF 排版</text>
+  </g>
+
+  <!-- 底部脚注 -->
+  <rect x="24" y="384" width="952" height="28" rx="7" fill="#f7f8fc"/>
+  <text x="40" y="402" font-size="11" fill="#8a8f9c">两条路共用同一份源码与同一个构建脚本；Pages 走子路径，自建走根路径，差异只在 VITE_BASE 一个变量。</text>
+</svg>
