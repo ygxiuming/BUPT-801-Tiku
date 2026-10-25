@@ -11,3 +11,6 @@ app/public/vendor/
 .DS_Store
 Thumbs.db
 /tmp/
+
+# 工具运行时的审计账本（每次调用都会写，纯噪音）
+.mimosa/
