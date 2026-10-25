@@ -116,10 +116,35 @@ def circle(cx, cy, r, dash=None, color=INK, width=1.6, fill='none'):
             f"stroke='{color}' stroke-width='{width}'{da}/>")
 
 
-def rect(x, y, w, h, dash=None, fill='none', width=1.6):
+def rect(x, y, w, h, dash=None, fill='none', width=1.6, color=INK):
     da = f" stroke-dasharray='{dash}'" if dash else ''
     return (f"<rect x='{x:.1f}' y='{y:.1f}' width='{w:.1f}' height='{h:.1f}' fill='{fill}' "
-            f"stroke='{INK}' stroke-width='{width}'{da}/>")
+            f"stroke='{color}' stroke-width='{width}'{da}/>")
+
+
+def dash_box(x0, y0, x1, y1, gaps=None):
+    """虚线分组框；gaps={'top':[...],'bottom':[...],'left':[...],'right':[...]}
+    在指定坐标处各留 8px 缺口，供信号线穿框（避免实线压虚线）。"""
+    gaps = gaps or {}
+
+    def h(y, xa, xb, gl):
+        xs = [xa]
+        for g in sorted(gl):
+            xs += [g - 8, g + 8]
+        xs.append(xb)
+        return ''.join(line(xs[i], y, xs[i + 1], y, width=1.2, dash='5,4')
+                       for i in range(0, len(xs), 2) if xs[i + 1] - xs[i] > 0.5)
+
+    def v(x, ya, yb, gl):
+        ys = [ya]
+        for g in sorted(gl):
+            ys += [g - 8, g + 8]
+        ys.append(yb)
+        return ''.join(line(x, ys[i], x, ys[i + 1], width=1.2, dash='5,4')
+                       for i in range(0, len(ys), 2) if ys[i + 1] - ys[i] > 0.5)
+
+    return (h(y0, x0, x1, gaps.get('top', [])) + h(y1, x0, x1, gaps.get('bottom', []))
+            + v(x0, y0, y1, gaps.get('left', [])) + v(x1, y0, y1, gaps.get('right', [])))
 
 
 def mul(cx, cy, r=14):
@@ -151,71 +176,86 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 
 # ---------------------------------------------------------------- 二、AM 系统框图
 def fig_q2am():
-    s = HEAD.format(w=700, h=200) + marker('a22')
+    """AM 发送—信道—接收链路（版式照原卷）：
+
+    m(t) 先与直流 A 相加，再乘载波得 s(t)=[A+m(t)]cos(2πf_c t)；s(t) 与白噪声
+    n_w(t) 相加后进接收端：BPF → ⊗(2cos2πf_c t) → LPF → 隔直流 → y(t)。
+    注意首级是"相加器（+A）"，不是"A·cos 相乘"——这是最易画错的地方。
+    """
+    s = HEAD.format(w=800, h=230) + marker('a22')
     Y = 100
-    # 发送端框
-    s += rect(8, 44, 116, 96, dash='6 4')
-    s += text(66, 36, '发送端', size=13)
-    # 输入 m(t)
-    s += line(20, Y, 56, Y, marker='a22')
-    s += text(38, 84, 'm(t)', size=13, style='i')
-    s += mul(78, Y)
-    s += line(92, Y, 126, Y)
-    s += text(106, 84, 's(t)', size=13, style='i')
-    s += adder(140, Y)
-    s += line(154, Y, 182, Y)
+    # 发送端框（对称，信号线穿框处留 8px 缺口）
+    s += dash_box(22, 66, 212, 134,
+                  gaps={'left': [Y], 'right': [Y], 'bottom': [84, 180]})
+    s += text(117, 52, '发送端', size=13)
+    s += line(16, Y, 70, Y, marker='a22')
+    s += text(44, 80, 'm(t)', size=13, style='i')
+    s += adder(84, Y)
+    s += line(98, Y, 166, Y, marker='a22')
+    s += mul(180, Y)
+    s += line(194, Y, 286, Y, marker='a22')
+    s += text(216, 76, 's(t)', size=13, style='i', anchor='start')
+    # 信道加噪（两框之间）
+    s += adder(300, Y)
+    s += line(314, Y, 340, Y, marker='a22')
     # 接收端框
-    s += rect(168, 44, 372, 96, dash='6 4')
-    s += text(354, 36, '接收端', size=13)
-    s += rect(182, 78, 80, 44)
-    s += text(222, 106, 'BPF', size=13)
-    s += line(262, Y, 290, Y)
-    s += text(276, 84, 'r(t)', size=12, style='i')
-    s += mul(304, Y)
-    s += line(318, Y, 340, Y)
-    s += rect(340, 78, 80, 44)
-    s += text(380, 106, 'LPF', size=13)
-    s += line(420, Y, 446, Y)
-    s += rect(446, 78, 76, 44)
-    s += text(484, 106, '隔直流', size=12)
-    s += line(522, Y, 562, Y, marker='a22')
-    s += text(570, 105, 'y(t)', size=13, anchor='start', style='i')
-    # 三路注入
-    s += line(78, 138, 78, Y + 17, marker='a22')
-    s += text(126, 156, 'A cos(2πf_ct)', size=11.5, anchor='end')
-    s += line(140, 138, 140, Y + 17, marker='a22')
-    s += text(148, 156, 'n_w(t)', size=12, anchor='start')
-    s += line(304, 138, 304, Y + 17, marker='a22')
-    s += text(304, 156, '2cos(2πf_ct)', size=11.5)
+    s += dash_box(326, 66, 722, 134,
+                  gaps={'left': [Y], 'right': [Y], 'bottom': [470]})
+    s += text(524, 52, '接收端', size=13)
+    s += rect(340, 76, 84, 48)
+    s += text(382, 106, 'BPF', size=13)
+    s += line(424, Y, 456, Y, marker='a22')
+    s += text(440, 80, 'r(t)', size=12, style='i')
+    s += mul(470, Y)
+    s += line(484, Y, 514, Y, marker='a22')
+    s += rect(514, 76, 84, 48)
+    s += text(556, 106, 'LPF', size=13)
+    s += line(598, Y, 626, Y, marker='a22')
+    s += rect(626, 76, 88, 48)
+    s += text(670, 106, '隔直流', size=12)
+    s += line(714, Y, 752, Y, marker='a22')
+    s += text(758, 105, 'y(t)', size=13, anchor='start', style='i')
+    # 自下注入：A、载波、噪声、2cos（箭头穿框底缺口进入）
+    s += line(84, 156, 84, Y + 14, marker='a22')
+    s += text(84, 176, 'A', size=13)
+    s += line(180, 156, 180, Y + 14, marker='a22')
+    s += text(180, 176, 'cos(2πf_ct)', size=11.5)
+    s += line(300, 156, 300, Y + 14, marker='a22')
+    s += text(300, 176, 'n_w(t)', size=12)
+    s += line(470, 156, 470, Y + 14, marker='a22')
+    s += text(470, 176, '2cos(2πf_ct)', size=11.5)
     return tighten(s + '</svg>')
 
 
 # ---------------------------------------------------------------- 四、二进制调制接收框图
 def fig_q4rx():
-    s = HEAD.format(w=560, h=190) + marker('a42')
-    Y = 96
-    s += line(14, Y, 88, Y, marker='a42')
-    s += text(58, 66, 's_1(t) 或 s_2(t)', size=12)
+    s = HEAD.format(w=580, h=210) + marker('a42')
+    Y = 100
+    s += line(14, Y, 90, Y, marker='a42')
+    s += text(56, 70, 's_1(t) 或 s_2(t)', size=12)
     s += adder(104, Y)
-    s += line(118, Y, 148, Y)
-    s += text(132, 80, 'r(t)', size=12, style='i')
+    s += line(118, Y, 156, Y, marker='a42')
+    s += text(137, 68, 'r(t)', size=12, style='i')
     s += mul(170, Y)
-    s += line(184, Y, 212, Y)
-    s += rect(212, 74, 106, 44)
-    s += text(265, 102, '∫_0^T(·)dt', size=14)
-    s += line(318, Y, 338, Y)
-    s += text(328, 80, 'y', size=13, style='i')
-    s += rect(338, 70, 76, 52)
-    s += text(376, 102, '判决', size=13)
-    s += line(414, Y, 474, Y, marker='a42')
-    s += text(482, 101, '输出', size=12, anchor='start')
-    # 噪声与门限（自下注入）
-    s += line(104, 146, 104, Y + 17, marker='a42')
-    s += text(98, 162, '白高斯噪声', size=12, anchor='end')
-    s += line(170, 146, 170, Y + 17, marker='a42')
-    s += text(170, 162, 'cos(2πf_ct)', size=11.5)
-    s += line(376, 154, 376, 126, marker='a42')
-    s += text(376, 170, 'V_{th}', size=13)
+    s += line(184, Y, 212, Y, marker='a42')
+    s += rect(212, 76, 116, 48)
+    # ∫_0^T(·)dt：上下限叠放在积分号右侧（照 2026 题三接收框图的画法）
+    s += text(226, Y + 10, '∫', size=28)
+    s += text(244, Y - 8, 'T', size=10, anchor='start')
+    s += text(244, Y + 20, '0', size=10, anchor='start')
+    s += text(262, Y + 6, '(·)dt', anchor='start')
+    s += line(328, Y, 350, Y)
+    s += text(340, 80, 'y', size=13, style='i')
+    s += rect(350, 74, 78, 52)
+    s += text(389, 106, '判决', size=13)
+    s += line(428, Y, 500, Y, marker='a42')
+    # 自下注入：噪声、载波、门限
+    s += line(104, 156, 104, Y + 14, marker='a42')
+    s += text(104, 176, '白高斯噪声', size=12)
+    s += line(170, 156, 170, Y + 14, marker='a42')
+    s += text(170, 176, 'cos(2πf_ct)', size=11.5)
+    s += line(389, 160, 389, 126, marker='a42')
+    s += text(389, 180, 'V_{th}', size=13)
     return tighten(s + '</svg>')
 
 
@@ -240,9 +280,9 @@ def fig_q5const():
     s += text(BC + 10, BY - 140, 'Im', size=12, anchor='start')
     # 两个正方形的虚线框
     ox, oy = px(B * 1.41421356, B * 1.41421356)
-    s += rect(ox, oy, 2 * (BC - ox), 2 * (BY - oy), dash='5 4', width=1.3)
+    s += rect(ox, oy, 2 * (BC - ox), 2 * (BY - oy), dash='5,4', width=1.3)
     pts = [px(*p) for p in [(B, 0), (0, B), (-B, 0), (0, -B)]]
-    s += poly(pts, dash='5 4', width=1.3, close=True)
+    s += poly(pts, dash='5,4', width=1.3, close=True)
     # 星座点
     for u, v, name in INNER + OUTER:
         x, y = px(u, v)
@@ -294,13 +334,13 @@ def fig_q9sd():
     s += text(x - 62, y + 6, '00', size=13)
     x, y = P['11']
     s += path(f"M{x+6:.1f},{y-21:.1f} C{x+64:.1f},{y-34:.1f} {x+64:.1f},{y+34:.1f} {x+6:.1f},{y+21:.1f}",
-              dash='6 4', marker='a92')
+              dash='5,4', marker='a92')
     s += text(x + 74, y + 6, '01', size=13, anchor='start')
     # 主边
     E = lambda a, b, dash=None: edge(*P[a], *P[b], r=R, dash=dash, mid='a92')
-    s += E('00', '10', dash='6 4')                            # 1 → 11
+    s += E('00', '10', dash='5,4')                            # 1 → 11
     s += text(186, 92, '11', size=13)
-    s += E('10', '11', dash='6 4')                            # 1 → 10
+    s += E('10', '11', dash='5,4')                            # 1 → 10
     s += text(414, 92, '10', size=13)
     s += E('01', '00')                                        # 0 → 11
     s += text(186, 232, '11', size=13)
@@ -309,7 +349,7 @@ def fig_q9sd():
     # 中间两条竖线（错开 9px 以免重叠）
     s += line(309, P['10'][1] + R, 309, P['01'][1] - R, marker='a92')                       # 10 --0--> 01
     s += text(320, 166, '01', size=13, anchor='start')
-    s += line(291, P['01'][1] - R, 291, P['10'][1] + R, dash='6 4', marker='a92')           # 01 --1--> 10
+    s += line(291, P['01'][1] - R, 291, P['10'][1] + R, dash='5,4', marker='a92')           # 01 --1--> 10
     s += text(280, 166, '00', size=13, anchor='end')
     for k in P:
         s += node(k)
@@ -318,43 +358,51 @@ def fig_q9sd():
 
 # ---------------------------------------------------------------- 五(3)、s2 判决域
 def fig_q5region():
-    s = HEAD.format(w=540, h=580) + marker('a5r')
-    cx, cy, K = 170, 390, 34
+    """s2 的 Voronoi 判决域：被 s2–s1、s2–s3 两条中垂线夹住，向第一象限张开。
+
+    两条中垂线交点 (1.641,1.641)，各自与坐标轴交于 7.243——区域本质无界，按绘图框
+    [0,8.2]² 裁切。阴影用 polygon 且完全落在坐标轴/标签之内，故 tighten 后四边 18。
+    """
+    ox, oy, K = 165, 385, 42
 
     def P2(u, v):
-        return cx + u * K, cy - v * K
+        return ox + u * K, oy - v * K
 
-    # 阴影区：两条中垂线之“上”（含两条正半轴），向第一象限张开
-    L1a = P2(7.243, 0)          # L1 与 Re 轴交点
-    L2b = P2(0, 7.243)          # L2 与 Im 轴交点
-    cross = P2(1.641, 1.641)    # 两条中垂线的交点
-    s += area([P2(0, 9.8), L2b, cross, L1a, P2(9.8, 0), P2(9.8, 9.8)])
+    s = HEAD.format(w=560, h=560) + marker('a5r')
+    # 判决域阴影：V 形边界以上的区域（裁到绘图框内）
+    s += area([P2(0, 8.2), P2(8.2, 8.2), P2(8.2, 0),
+               P2(7.243, 0), P2(1.641, 1.641), P2(0, 7.243)], opacity=0.08)
     # 坐标轴
-    s += line(cx - 140, cy, cx + 324, cy, width=1.3, marker='a5r')
-    s += line(cx, cy + 140, cx, cy - 324, width=1.3, marker='a5r')
-    s += text(cx + 316, cy + 18, 'Re', size=12, anchor='start')
-    s += text(cx + 10, cy - 314, 'Im', size=12, anchor='start')
-    # 星座与两个虚线框
-    ox, oy = P2(2.0 * 1.41421356, 2.0 * 1.41421356)
-    s += rect(ox, oy, 2 * (cx - ox), 2 * (cy - oy), dash='5 4', width=1.2)
-    s += poly([P2(2, 0), P2(0, 2), P2(-2, 0), P2(0, -2)], dash='5 4', width=1.2, close=True)
-    for u, v in [(2, 0), (0, 2), (-2, 0), (0, -2)]:
+    ax1, ay1 = P2(-3.3, 0)
+    ax2, ay2 = P2(8.3, 0)
+    s += line(ax1, ay1, ax2, ay2, width=1.4, marker='a5r')
+    bx1, by1 = P2(0, -3.3)
+    bx2, by2 = P2(0, 8.3)
+    s += line(bx1, by1, bx2, by2, width=1.4, marker='a5r')
+    s += text(ax2 + 6, ay1 + 16, 'Re', size=12, anchor='start')
+    s += text(bx1 + 8, by2 - 6, 'Im', size=12, anchor='start')
+    # 星座几何（虚线外方框 + 内菱形），弱化为参考
+    x0, y0 = P2(-2.8284, 2.8284)
+    x1, y1 = P2(2.8284, -2.8284)
+    s += rect(x0, y0, x1 - x0, y1 - y0, dash='5,4', width=1.1, color='#888')
+    s += poly([P2(2, 0), P2(0, 2), P2(-2, 0), P2(0, -2)],
+              stroke='#888', dash='5,4', width=1.1, close=True)
+    # 八个星座点
+    for u, v in [(2, 0), (0, 2), (-2, 0), (0, -2),
+                 (2.8284, 2.8284), (-2.8284, 2.8284), (-2.8284, -2.8284), (2.8284, -2.8284)]:
         s += dot(*P2(u, v), 4.2)
-    for u, v in [(2.83, 2.83), (-2.83, 2.83), (-2.83, -2.83), (2.83, -2.83)]:
-        s += dot(*P2(u, v), 4.2)
-    # 两条中垂线（沿自身方向向两端延长）
-    s += line(120, 303.3, 460, 402.8, color=HOT, width=1.8)
-    s += line(152, 82.2, 254, 430, color=HOT, width=1.8)
-    # 标注
-    s += text(250, 384, 's_1', size=13, anchor='start')
-    s += text(276, 288, 's_2', size=13, anchor='start')
-    s += text(182, 314, 's_3', size=13, anchor='start')
-    s += text(64, 288, 's_4', size=13, anchor='end')
-    s += text(94, 402, 's_5', size=13, anchor='end')
-    s += text(64, 492, 's_6', size=13, anchor='end')
-    s += text(182, 472, 's_7', size=13, anchor='start')
-    s += text(276, 492, 's_8', size=13, anchor='start')
-    s += text(318, 226, 's_2 的判决域', size=13, color=HOT)
+    # 两条中垂线（判决域边界，V 形）
+    s += poly([P2(0, 7.243), P2(1.641, 1.641), P2(7.243, 0)], stroke='#888', width=1.4, dash='5,4')
+    # 点标签
+    s += text(257, 397, 's_1', size=13, anchor='start')
+    s += text(292, 258, 's_2', size=13, anchor='start')
+    s += text(173, 295, 's_3', size=13, anchor='start')
+    s += text(38, 258, 's_4', size=13, anchor='end')
+    s += text(73, 397, 's_5', size=13, anchor='end')
+    s += text(38, 512, 's_6', size=13, anchor='end')
+    s += text(173, 477, 's_7', size=13, anchor='start')
+    s += text(292, 512, 's_8', size=13, anchor='start')
+    s += text(312, 142, 's_2 的判决域', size=13, color='#a8322a')
     return tighten(s + '</svg>')
 
 
