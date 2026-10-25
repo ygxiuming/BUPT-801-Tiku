@@ -13,11 +13,18 @@
 
 图件的唯一口径在 `~/.workbuddy/skills/bupt801/SKILL.md` 第 5 节（留白/线型色表/字号/间距/同类图参照）。渲染预览走 `tools/preview_figures.py <年> --cols 3`（整年网格一次看完），收边只走 `svgkit.tighten()`，不改 viewBox。
 
-改前端/改版时再加一条：`node tools/audit_site.mjs`（全站审计：4 年×3 页 + 首页/统计/图库、13 条完整流程、a11y 扫描，`--json` 可接 CI）。它比 smoke 深一层，能抓住"页面能打开但序号错/流程走不通"的问题。
+改前端/改版时再加一条：`node tools/audit_site.mjs`（全站审计：逐年×3 页 + 首页/统计/图库/复习/编辑器、21 条完整流程、a11y 扫描，`--json` 可接 CI）。它比 smoke 深一层，能抓住"页面能打开但序号错/流程走不通"的问题——会核对大题序号与数据一致、目录锚点、DOM id 重复、图件空块。
 
 ## 环境限制
 
 - 沙箱内禁本地网络（`curl 127.0.0.1` 返回 502）、禁 `copyFileSync`（`npm run sync` 报 EPERM），所以验证走 jsdom、同步交回本地执行。
+- **jsdom 测试桩必须补的全局**（缺了会把应用 bug 和环境 bug 搞混，症状很有迷惑性）：
+  - `Document` / `ShadowRoot`：Vue 的 `vModelText.beforeUpdate` 里有 `getRootNode() instanceof Document`，
+    缺了会让**所有含 v-model 的页面**抛 `ReferenceError`，且报错位置在 Vue 内部函数里。
+  - `URL`（用 jsdom 那份）：Node 内置 `URL.createObjectURL` 不认 jsdom 的 `Blob`，会让导出被自己的 try/catch 吞掉。
+  - 键盘事件要派到真正的监听目标：⌘K→`window`、↑↓/Enter→`input`、Esc→`document`，一律往 window 发会假失败。
+  - `HTMLAnchorElement.prototype.click` 打桩记录 `download`，否则 jsdom 会刷「导航未实现」。
+  - 桩在 `smoke_pages.mjs globalsFor()` 与 `audit_site.mjs bindGlobals()` 各一份，改一处要改两处。
 - 本机无 Chrome（headless EXIT=133），SVG 预览用 cairosvg（`~/.workbuddy/binaries/python/envs/default`），预览/量墨迹前都要把 font-family 换成 `Noto Sans CJK SC`。
 - 沙箱内 `vite build` 会 Wasm OOM（`WebAssembly.instantiate(): Out of memory`）。只改 `app/index.html` 的静态 `<script>` 清单时，可直接把这些标签同步插入 `app/dist/index.html`（vite 原样保留），不必重新构建；改了 `app/src` 才必须本地重跑 `npm run build`。
 

@@ -50,7 +50,8 @@ data/
 | `node tools/validate_data.js` | 结构/引用/公式/数值抽查校验；新年份在文件头 require 区和 EXPECT 里各登记一次 |
 | `cd app && npm run sync` | data → public 逐文件拷贝（开发快照；生产不需要）；dev/build 前自动跑 |
 | `node tools/build-frontend.mjs` | **回退构建**：esbuild + compiler-sfc 生成 `app/dist`（vite 在受限环境因 wasm 起不来时用） |
-| `node tools/smoke_pages.mjs` | **页面冒烟**（jsdom + dist，不需要浏览器/网络）：6 条路由逐页断言"非空 + KaTeX 零报错 + Vue 零错误"，再跑"首页→试卷页""考试页开始作答""练习页选答→看解析"三个交互 |
+| `node tools/smoke_pages.mjs` | **页面冒烟**（jsdom + dist，不需要浏览器/网络）：逐年 × 3 页 + 首页/统计/图库/复习/编辑器，逐页断言"非空 + KaTeX 零报错 + Vue 零错误"，再跑 11 条交互（导航、考试开始、练习选答、⌘K 搜索、复习评分、编辑器切换与导出、备份导出导入） |
+| `node tools/audit_site.mjs` | **全站审计**（同样走 jsdom）：结构侧核对大题序号与数据一致/目录锚点/DOM id 重复/图件空块，交互侧 21 条完整流程，附 a11y 扫描（h1、label、按钮可访问名、SVG title）。`--json` 可接 CI |
 | `tools/svg_fit.py` | 生成器里调用的瘦身函数：按墨迹包围盒（line/rect/circle/poly/path/text，剔除 `<defs>` 里的 marker）收紧 viewBox，只改 viewBox 不动坐标 |
 | `tools/fit_figures_render.py <年>` | emit 之后跑：cairosvg 1:1 渲染 + PIL 量非白像素，按真实字形边界再收紧一次 viewBox（比字符宽度估算准），要求 cairosvg/pillow（在 envs/default 里） |
 | `cd server && npm start` | 托管 app/dist + `/data/**` 实时映射项目 data/ + `/api/pdf/<年>/(paper|ans)` Puppeteer 排版（每年份自动注册路由） |
@@ -68,32 +69,56 @@ data/
 9. **主题色一律走 CSS 变量**（`app/src/styles/app.css` 第 1 节）。组件里不要写死 `#fff` / `#eef3ff`，否则深色主题下会白底白字。卷面 `.paper-sheet` 内部已锁定一套浅色令牌（`--ink/--surface/--line…` 局部覆盖），所以在白纸上渲染解析块时不用另写颜色。
 10. **组件不写 `<style scoped>`**：样式统一放 `app.css`。一是便于主题令牌复用，二是本机沙箱内 `vite build` 不可用（rollup 内置 wasm 在 4GB 虚拟内存上限下无法实例化），临时产物由 esbuild + `@vue/compiler-sfc` 生成，不处理 scoped 样式。
 11. **沙箱里连不上 127.0.0.1**：`curl http://127.0.0.1:3000` 返回 502、`npm run sync` 报 `EPERM copyfile`（被文件策略拦）。所以页面验证走 `node tools/smoke_pages.mjs`：读 `app/dist/index.html` → 在 jsdom 里 `window.eval` 所有数据脚本（数据脚本必须早于 bundle）→ 动态 `import('dist/assets/app.js?r=N')` 让它自己 mount，全程只用文件通道。esbuild 写文件走原生二进制，不受该策略影响。
+12. **jsdom 缺两个全局构造器**，写测试桩时必须补，否则会误判成应用 bug：
+    - `Document` / `ShadowRoot`：Vue 的 `vModelText.beforeUpdate` 里有 `getRootNode() instanceof Document`，
+      缺了会让**所有 v-model 输入**抛 `ReferenceError`（症状：只有含输入框的页面报错，报的是 Vue 内部函数）。
+    - `URL`：必须用 jsdom 那份而不是 Node 内置的，Node 的 `URL.createObjectURL` 不认 jsdom 的 `Blob`，
+      会让导出功能被自己的 try/catch 吞掉、静默走「环境不支持」分支。
+    另外 `HTMLAnchorElement.prototype.click` 要打桩记录 `download` 属性，否则 jsdom 会因"导航未实现"刷屏。
+    这些桩在 `smoke_pages.mjs` 的 `globalsFor()` 与 `audit_site.mjs` 的 `bindGlobals()` 里各有一份，改一处别忘了另一处。
+13. **键盘事件的派发目标要与监听器一致**：⌘K 绑在 `window`、面板的 ↑↓/Enter 绑在 `<input>`、Esc 绑在 `document`。
+    jsdom 里一律往 `window` 上派发 KeyboardEvent 是收不到的，测试会假失败。
+14. **表单 label 关联**：`<label>文本</label><input>`（同级）是**无效**关联，只有 `<label for>` 或
+    控件写进 `<label>` 内部才有效。编辑器的表单多，控件 id 一律带上下标（如 `:id="'ed-ch-' + bi"`），
+    否则 v-for 会产出重复 id。审计脚本认这三种写法，别用 placeholder 冒充 label。
 
 ## 六、前端结构（2025-10-25 界面改版）
 
 ```
 app/src/
 ├── styles/app.css        # 设计系统：设计令牌（浅/深）→ 基础排版 → 顶栏 → 通用组件 → 各页 → 响应式 → 打印
-├── App.vue               # 顶栏（导航/已刷题数/主题切换/帮助）+ 路由过渡 + 页脚 + Lightbox/Help/Toast
-├── router.js             # 5 条路由
+├── App.vue               # 顶栏（导航/已刷题数/待复习角标/主题切换/帮助/⌘K）+ 路由过渡 + 页脚 + 全局挂载
+├── router.js             # 试卷 / 刷题 / 模考 / 复习 / 统计 / 图库 / 编辑器（同前）
 ├── views/
-│   ├── HomeView.vue      # Hero + 继续上次 + 逐年进度卡 + 考点覆盖 + 工具入口
+│   ├── HomeView.vue      # Hero + 继续上次 + 逐年进度卡 + 考点覆盖 + 6 个工具入口
 │   ├── PaperView.vue     # 卷面（v-html 拼装）+ 目录（滚动高亮）+ 工具栏（解析开关/打印/PDF）
-│   ├── PracticeView.vue  # 吸顶工具条 + 题目卡 + 侧栏筛选/题号面板（窄屏→抽屉）+ 深链 ?id=
-│   ├── ExamView.vue      # setup / run / result（得分环）/ review（只看错题）
-│   ├── StatsView.vue     # KPI + 掌握度环 + 14 天活跃度 + 分章正确率 + 错题/收藏
-│   └── FiguresView.vue   # 图库（按年/类型分组 + 关键词搜索）
+│   ├── PracticeView.vue  # 吸顶工具条 + 题目卡 + 侧栏筛选/题号面板（窄屏→抽屉）+ 深链 ?id= + 逐题计时 + 笔记
+│   ├── ExamView.vue      # setup / run / result（得分环 + 综合题三档自评 + 节奏分析）/ review（只看错题）
+│   ├── ReviewView.vue    # 间隔复习：到期队列 + 四档评分 + 未来 14 天负荷 + 复习笔记
+│   ├── StatsView.vue     # KPI + 掌握度环 + 14 天活跃度 + 分章正确率 + 考点热度矩阵 + 成绩趋势 +
+│   │                     # 节奏散点 + 学习计划周报 + 备份/恢复 + 错题/收藏
+│   ├── FiguresView.vue   # 图库（按年/类型分组 + 关键词搜索）
+│   └── EditorView.vue    # 录入编辑器：选择题/综合题表单 + 实时预览 + 校验 + 导出 paper.js/answer.js
 ├── components/           # QuestionCard / OptTable / ChoiceExp / BigSol / FigBlock / SheetPanel /
-│                         # Lightbox / Icon / ProgressRing / Toast / HelpModal
-└── lib/                  # data（题库访问+汇总）/ records（记录+派生统计）/ render（KaTeX、SVG 适配）/
-                          # lightbox / theme（主题持久化）/ toast
+│                         # Lightbox / Icon / ProgressRing / Toast / HelpModal /
+│                         # CommandPalette（⌘K 全站搜索）/ NotePanel（题目笔记）/
+│                         # HeatmapMatrix / TrendChart / TimeScatter（三个手搓 SVG 图表）
+└── lib/                  # data（题库访问+汇总）/ records（记录+派生统计+SRS 挂钩）/
+                          # srs（FSRS 简化调度）/ notes / examlog / plan / backup /
+                          # search（索引+评分+高亮）/ render（KaTeX、SVG 适配、id 作用域）/
+                          # lightbox / theme / toast / format
 ```
 
 关键约定：
 - **KaTeX 只渲染 `.math-zone`**（见坑 4），新写 `v-html` 容器记得加这个类。
 - **图块 `.figblock` 永远白底**：SVG 线条是深色，深色主题下不给白底会"消失"。
 - 记录相关的派生统计（进度、正确率、近 14 天活跃、最近一次作答）都在 `lib/records.js`，视图只消费。
-- 题目深链 `/practice?id=<题目id>`：首页「继续上次」与统计页错题/收藏都走这个入口。
+- 题目深链 `/practice?id=<题目id>`：首页「继续上次」、统计页错题/收藏、⌘K 搜索结果都走这个入口。
+- **图件的 id 必须加作用域**：`render.js` 的 `scopeIds()` 会在渲染时给 SVG 内部 id 加 `f<年>-<图名>-<序号>` 前缀
+  （server 端 `print-html.js` 同逻辑）。生成器起的是 `a241` 这类内容哈希短名，一页十几张图必然撞车，
+  撞了会让 `url(#a241)` 指向别的图的箭头。新增渲染路径时记得一并调用。
+- **三个图表组件是手写 SVG**（热度矩阵用 `<table>` + 色块，趋势/散点是 `<svg>`），不引第三方图表库：
+  本机沙箱装不了外部依赖，且数据量小（≤5 年 × 9 章），手写更轻。图表容器要能扛住空数据（显示空态而非报错）。
 
 ## 五、待办 / 已知问题
 
