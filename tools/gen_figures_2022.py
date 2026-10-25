@@ -301,19 +301,21 @@ def fig_q5const():
 
 # ---------------------------------------------------------------- 七、量化器框图
 def fig_q7block():
-    s = HEAD.format(w=380, h=120) + marker('a72')
-    Y = 78
-    s += line(46, Y, 84, Y, marker='a72')
-    s += text(34, 84, 'X', size=14, style='i')
-    s += rect(84, 56, 78, 44)
-    s += text(123, 84, '√(·)', size=14)
-    s += line(162, Y, 190, Y)
-    s += text(176, 66, 'W', size=13, style='i')
-    s += rect(190, 56, 78, 44)
-    s += text(229, 84, 'Q(·)', size=14)
-    s += line(268, Y, 316, Y, marker='a72')
-    s += text(330, 84, 'Z', size=14, style='i')
-    s += text(229, 40, '量化', size=12)
+    """二电平均匀量化器：X →[√(·)]→ W →[Q(·)]→ Z。原卷三段连线均带箭头，
+    W 悬在「√ 框→Q 框」中段线上方留白，量化标在 Q 框上方。"""
+    s = HEAD.format(w=440, h=118) + marker('a72')
+    Y = 76
+    s += text(22, Y + 7, 'X', size=15, style='i')
+    s += line(34, Y, 64, Y, marker='a72')
+    s += rect(64, Y - 23, 96, 46)                    # √ 框 64..160
+    s += text(112, Y + 6, '√(·)', size=15)
+    s += line(160, Y, 228, Y, marker='a72')          # 中段连线（带箭头指向 Q）
+    s += text(190, Y - 12, 'W', size=14, style='i')  # W 悬于线上方、略偏左
+    s += rect(228, Y - 23, 96, 46)                   # Q 框 228..324
+    s += text(276, Y + 6, 'Q(·)', size=15)
+    s += text(276, Y - 40, '量化', size=12)
+    s += line(324, Y, 368, Y, marker='a72')
+    s += text(378, Y + 7, 'Z', size=15, style='i')
     return tighten(s + '</svg>')
 
 
