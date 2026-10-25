@@ -149,48 +149,65 @@ def fig_pam():
 
 # ------------------------------------------------------------------ 题九：两级编码器
 def fig_encoder():
-    """b=uG₁ → c=b*g 两级编码框图（2025 第九题）。
+    """b=uG₁ → c=bG₂ 两级编码框图（2025 第九题），版式照原卷：
 
-    版式要点：标签与箭头各留 ≥8px 空隙；抽头母线在延迟线正上方；G₂ 标签放在
-    虚线框内左下角空位；⊕ 用「圆 + 十字线」绘制（不用字符），交叉点即模二加。
+    G／G₂ 两个虚线框左上角标名；⊕ 悬在 D₁、D₂ 之间的正上方，三路抽头分别从
+    左（b）、下（D₁ 后）、右（D₃ 后）汇入；输出从 ⊕ 顶部上折再往右穿框出去。
+    信号线穿虚线框的位置留 8px 缺口，避免"实线压虚线框"。
     """
-    X0, X1 = 406, 874          # G₂ 虚线框左右边界
-    YB, YBUS = 96, 50          # 信号线 / 抽头母线
-    YT, YD = 26, 138           # 框上/下边界
-    s = HEAD.format(w=1070, h=150) + marker('arC')
+    YS = 182                       # 信号线
+    YA = 108                       # ⊕ 与左右抽头母线的水平
+    YO = 58                        # 输出线（⊕ 顶部上折后）
+    AX = 454                       # ⊕ 中心，对准 D₁/D₂ 之间的抽头
+    GX0, GX1, GY0, GY1 = 132, 838, 16, 232       # 外层 G 框（整个编码器）
+    SX0, SX1, SY0, SY1 = 340, 790, 38, 214       # 内层 G₂ 框（bG₂）
+    s = HEAD.format(w=1060, h=258) + marker('arC')
 
-    def dashed(x1, y1, x2, y2):
-        return line(x1, y1, x2, y2, width=1.3, dash='6,4')
+    def dashh(y, x1, x2):
+        return line(x1, y, x2, y, width=1.2, dash='5,4')
 
-    # 虚线框：左边界给输入线让路、右边界给输出线让路，线不压框
-    s += dashed(X0, YT, X1, YT) + dashed(X0, YD, X1, YD)                    # 上下边
-    s += dashed(X0, YT, X0, YB - 7) + dashed(X0, YB + 7, X0, YD)            # 左边（缺口）
-    s += dashed(X1, YT, X1, YBUS - 6) + dashed(X1, YBUS + 6, X1, YD)        # 右边（缺口）
-    s += text(414, YD - 8, 'G_2', anchor='start', style='b')
+    def dashv(x, y1, y2, gaps=()):
+        """竖虚线；gaps 里的 y 各留 ±8px 缺口（给穿框的实线让路）"""
+        ys = [y1]
+        for g in gaps:
+            ys += [g - 8, g + 8]
+        ys.append(y2)
+        return ''.join(line(x, ys[i], x, ys[i + 1], width=1.2, dash='5,4')
+                       for i in range(0, len(ys), 2))
+
+    # ---- 外层 G 框、内层 G₂ 框 ----
+    s += dashh(GY0, GX0, GX1) + dashh(GY1, GX0, GX1)
+    s += dashv(GX0, GY0, GY1, gaps=(YS,)) + dashv(GX1, GY0, GY1, gaps=(YO,))
+    s += dashh(SY0, SX0, SX1) + dashh(SY1, SX0, SX1)
+    s += dashv(SX0, SY0, SY1, gaps=(YS,)) + dashv(SX1, SY0, SY1, gaps=(YO,))
+    s += text(GX0 + 15, GY0 + 31, 'G', anchor='start', style='i')
+    s += text(SX0 + 15, SY0 + 29, 'G_2', anchor='start', style='i')
 
     # ---- u → G₁ → b ----
-    s += text(10, YB - 11, 'u=(u_0u_1u_2u_3)', anchor='start', style='i')
-    s += line(6, YB, 148, YB, marker='arC')
-    s += rect(151, YB - 18, 44, 36) + text(173, YB + 5, 'G_1', style='b')
-    s += line(197, YB, 228, YB, marker='arC')
-    s += text(234, YB - 11, 'b=(b_0b_1b_2b_3)', anchor='start', style='i')
+    s += text(10, YS - 13, 'u=(u_0u_1u_2u_3)', anchor='start', style='i')
+    s += line(120, YS, 159, YS, marker='arC')
+    s += rect(163, YS - 23, 46, 46) + text(186, YS + 5, 'G_1', style='i')
+    s += text(219, YS - 13, 'b=(b_0b_1b_2b_3)', anchor='start', style='i')
 
-    # ---- b → 延迟线 D D D ----
-    s += line(332, YB, 441, YB, marker='arC')
-    for x in (444, 516, 588):
-        s += rect(x, YB - 16, 36, 32) + text(x + 18, YB + 5, 'D', style='i')
-    s += line(480, YB, 513, YB, marker='arC')
-    s += line(552, YB, 585, YB, marker='arC')
-    s += line(624, YB, 690, YB)
+    # ---- b 母线 + 三级延迟 D ----
+    s += line(209, YS, 400, YS)
+    s += dot(372, YS, 2.6)                                   # 抽头①：b（g_0=1）
+    for x in (400, 470, 540):
+        s += rect(x, YS - 17, 38, 34) + text(x + 19, YS + 5, 'D', style='i')
+    s += line(438, YS, 470, YS) + dot(454, YS, 2.6)          # 抽头②：D₁ 后（g_1=1）
+    s += line(508, YS, 540, YS)
+    s += line(578, YS, 620, YS)                              # 抽头③：D₃ 后（g_4=1）
 
-    # ---- 抽头：输入(g0=1)、1D(g1=1)、3D(g3=1) → 模二加 ----
-    for x in (420, 498, 690):
-        s += dot(x, YB, 2.6) + line(x, YB, x, YBUS) + dot(x, YBUS, 2.6)
-    s += line(420, YBUS, 728, YBUS)
-    s += circle(740, YBUS, 12)
-    s += line(731, YBUS, 749, YBUS) + line(740, YBUS - 9, 740, YBUS + 9)
-    s += line(752, YBUS, 884, YBUS, marker='arC')          # 穿框右边界缺口输出 c
-    s += text(892, YBUS + 5, 'c=(c_0c_1c_2c_3c_4c_5c_6)', anchor='start', style='i')
+    # ---- 三路抽头汇入 ⊕ ----
+    s += line(372, YS, 372, YA) + line(372, YA, 442, YA, marker='arC')   # 左
+    s += line(AX, YS, AX, YA + 12, marker='arC')                          # 下
+    s += line(620, YS, 620, YA) + line(620, YA, 466, YA, marker='arC')   # 右
+    s += circle(AX, YA, 12)
+    s += line(AX - 9, YA, AX + 9, YA) + line(AX, YA - 9, AX, YA + 9)
+
+    # ---- ⊕ → c（上折后穿两层框的缺口出去） ----
+    s += line(AX, YA - 12, AX, YO) + line(AX, YO, 878, YO, marker='arC')
+    s += text(890, YO + 5, 'c=(c_0c_1c_2c_3c_4c_5c_6)', anchor='start', style='i')
     return s + '</svg>'
 
 
