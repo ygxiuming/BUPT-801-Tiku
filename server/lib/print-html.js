@@ -26,9 +26,33 @@ function optTable(o) {
   return `<table class="opt-table"><tbody>${rows}</tbody></table>`
 }
 
+// 与 app/src/lib/render.js scopeIds 同一套处理：图件的 marker id 是按内容哈希起的名字，
+// 一页里放了多张图就会撞 id，url(#a241) 会指向别的图的箭头。打印页同样要加前缀。
+function scopeIds(s, prefix) {
+  if (!s) return s
+  const p = String(prefix || 'f')
+  const ids = []
+  const re = /\sid\s*=\s*["']([^"']+)["']/g
+  let m
+  while ((m = re.exec(s))) ids.push(m[1])
+  if (!ids.length) return s
+  for (const id of ids) {
+    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const to = p + '-' + id
+    s = s.replace(new RegExp('url\\(["\']?#' + esc + '["\']?\\)', 'g'), 'url(#' + to + ')')
+    s = s.replace(new RegExp('(["\'])#' + esc + '\\1', 'g'), '$1#' + to + '$1')
+  }
+  return s.replace(/\sid\s*=\s*["']([^"']+)["']/g, (mm, id) => ' id="' + p + '-' + id + '"')
+}
+
+// 同一张图可能在一页里出现多次（两个小问引用同一张配图），再叠上出现序号
+const figSeq = {}
 function figSvg(year, key) {
   const f = B.figures[String(year)]
-  return (f && f[key]) || ''
+  const s = (f && f[key]) || ''
+  const k = String(year) + '/' + key
+  const n = (figSeq[k] = (figSeq[k] || 0) + 1)
+  return scopeIds(s, 'f' + year + '-' + key + '-' + n)
 }
 
 function chapterName(q) {
