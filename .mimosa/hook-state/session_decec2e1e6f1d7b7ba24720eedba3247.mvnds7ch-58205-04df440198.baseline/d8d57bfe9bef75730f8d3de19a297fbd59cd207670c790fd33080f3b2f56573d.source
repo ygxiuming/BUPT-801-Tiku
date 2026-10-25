@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+# 生成 2025年试卷 SVG 图库（相对路径落盘，需在项目根目录运行）：
+#   python3 tools/gen_figures_2025.py
+import math, os
+
+OUT_REL = os.path.join('data', 'figures', '2025.js')
+
+
+def marker(mid):
+    return (f"<defs><marker id='{mid}' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'>"
+            f"<path d='M0,0 L7,3 L0,6 z' fill='#1a1a1a'/></marker></defs>")
+
+
+def poly(pts, stroke='#1a1a1a', width=1.6, dash=None, fill='none', close=False):
+    d = ' '.join(f'{x:.1f},{y:.1f}' for x, y in pts)
+    dd = ' Z' if close else ''
+    da = f" stroke-dasharray='{dash}'" if dash else ''
+    return f"<path d='M{d}{dd}' fill='{fill}' stroke='{stroke}' stroke-width='{width}'{da}/>"
+
+
+def line(x1, y1, x2, y2, width=1.6, dash=None, color='#1a1a1a', marker=None):
+    da = f" stroke-dasharray='{dash}'" if dash else ''
+    mk = f" marker-end='url(#{marker})'" if marker else ''
+    return (f"<line x1='{x1:.1f}' y1='{y1:.1f}' x2='{x2:.1f}' y2='{y2:.1f}' "
+            f"stroke='{color}' stroke-width='{width}'{da}{mk}/>")
+
+
+def text(x, y, s, size=14, anchor='middle', style='', color='#1a1a1a'):
+    st = " font-style='italic'" if 'i' in style else ''
+    wt = " font-weight='bold'" if 'b' in style else ''
+    small = f" font-size='{size}'" if size != 14 else ''
+    return f"<text x='{x:.1f}' y='{y:.1f}' text-anchor='{anchor}'{small}{st}{wt} fill='{color}'>{s}</text>"
+
+
+def dot(x, y, r=4, fill='#1a1a1a', stroke='none'):
+    return f"<circle cx='{x:.1f}' cy='{y:.1f}' r='{r}' fill='{fill}' stroke='{stroke}'/>"
+
+
+def circle(cx, cy, r, dash=None, color='#1a1a1a', width=1.6, fill='none'):
+    da = f" stroke-dasharray='{dash}'" if dash else ''
+    return (f"<circle cx='{cx:.1f}' cy='{cy:.1f}' r='{r:.1f}' fill='{fill}' "
+            f"stroke='{color}' stroke-width='{width}'{da}/>")
+
+
+def rect(x, y, w, h, dash=None, fill='none'):
+    da = f" stroke-dasharray='{dash}'" if dash else ''
+    return f"<rect x='{x:.1f}' y='{y:.1f}' width='{w:.1f}' height='{h:.1f}' fill='{fill}' stroke='#1a1a1a'/>"
+
+
+HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
+        "font-family=\"Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif\" font-size='14'>")
+
+
+def fig_ssb():
+    s = HEAD.format(w=720, h=130) + marker('arA')
+    s += text(12, 45, 's(t)', anchor='start', style='i')
+    s += line(48, 40, 72, 40, marker='arA')
+    s += rect(75, 25, 52, 30) + text(101, 45, '信道')
+    s += line(127, 40, 162, 40, marker='arA') + text(145, 32, 'r(t)')
+    s += rect(165, 25, 44, 30) + text(187, 45, 'BPF')
+    s += line(209, 40, 240, 40, marker='arA')
+    s += circle(255, 40, 13) + line(249, 34, 261, 46) + line(261, 34, 249, 46)
+    s += line(268, 40, 301, 40, marker='arA')
+    s += rect(304, 25, 46, 30) + text(327, 45, 'LPF')
+    s += line(350, 40, 390, 40, marker='arA') + text(398, 45, 'm(t)/2', anchor='start', style='i')
+    s += text(252, 100, '2cos(2πf_c t)')
+    s += line(252, 86, 255, 57, marker='arA')
+    return s + '</svg>'
+
+
+def fig_pam():
+    s = HEAD.format(w=900, h=195) + marker('arB')
+    s += line(55, 30, 470, 30) + line(55, 30, 55, 42) + line(470, 30, 470, 42)
+    s += text(262, 20, 'X(f), x(t)', style='i')
+    s += text(6, 74, 'd(t)', anchor='start', style='i')
+    s += line(38, 70, 64, 70, marker='arB')
+    s += dot(55, 70, 3) + text(55, 94, 'A')
+    s += rect(67, 55, 80, 32) + text(107, 69, '发送滤波器') + text(107, 83, 'G_T(f)', style='i')
+    s += line(147, 70, 180, 70, marker='arB') + text(163, 62, 's(t)', style='i')
+    s += rect(183, 55, 64, 32) + text(215, 69, '信道') + text(215, 83, 'C(f)', style='i')
+    s += line(247, 70, 286, 70, marker='arB') + text(266, 62, 'y(t)', style='i')
+    s += circle(300, 70, 11) + line(294, 70, 306, 70) + line(300, 64, 300, 76)
+    s += line(300, 120, 300, 84, marker='arB') + text(300, 138, 'n_w(t)', style='i')
+    s += line(311, 70, 346, 70, marker='arB') + text(329, 62, 'r(t)', style='i')
+    s += rect(349, 55, 80, 32) + text(389, 69, '接收滤波器') + text(389, 83, 'G_R(f)', style='i')
+    s += line(429, 70, 462, 70, marker='arB') + text(446, 62, 'v(t)', style='i')
+    s += dot(470, 70, 3) + text(470, 94, 'B')
+    s += line(470, 70, 492, 70)
+    s += line(492, 80, 516, 60, width=1.8) + line(492, 70, 516, 70)
+    s += text(512, 48, 't=kT_s', style='i')
+    s += line(516, 70, 548, 70)
+    s += dot(552, 70, 3) + text(552, 94, 'C')
+    s += line(556, 70, 588, 70, marker='arB') + text(598, 75, 'v_k', anchor='start', style='i')
+    return s + '</svg>'
+
+
+def fig_encoder():
+    s = HEAD.format(w=840, h=170) + marker('arC')
+    s += text(4, 86, 'u=(u₀u₁u₂u₃)', anchor='start', style='i')
+    s += line(90, 82, 110, 82, marker='arC')
+    s += rect(113, 64, 40, 36) + text(133, 87, 'G₁', style='b')
+    s += line(153, 82, 184, 82, marker='arC')
+    s += text(190, 87, 'b=(b₀b₁b₂b₃)', anchor='start', style='i')
+    s += line(276, 82, 306, 82, marker='arC')
+    s += rect(296, 30, 420, 104, dash='6,4') + text(312, 52, 'G₂', anchor='start', style='b')
+    s += line(308, 82, 342, 82, marker='arC')
+    for x in (345, 413, 481):
+        s += rect(x, 68, 34, 28) + text(x + 17, 87, 'D', style='i')
+        s += line(x + 34, 82, x + 65, 82, marker='arC')
+    s += dot(560, 82, 2.5)
+    # 抽头: 输入(g0=1)、1D(g1=1)、3D(g3=1) → 模二加
+    s += dot(322, 82, 2.5) + line(322, 82, 322, 34) + line(322, 34, 422, 34)
+    s += dot(396, 82, 2.5) + line(396, 82, 396, 34) + line(396, 34, 422, 34)
+    s += line(560, 82, 560, 34) + line(560, 34, 450, 34, marker='arC')
+    s += circle(436, 34, 12) + text(436, 39, '⊕')
+    s += line(436, 22, 436, 12) + line(436, 12, 698, 12, marker='arC')
+    s += text(704, 17, 'c=(c₀c₁c₂c₃c₄c₅c₆)', anchor='start', style='i')
+    return s + '</svg>'
+
+
+GRAY = {8: '100', 1: '000', 2: '001', 3: '011', 4: '010', 5: '110', 6: '111', 7: '101'}
+
+
+def pt(cx, cy, r, deg):
+    return (cx + r * math.cos(math.radians(deg)), cy - r * math.sin(math.radians(deg)))
+
+
+def fig_psk8():
+    cx, cy, R = 200, 200, 120
+    s = HEAD.format(w=400, h=400) + circle(cx, cy, R)
+    for k in range(8):  # ML判决边界 22.5°+45k
+        a = 22.5 + 45 * k
+        x2, y2 = pt(cx, cy, 155, a)
+        s += line(cx, cy, x2, y2, dash='5,4', color='#555')
+    for i in range(1, 9):
+        deg = 45 * i % 360
+        px, py = pt(cx, cy, R, deg)
+        s += dot(px, py, 4.5)
+        lx, ly = pt(cx, cy, 92, deg)
+        s += text(lx, ly + 5, f's{i}', style='i')
+        dx, dy = pt(cx, cy, 60, deg)
+        s += text(dx, dy + 5, f'D{i}', size=13, color='#555')
+        bx, by = pt(cx, cy, 150, deg)
+        s += text(bx, by + 5, GRAY[i], size=13, color='#333')
+    return s + '</svg>'
+
+
+def fig_psk8new():
+    cx, cy, S = 210, 210, 110
+    tpx = 0.580 * S  # 三重点（轴上）
+    s = HEAD.format(w=430, h=430)
+    s += circle(cx, cy, S, dash='4,4', color='#999', width=1.2)
+    s += circle(cx, cy, S / 2, dash='2,4', color='#bbb', width=1.0)
+    inner = {1: 45, 3: 135, 5: 225, 7: 315}
+    outer = {8: 0, 2: 90, 4: 180, 6: 270}
+    for dx, dy in ((tpx, 0), (-tpx, 0), (0, tpx), (0, -tpx)):
+        s += line(cx, cy, cx + dx, cy + dy, color='#555', dash='5,4')
+    rays = [
+        ((tpx, 0), (1.35, -1.25)), ((tpx, 0), (1.35, 1.25)),
+        ((-tpx, 0), (-1.35, -1.25)), ((-tpx, 0), (-1.35, 1.25)),
+        ((0, tpx), (1.25, -1.35)), ((0, tpx), (-1.25, -1.35)),
+        ((0, -tpx), (1.25, 1.35)), ((0, -tpx), (-1.25, 1.35)),
+    ]
+    for (sx, sy), (ex, ey) in rays:
+        s += line(cx + sx, cy + sy, cx + ex * S, cy + ey * S, color='#555', dash='5,4')
+    lbl = {8: (16, 5, 's₈ 100'), 2: (14, -8, 's₂ 001'), 4: (-18, 5, 's₄ 010'), 6: (-16, 16, 's₆ 111'),
+           1: (12, -6, 's₁ 000'), 3: (-14, -6, 's₃ 011'), 5: (-16, 14, 's₅ 110'), 7: (12, 14, 's₇ 101')}
+    allp = {**inner, **outer}
+    for i, deg in allp.items():
+        r = S / 2 if i in inner else S
+        px, py = pt(cx, cy, r, deg)
+        s += dot(px, py, 4.5)
+        ox, oy, t = lbl[i]
+        s += text(px + ox, py + oy, t, size=13)
+    for i, deg in allp.items():
+        r = S / 2 if i in inner else S
+        dx, dy = pt(cx, cy, r * 0.72, deg)
+        s += text(dx, dy + 5, f'D{i}', size=13, color='#555')
+    s += text(215, 420, '内圆r=1/2（s₁s₃s₅s₇），外圆r=1；虚线圆为原单位圆', size=12, color='#777')
+    return s + '</svg>'
+
+
+def gauss_pts(cx, base_y, peak, sigma, x0, x1, step=6):
+    pts = []
+    x = x0
+    while x <= x1:
+        y = base_y - peak * math.exp(-((x - cx) ** 2) / (2 * sigma ** 2))
+        pts.append((x, y))
+        x += step
+    return pts
+
+
+def fig_ookpdf():
+    base, sigma, peak = 200, 45, 125
+    c0, c1, vt = 140, 400, 270
+    s = HEAD.format(w=560, h=240) + marker('arD')
+    s += line(30, base, 530, base, marker='arD')
+    s += line(140, base, 140, 40, color='#999', dash='2,3')
+    s += line(400, base, 400, 40, color='#999', dash='2,3')
+    s += poly(gauss_pts(c0, base, peak, sigma, c0 - 130, c0 + 130))
+    s += poly(gauss_pts(c1, base, peak, sigma, c1 - 130, c1 + 130))
+    s += line(vt, base, vt, 55, width=1.6, dash='7,4', color='#c0392b')
+    s += text(vt, 45, 'V_T=E₁/2', style='i', color='#c0392b')
+    s += text(c0 - 55, 62, 'f(y|"0")', style='i')
+    s += text(c1 + 62, 62, 'f(y|"1")', style='i')
+    s += text(c0, 220, '0') + text(c1, 220, 'E₁', style='i')
+    s += text(508, 220, 'y', anchor='end', style='i')
+    s += text(205, 190, 'P(e|s₂)', size=12, color='#c0392b')
+    s += text(335, 190, 'P(e|s₁)', size=12, color='#c0392b')
+    return s + '</svg>'
+
+
+def fig_q8chan():
+    s = HEAD.format(w=470, h=290) + marker('arE')
+    xy = {'0': (80, 70), '1': (80, 140), '2': (80, 210)}
+    for k, (x, y) in xy.items():
+        s += dot(x, y, 5)
+        s += text(x - 14, y + 5, f'X={k}', anchor='end', style='i')
+        s += text(x - 14, y + 23, 'P=1/3', anchor='end', size=12, color='#555')
+    yy = {'0': 70, '1': 145, '2': 220}
+    for k, y in yy.items():
+        s += dot(340, y, 5) + text(356, y + 5, f'Y={k}', anchor='start', style='i')
+    s += dot(340, 270, 5) + text(356, 275, 'Y=3', anchor='start', style='i')
+    for k in ('0', '1', '2'):
+        sy = xy[k][1]
+        s += line(86, sy, 333, yy[k], marker='arE')
+        s += text((86 + 333) / 2 - 16, (sy + yy[k]) / 2 - 6, '1/2', size=12, color='#c0392b')
+        s += line(86, sy, 333, 270, marker='arE', color='#888')
+        s += text((86 + 333) / 2 + 16, (sy + 270) / 2 + 4, '1/2', size=12, color='#c0392b')
+    for k, y in yy.items():
+        s += text(424, y + 5, '1/6', anchor='start', size=12, color='#555')
+    s += text(424, 275, '1/2', anchor='start', size=12, color='#555')
+    return s + '</svg>'
+
+
+def fig_q7quant():
+    s = HEAD.format(w=740, h=250) + marker('arF')
+    X0, XS, YB = 60, 35, 195
+
+    def mx(v):
+        return X0 + (v + 4) * XS
+
+    s += line(X0 - 12, YB, 350, YB, marker='arF') + text(356, YB + 5, 'x', anchor='start', style='i')
+    s += line(mx(0), YB, mx(0), 75, marker='arF')
+    s += poly([(mx(-4), YB), (mx(0), 95), (mx(4), YB)], close=True, fill='#f5f5f5')
+    s += text(mx(0) - 8, 90, '1/4', anchor='end')
+    for v in (-4, -2, 2, 4):
+        s += line(mx(v), YB, mx(v), YB + 5) + text(mx(v), YB + 22, str(v))
+    s += text(mx(0), YB + 22, '0') + text(mx(0) - 34, 130, 'p(x)', style='i')
+    X1, XS2 = 420, 35
+
+    def mx2(v):
+        return X1 + (v + 4) * XS2
+
+    yb, ya, y_aa, y_ab = 80, 120, 160, 200
+    s += line(X1 - 12, y_ab, 710, y_ab, marker='arF') + text(716, y_ab + 5, 'x', anchor='start', style='i')
+    s += line(mx2(0), y_ab, mx2(0), 55, marker='arF')
+    s += line(mx2(0), y_aa, mx2(0) + XS2 * 4 + 6, y_aa, color='#bbb', dash='2,3')
+    s += line(mx2(0), ya, mx2(0) - XS2 * 2 - 6, ya, color='#bbb', dash='2,3')
+    s += poly([(mx2(-4), y_ab), (mx2(-2), y_ab), (mx2(-2), y_aa), (mx2(0), y_aa),
+               (mx2(0), ya), (mx2(2), ya), (mx2(2), yb), (mx2(4), yb)])
+    for v in (-2, 2):
+        s += line(mx2(v), yb - 5, mx2(v), y_ab + 5, color='#999', dash='3,3')
+    s += dot(mx2(-2), y_ab, 3.5) + dot(mx2(-2), y_aa, 3.5, fill='#fff', stroke='#1a1a1a')
+    s += dot(mx2(0), y_aa, 3.5) + dot(mx2(0), ya, 3.5, fill='#fff', stroke='#1a1a1a')
+    s += dot(mx2(2), ya, 3.5) + dot(mx2(2), yb, 3.5, fill='#fff', stroke='#1a1a1a')
+    for yy2, nm in ((yb, 'b'), (ya, 'a'), (y_aa, '−a'), (y_ab, '−b')):
+        s += text(X1 - 20, yy2 + 5, nm, anchor='end', style='i')
+    for v in (-4, -2, 2, 4):
+        s += text(mx2(v), y_ab + 22, str(v))
+    s += text(mx2(0), y_ab + 22, '0') + text(mx2(0) - 44, 70, 'Y=Q(x)', style='i')
+    return s + '</svg>'
+
+
+def fig_q2psd():
+    s = HEAD.format(w=380, h=190) + marker('arG')
+    s += line(40, 150, 340, 150, marker='arG') + text(348, 155, 'f', anchor='start', style='i')
+    s += line(190, 150, 190, 40, marker='arG')
+    s += poly([(90, 150), (90, 60), (290, 60), (290, 150)], fill='#f5f5f5')
+    s += text(84, 56, 'N₀/2', anchor='end', style='i')
+    s += text(90, 168, '−B') + text(290, 168, 'B') + text(196, 168, '0', anchor='start')
+    s += text(190, 30, 'P_nB(f)', style='i')
+    return s + '</svg>'
+
+
+def fig_q3psd():
+    s = HEAD.format(w=480, h=190) + marker('arH')
+    s += line(30, 150, 450, 150, marker='arH') + text(458, 155, 'f', anchor='start', style='i')
+    s += line(240, 150, 240, 40, marker='arH')
+
+    def imp(x, h, w):
+        return (line(x, 150, x, 150 - h)
+                + f"<polygon points='{x - 4},{150 - h + 9} {x + 4},{150 - h + 9} {x},{150 - h}' fill='#1a1a1a'/>"
+                + text(x, 150 - h - 6, w, size=12))
+
+    s += imp(140, 70, '1') + imp(340, 70, '1')
+    s += imp(95, 32, '1/4') + imp(385, 32, '1/4')
+    for x, t in ((95, '−900'), (140, '−400'), (240, '0'), (340, '400'), (385, '900')):
+        s += text(x, 168, t, size=12)
+    s += text(240, 30, 'P_m(f)', style='i')
+    return s + '</svg>'
+
+
+def sinc(x):
+    return 1.0 if abs(x) < 1e-9 else math.sin(math.pi * x) / (math.pi * x)
+
+
+def fig_q4x():
+    X0, TSP, Y0, SC = 200, 80, 150, 70
+    s = HEAD.format(w=560, h=230) + marker('arI')
+    s += line(20, Y0, 540, Y0, marker='arI') + text(548, Y0 + 5, 't', anchor='start', style='i')
+    pts = []
+    t = -2.4
+    while t <= 3.55:
+        v = sinc(t) - sinc(t - 2)
+        pts.append((X0 + t * TSP, Y0 - v * SC))
+        t += 0.05
+    s += poly(pts, width=2)
+    for k in (-2, -1, 0, 1, 2, 3):
+        x = X0 + k * TSP
+        s += line(x, Y0 - 4, x, Y0 + 4)
+        lbl = ('−' + str(-k) + 'T_s') if k < 0 else ('0' if k == 0 else (str(k) + 'T_s'))
+        s += text(x, Y0 + 20, lbl, size=12)
+    s += dot(X0, Y0 - SC, 4.5) + text(X0 + 10, Y0 - SC - 6, 'x(0)=1', anchor='start', size=12, style='i')
+    s += dot(X0 + 2 * TSP, Y0 + SC, 4.5) + text(X0 + 2 * TSP + 10, Y0 + SC + 14, 'x(2T_s)=−1', anchor='start', size=12, style='i')
+    for k in (-2, -1, 1, 3):
+        s += dot(X0 + k * TSP, Y0, 3.5, fill='#fff', stroke='#1a1a1a')
+    return s + '</svg>'
+
+
+FIGS = {
+    'ssb': fig_ssb(), 'pam': fig_pam(), 'encoder': fig_encoder(),
+    'psk8': fig_psk8(), 'psk8new': fig_psk8new(), 'ookpdf': fig_ookpdf(),
+    'q8chan': fig_q8chan(), 'q7quant': fig_q7quant(), 'q2psd': fig_q2psd(),
+    'q3psd': fig_q3psd(), 'q4x': fig_q4x(),
+}
+
+print('// 2025年试卷 SVG 图库 —— 由 tools/gen_figures_2025.py 生成，勿手改')
+print('// 试卷框图: ssb/pam/encoder；解析配图: 其余。统一风格：白底黑线。')
+print('window.BUPT801 = window.BUPT801 || {};')
+print('window.BUPT801.figures = window.BUPT801.figures || {};')
+print('window.BUPT801.figures["2025"] = {')
+for k, v in FIGS.items():
+    print(f'  {k}: {v!r},')
+print('};')

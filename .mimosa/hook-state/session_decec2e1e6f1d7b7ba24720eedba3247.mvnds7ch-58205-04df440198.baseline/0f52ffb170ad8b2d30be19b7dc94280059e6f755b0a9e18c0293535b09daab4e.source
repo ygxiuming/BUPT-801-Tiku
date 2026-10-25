@@ -1,0 +1,16 @@
+// KaTeX 渲染辅助
+export function renderMath(el) {
+  if (!el || !window.renderMathInElement) return
+  window.renderMathInElement(el, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false }
+    ],
+    throwOnError: false
+  })
+}
+
+export function figureSvg(year, key) {
+  const f = (window.BUPT801.figures || {})[String(year)]
+  return (f && f[key]) || ''
+}

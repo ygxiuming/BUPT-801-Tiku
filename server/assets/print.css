@@ -1,0 +1,55 @@
+/* PDF 打印排版样式（server/assets/print.css）—— 与试卷页同源的统一真题版式 */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Songti SC", "Noto Serif CJK SC", "SimSun", serif; font-size: 14.5px; line-height: 2.0; color: #1a1a1a; background: #fff; }
+
+.paper-sheet { max-width: 100%; padding: 0; }
+
+.paper-head { text-align: center; margin-bottom: 16px; }
+.paper-head .t1 { font-size: 21px; font-weight: 700; letter-spacing: 3px; }
+.paper-head .t2 { font-size: 17.5px; font-weight: 700; margin-top: 6px; }
+.paper-head .t3 { font-size: 14.5px; margin-top: 6px; }
+.paper-note { font-size: 13.5px; margin: 10px 0 4px; }
+
+.sec-title { font-weight: 700; font-size: 15.5px; margin: 18px 0 6px; }
+.sec-intro { font-size: 13.5px; margin-bottom: 8px; }
+.qline { margin: 5px 0; text-indent: -1.6em; padding-left: 1.6em; }
+.qline::before { content: "● "; font-size: 11px; vertical-align: 2px; }
+.blank { font-weight: 700; }
+
+.opt-table { border-collapse: collapse; margin: 7px 0 10px 1.6em; width: calc(100% - 2em); font-size: 13.5px; page-break-inside: avoid; }
+.opt-table td { border: 1px solid #444; padding: 2px 10px; line-height: 1.9; }
+.optkey { margin-right: 7px; font-weight: 600; }
+
+.bigq { margin: 18px 0 8px; page-break-inside: auto; }
+.bigq .qnum { font-weight: 700; font-size: 15.5px; page-break-after: avoid; }
+.bigq .stem { margin: 5px 0; text-align: justify; page-break-after: avoid; }
+.bigq .subs { margin: 3px 0 3px 1.6em; }
+.bigq .subs div { margin: 2px 0; }
+
+.figblock { text-align: center; margin: 10px auto; page-break-inside: avoid; }
+.figblock svg { max-width: 78%; max-height: 250px; height: auto; }
+
+/* 解析块：默认隐藏，body.with-ans 时显示；允许块内分页，仅小元素避免拆分 */
+.ans { display: none; border: 1.2pt solid #2f6bff; border-radius: 8px; padding: 9px 13px; margin: 9px 0 4px;
+  font-size: 12.8px; line-height: 1.85;
+  font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif; }
+body.with-ans .ans { display: block; }
+.ans-title { font-weight: 700; color: #1e4fd6; font-size: 13.5px; margin-bottom: 3px; page-break-after: avoid; }
+.ans-letter { font-size: 15px; }
+.ans-meta { float: right; color: #666; font-weight: 400; font-size: 11.5px; }
+.ans-concl { margin: 3px 0; }
+.ans-opts { margin: 6px 0; }
+.opt-exp { margin: 5px 0; padding: 1px 10px; border-left: 2.5pt solid #d9d9d9; page-break-inside: avoid; }
+.opt-exp.right { border-left-color: #16a34a; background: #f2faf4; }
+.opt-exp b { color: #1e4fd6; margin-right: 4px; }
+.ans-note { background: #fdf6e7; border-radius: 5px; padding: 5px 9px; margin-top: 6px; font-size: 12px; page-break-inside: avoid; }
+.sol-step { margin: 7px 0; }
+.sol-step summary { font-weight: 700; color: #1e4fd6; page-break-after: avoid; }
+.sol-step .step-body { padding: 4px 2px 2px 11px; border-left: 1.5pt solid #cfd9f5; margin-left: 5px; }
+.step-line { margin: 6px 0; }
+.step-ans { background: #eef7f0; border-radius: 5px; padding: 4px 9px; margin-top: 5px; font-size: 12.5px; page-break-inside: avoid; }
+.sol-summary { background: #eef7f0; border-radius: 5px; padding: 6px 10px; margin-top: 8px; font-size: 12.5px; page-break-inside: avoid; }
+
+.katex { font-size: 1.02em; }
+.katex-display { margin: 0.5em 0; }

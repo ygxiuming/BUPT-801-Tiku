@@ -1,0 +1,9 @@
+// 在 Node 端加载题库数据（数据脚本向 window.BUPT801 挂载）
+global.window = global.window || {}
+require('../../data/chapters.js')
+require('../../data/figures/2025.js')
+require('../../data/questions/2025.js')
+require('../../data/questions/2025-b.js')
+require('../../data/questions/2025-big.js')
+
+module.exports = { B: global.window.BUPT801 }

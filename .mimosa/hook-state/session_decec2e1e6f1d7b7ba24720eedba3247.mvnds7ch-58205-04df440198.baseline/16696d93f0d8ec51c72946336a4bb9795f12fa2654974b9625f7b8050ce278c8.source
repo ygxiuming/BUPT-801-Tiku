@@ -1,0 +1,43 @@
+// 内联打印样式：print.css + katex.min.css（字体转 base64 data URI，页面零外部引用）
+const fs = require('fs')
+const path = require('path')
+
+const ROOT = path.dirname(path.dirname(path.dirname(__filename)))
+const KATEX_DIR = path.join(ROOT, 'web', 'vendor', 'katex')
+const FONTS_DIR = path.join(KATEX_DIR, 'fonts')
+const PRINT_CSS = path.join(__dirname, '..', 'assets', 'print.css')
+
+// 字体文件白名单：basename -> 绝对路径（启动时扫描目录建立，替换时只查表）
+const FONT_WHITELIST = {}
+fs.readdirSync(FONTS_DIR).forEach((name) => {
+  if (/\.(woff2|woff|ttf)$/.test(name)) {
+    FONT_WHITELIST['fonts/' + name] = path.join(FONTS_DIR, name)
+  }
+})
+
+function mimeOf(name) {
+  if (name.endsWith('.woff2')) return 'font/woff2'
+  if (name.endsWith('.woff')) return 'font/woff'
+  return 'font/ttf'
+}
+
+let cached = null
+
+function katexCssInlined() {
+  const css = fs.readFileSync(path.join(KATEX_DIR, 'katex.min.css'), 'utf8')
+  return css.replace(/url\((fonts\/[^)']+)\)/g, (m, rel) => {
+    const fp = FONT_WHITELIST[rel]
+    if (!fp) return m // 白名单之外的引用原样保留
+    const b64 = fs.readFileSync(fp).toString('base64')
+    return "url(data:" + mimeOf(rel) + ";base64," + b64 + ")"
+  })
+}
+
+function buildInlineCss() {
+  if (!cached) {
+    cached = katexCssInlined() + '\n' + fs.readFileSync(PRINT_CSS, 'utf8')
+  }
+  return cached
+}
+
+module.exports = { buildInlineCss }

@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20261025T044908010Z-52466-7731d0e1c7d8",
+  "runId": "20261025T044908010Z-52466-7731d0e1c7d8",
+  "runStatus": "inconclusive",
+  "coverage": {
+    "status": "partial",
+    "reasons": [
+      {
+        "code": "baseline_snapshot_unreadable",
+        "stage": "baseline-read",
+        "target": "data/chapters.js",
+        "detail": "file is missing from task baseline",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "baseline-read",
+        "target": "data/chapters.js",
+        "detail": "baseline_snapshot_unreadable: file is missing from task baseline",
+        "affectsCompletion": true
+      }
+    ]
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": null,
+  "diffHash": "30b289f11c3d97716c5f5d1c5dbc1232e4c4ef8022f01f5b10496a062a946578",
+  "rulesVersion": "unavailable",
+  "sessionHash": "b9fa736876ad71a5a537a1366dbd3164f910e23167b40184d95b2ce5d09db5e0",
+  "reportRef": ".mimosa/reports/task-review-session_decec2e1e6f1d7b7ba24720eedba3247-20261025T044908010Z-52466-7731d0e1c7d8.json",
+  "events": [
+    {
+      "eventId": "hook-76d2eb2f7de2f66fe01e0a50370be5d2",
+      "findingId": "mimosa-fe6707694f14c53f41e103a7",
+      "type": "finding_blocked",
+      "at": "2026-10-25T04:13:47.331Z",
+      "identity": {
+        "projectRelativeFile": "tools/gen_figures_2025.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "308fcd2d059f199b8d6c43317784365621389dd4049c2f8a88b1f0894dc18b01",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 353,
+      "endLine": 353,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "308fcd2d059f199b8d6c43317784365621389dd4049c2f8a88b1f0894dc18b01"
+      },
+      "sequence": 0
+    },
+    {
+      "eventId": "hook-39d1b9cc3c692b26cfb3f533da26e871",
+      "findingId": "mimosa-b1ce0f43f70bc537eac9a2cf",
+      "type": "finding_observed",
+      "at": "2026-10-25T04:37:52.615Z",
+      "identity": {
+        "projectRelativeFile": "web/js/practice.js",
+        "ruleId": "security",
+        "codeEvidenceHash": "daa00491cc8e1a38ddd8a0ec737cc7fae37e0aaf475c6b21fe8090f011187b5b",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 110,
+      "endLine": 110,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "daa00491cc8e1a38ddd8a0ec737cc7fae37e0aaf475c6b21fe8090f011187b5b"
+      },
+      "sequence": 1
+    }
+  ],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "tools/gen_figures_2025.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "data/figures/2025.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "data/questions/2025.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "data/questions/2025-b.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "data/questions/2025-big.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tools/validate_data.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/js/common.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/js/practice.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "data/chapters.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-10-25T04:49:08.332Z"
+}

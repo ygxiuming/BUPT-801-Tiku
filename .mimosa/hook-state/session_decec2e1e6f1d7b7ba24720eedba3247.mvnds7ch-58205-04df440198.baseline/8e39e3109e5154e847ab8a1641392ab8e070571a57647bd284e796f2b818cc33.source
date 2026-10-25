@@ -1,0 +1,32 @@
+// 做题记录（localStorage 持久化，兼容 v1 键，老记录可直接继承）
+import { reactive } from 'vue'
+
+const RKEY = 'bupt801-records-v1'
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(RKEY) || '{}') } catch (e) { return {} }
+}
+
+export const rec = reactive(load())
+
+export function saveRec() {
+  try { localStorage.setItem(RKEY, JSON.stringify(rec)) } catch (e) {}
+}
+
+// ok 为 true/false 时累加对错计数并记录最近结果；仅查看解析不计分
+export function record(id, ok) {
+  const r = rec[id] || { c: 0, w: 0 }
+  if (ok === true) r.c++
+  else if (ok === false) r.w++
+  r.ok = ok
+  r.t = Date.now()
+  rec[id] = r
+  saveRec()
+}
+
+export function clearRec() {
+  Object.keys(rec).forEach((k) => delete rec[k])
+  saveRec()
+}
+
+export function isWrong(id) { return !!(rec[id] && rec[id].ok === false) }

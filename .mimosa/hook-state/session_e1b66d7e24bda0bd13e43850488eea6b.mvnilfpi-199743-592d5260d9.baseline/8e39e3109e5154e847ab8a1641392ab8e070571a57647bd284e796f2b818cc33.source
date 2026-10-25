@@ -1,0 +1,61 @@
+// 做题记录（localStorage 持久化，兼容 v1 键，老记录可直接继承）
+import { reactive } from 'vue'
+
+const RKEY = 'bupt801-records-v1'
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(RKEY) || '{}') } catch (e) { return {} }
+}
+
+export const rec = reactive(load())
+
+export function saveRec() {
+  try { localStorage.setItem(RKEY, JSON.stringify(rec)) } catch (e) {}
+}
+
+// ok 为 true/false 时累加对错计数并记录最近结果；仅查看解析不计分
+export function record(id, ok) {
+  const r = rec[id] || { c: 0, w: 0 }
+  if (ok === true) r.c++
+  else if (ok === false) r.w++
+  r.ok = ok
+  r.t = Date.now()
+  rec[id] = r
+  saveRec()
+}
+
+// 三档掌握度自评：1=会 2=模糊 3=不会（会计对、不会计错、模糊单独计 f）
+export function setLevel(id, level) {
+  const r = rec[id] || { c: 0, w: 0 }
+  r.level = level
+  if (level === 1) r.c++
+  else if (level === 3) r.w++
+  else r.f = (r.f || 0) + 1
+  r.ok = level === 1 ? true : level === 3 ? false : undefined
+  r.t = Date.now()
+  rec[id] = r
+  saveRec()
+}
+
+export function levelLabel(l) {
+  return l === 1 ? '会' : l === 2 ? '模糊' : l === 3 ? '不会' : ''
+}
+
+// 收藏星标
+export function toggleStar(id) {
+  const r = rec[id] || { c: 0, w: 0 }
+  r.star = !r.star
+  rec[id] = r
+  saveRec()
+}
+
+export function starredIds() {
+  return Object.keys(rec).filter((id) => rec[id] && rec[id].star)
+}
+
+export function clearRec() {
+  Object.keys(rec).forEach((k) => delete rec[k])
+  saveRec()
+}
+
+export function isWrong(id) { return !!(rec[id] && rec[id].ok === false) }

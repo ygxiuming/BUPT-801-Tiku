@@ -1,0 +1,92 @@
+// 北邮801真题库 Node 服务：托管 Vue 前端 + 服务端排版生成 PDF 下载
+const express = require('express')
+const path = require('path')
+const fs = require('fs')
+const { B } = require('./lib/print-html-data.js')
+const { buildPrintHtml } = require('./lib/print-html.js')
+
+const PORT = process.env.PORT || 3000
+// server/ -> 项目根（用 dirname 嵌套表达，避免相对越界写法）
+const ROOT = path.dirname(path.dirname(__filename))
+const DIST = path.join(ROOT, 'app', 'dist')
+const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome'
+
+const app = express()
+app.use(express.json())
+
+// ---- 健康检查 ----
+app.get('/api/health', (req, res) => res.json({ ok: true }))
+
+// ---- 试卷元数据 ----
+app.get('/api/papers', (req, res) => {
+  const list = Object.keys(B.papers).sort().map((y) => {
+    const p = B.papers[y]
+    return {
+      year: p.year, subject: p.subject, title: p.title, totalScore: 150,
+      choice: p.questions.filter((q) => q.type === 'choice').length,
+      big: p.questions.filter((q) => q.type === 'big').length
+    }
+  })
+  res.json(list)
+})
+
+// ---- PDF 生成（每个年份注册字面量路由；年份为启动期数据常量，请求值不流入路径/HTML）----
+// 页面通过 setContent 注入（样式与字体全部内联），无文件写入、无网络请求
+function registerPdfRoute(yKey, paper) {
+  const year = String(paper.year)
+  const paperFooter = '<div style="width:100%;font-size:8.5px;color:#8a8f9c;display:flex;justify-content:space-between;padding:0 13mm;">' +
+    '<span>考试科目：801 通信原理</span>' +
+    '<span>北京邮电大学' + year + '年硕士研究生招生考试试题 · 第 <span class="pageNumber"></span> 页 / 共 <span class="totalPages"></span> 页</span></div>'
+  const ansFooter = '<div style="width:100%;font-size:8.5px;color:#8a8f9c;display:flex;justify-content:space-between;padding:0 13mm;">' +
+    '<span>考试科目：801 通信原理</span>' +
+    '<span>北京邮电大学' + year + '年硕士研究生招生考试试题（含解析） · 第 <span class="pageNumber"></span> 页 / 共 <span class="totalPages"></span> 页</span></div>'
+  const paperName = year + '年801通信原理真题试卷.pdf'
+  const ansName = year + '年801通信原理真题含解析.pdf'
+
+  app.get('/api/pdf/' + yKey + '/:kind', async (req, res) => {
+    const isAns = req.params.kind === 'ans'
+    let browser = null
+    try {
+      const html = buildPrintHtml(year, isAns)
+      const puppeteer = require('puppeteer-core')
+      browser = await puppeteer.launch({
+        executablePath: CHROME,
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-dev-shm-usage', '--font-render-hinting=none']
+      })
+      const page = await browser.newPage()
+      await page.setContent(html, { waitUntil: 'load', timeout: 60000 })
+      const buf = await page.pdf({
+        printBackground: true,
+        format: 'A4',
+        margin: { top: '15mm', bottom: '17mm', left: '13mm', right: '13mm' },
+        displayHeaderFooter: true,
+        headerTemplate: '<div></div>',
+        footerTemplate: isAns ? ansFooter : paperFooter
+      })
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(isAns ? ansName : paperName))
+      res.send(buf)
+    } catch (e) {
+      console.error('PDF 生成失败:', e.message)
+      res.status(500).json({ error: 'PDF生成失败: ' + e.message })
+    } finally {
+      if (browser) await browser.close().catch(() => {})
+    }
+  })
+}
+Object.keys(B.papers).sort().forEach((yKey) => registerPdfRoute(yKey, B.papers[yKey]))
+
+// ---- 前端静态资源（限制在 dist 内）----
+const realDist = fs.realpathSync(DIST)
+app.use(express.static(DIST, { index: 'index.html' }))
+app.get(/^\/(?!api\/).*/, (req, res) => {
+  const target = path.normalize(path.join(realDist, 'index.html'))
+  if (!target.startsWith(realDist)) return res.status(403).end()
+  res.sendFile(target)
+})
+
+app.listen(PORT, () => {
+  console.log('北邮801题库服务已启动: http://127.0.0.1:' + PORT)
+  console.log('PDF 接口: /api/pdf/<年份>/paper 或 /api/pdf/<年份>/ans')
+})

@@ -1,0 +1,439 @@
+// 刷题应用：筛选刷题 / 错题本 / 统计 / 整卷模考（纯前端，localStorage记录）
+(function () {
+  var B = window.BUPT801;
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- 记录 ----------
+  var RKEY = 'bupt801-records-v1';
+  function loadRec() { try { return JSON.parse(localStorage.getItem(RKEY) || '{}'); } catch (e) { return {}; } }
+  function saveRec() { try { localStorage.setItem(RKEY, JSON.stringify(rec)); } catch (e) {} }
+  var rec = loadRec();
+  function record(id, ok) {
+    var r = rec[id] || { c: 0, w: 0 };
+    if (ok) r.c++; else r.w++;
+    r.ok = ok; r.t = Date.now();
+    rec[id] = r; saveRec();
+  }
+
+  // ---------- 题目索引 ----------
+  var flat = [];   // {year, q}
+  Object.keys(B.papers).forEach(function (y) {
+    B.papers[y].questions.forEach(function (q) { flat.push({ year: B.papers[y].year, q: q, p: B.papers[y] }); });
+  });
+  var byId = {};
+  flat.forEach(function (it) { byId[it.q.id] = it; });
+
+  // ---------- 状态 ----------
+  var S = {
+    tab: 'practice',
+    years: new Set(), type: 'all', chapter: '', point: '', tags: new Set(), scope: 'all',
+    random: false,
+    queue: [], pos: 0,
+    mode: 'practice',        // practice | mock
+    mockAnswers: {}, mockTimer: null, mockSec: 0, mockYear: null
+  };
+  var qs = new URLSearchParams(location.search);
+  if (qs.get('y')) S.years.add(qs.get('y'));
+
+  // ---------- 筛选 UI ----------
+  function chipHtml(label, on) { return '<span class="chip' + (on ? ' on' : '') + '">' + label + '</span>'; }
+  function buildFilters() {
+    var yh = '';
+    Object.keys(B.papers).sort().reverse().forEach(function (y) {
+      yh += chipHtml(y + ' 年', S.years.has(y));
+    });
+    $('fYears').innerHTML = yh;
+    Array.prototype.forEach.call($('fYears').children, function (el, i) {
+      el.onclick = function () {
+        var y = el.textContent.replace(' 年', '');
+        S.years.has(y) ? S.years.delete(y) : S.years.add(y);
+        buildFilters(); buildQueue(); render();
+      };
+    });
+
+    var sel = $('fChapter');
+    var opt = '<option value="">全部章节</option>';
+    B.chapters.forEach(function (c) { opt += '<option value="' + c.id + '"' + (S.chapter === c.id ? ' selected' : '') + '>' + c.name + '</option>'; });
+    sel.innerHTML = opt;
+    sel.onchange = function () { S.chapter = sel.value; S.point = ''; buildQueue(); render(); };
+
+    var sel2 = $('fPoint');
+    var opt2 = '<option value="">全部知识点</option>';
+    B.chapters.forEach(function (c) {
+      if (S.chapter && c.id !== S.chapter) return;
+      c.points.forEach(function (pn) {
+        opt2 += '<option value="' + c.id + '|' + pn + '"' + (S.point === c.id + '|' + pn ? ' selected' : '') + '>' + (S.chapter ? '' : c.name + ' · ') + pn + '</option>';
+      });
+    });
+    sel2.innerHTML = opt2;
+    sel2.onchange = function () { S.point = sel2.value; buildQueue(); render(); };
+
+    // 易错点标签
+    var tagSet = {};
+    flat.forEach(function (it) { (it.q.tags || []).forEach(function (t) { tagSet[t] = 1; }); });
+    var th = '';
+    Object.keys(tagSet).sort().forEach(function (t) { th += chipHtml(t, S.tags.has(t)); });
+    $('fTags').innerHTML = th;
+    Array.prototype.forEach.call($('fTags').children, function (el) {
+      el.onclick = function () {
+        var t = el.textContent;
+        S.tags.has(t) ? S.tags.delete(t) : S.tags.add(t);
+        buildFilters(); buildQueue(); render();
+      };
+    });
+    // 段控件状态
+    [['fType', 'type'], ['fScope', 'scope']].forEach(function (pair) {
+      Array.prototype.forEach.call($(pair[0]).children, function (el) {
+        el.classList.toggle('on', el.dataset.v === S[pair[1]]);
+        el.onclick = function () { S[pair[1]] = el.dataset.v; buildFilters(); buildQueue(); render(); };
+      });
+    });
+  }
+
+  // ---------- 队列 ----------
+  function matched() {
+    return flat.filter(function (it) {
+      var q = it.q;
+      if (S.years.size && !S.years.has(String(it.year))) return false;
+      if (S.type !== 'all' && q.type !== S.type) return false;
+      if (S.chapter && q.chapter !== S.chapter) return false;
+      if (S.point && (q.chapter + '|' + q.point) !== S.point) return false;
+      if (S.tags.size && !(q.tags || []).some(function (t) { return S.tags.has(t); })) return false;
+      var r = rec[q.id];
+      if (S.scope === 'new' && r) return false;
+      if (S.scope === 'wrong' && (!r || r.ok !== false)) return false;
+      return true;
+    });
+  }
+  function buildQueue(keepPos) {
+    var arr = matched().slice();
+    if (S.random) {
+      var rnd = new Uint32Array(arr.length);
+      (window.crypto || msCrypto).getRandomValues(rnd);
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j2 = rnd[i] % (i + 1);
+        var tmp = arr[i]; arr[i] = arr[j2]; arr[j2] = tmp;
+      }
+    }
+    S.queue = arr;
+    if (!keepPos) S.pos = 0;
+    updateQueueInfo();
+  }
+  function updateQueueInfo() {
+    var done = 0;
+    S.queue.forEach(function (it) { if (rec[it.q.id]) done++; });
+    $('queueInfo').textContent = '当前队列 ' + S.queue.length + ' 题 · 已做 ' + done + ' 题' +
+      (S.mode === 'mock' ? ' · 模考中' : '');
+  }
+
+  // ---------- 渲染 ----------
+  function esc(s) { return s; } // 数据源可信（本地题库），不转义以保留公式
+
+  function stemOf(it) {
+    var q = it.q, g = it.p.groups[q.group];
+    var marker = '（' + q.blank + '）';
+    if (q.stem) {
+      if (g && g.stem && g.stem.indexOf(marker) >= 0) return g.stem;
+      return (g && g.stem ? g.stem : '') + q.stem;
+    }
+    return g && g.stem ? g.stem : q.stem;
+  }
+  function optsOf(it) {
+    var q = it.q, g = it.p.groups[q.group];
+    if (!g) return q.options || {};
+    if (q.blank === 12) return g.options12 || g.options;
+    if (q.blank === 13) return g.options13 || g.options;
+    if (q.blank === 25) return g.options25 || g.options;
+    if (q.blank === 26) return g.options26 || g.options;
+    return g.options || {};
+  }
+
+  function choiceCardHtml(it) {
+    var q = it.q;
+    var h = '<div class="qcard" id="qcard">';
+    h += '<div class="qhead"><span class="qbadge">选择题 ' + q.num + '</span>' +
+      '<span class="qbadge gray">' + it.year + ' 年</span>' +
+      '<span class="qmeta">' + B.chapterLabel(q) + '</span>' +
+      '<span class="qmeta">' + B.tagChips(q.tags) + '</span></div>';
+    h += '<div class="qstem">' + B.boldBlanks(esc(stemOf(it))) + '</div>';
+    var answered = S.mode === 'mock' ? S.mockAnswers[q.id] : rec[q.id] && rec[q.id].mockPick ? rec[q.id].mockPick : (rec[q.id] ? rec[q.id].pick : undefined);
+    var locked = false, picked = null;
+    if (S.mode === 'mock') { picked = S.mockAnswers[q.id]; }
+    else { picked = pickedOf(q.id); locked = !!picked; }
+    h += '<table class="opt-table' + (locked ? ' locked' : '') + '"><tbody>';
+    ['A', 'B', 'C', 'D'].forEach(function (k) {
+      if (optsOf(it)[k] === undefined) return;
+      var cls = '';
+      if (locked && picked === k) cls = (k === q.answer) ? 'sel-right' : 'sel-wrong';
+      if (locked && picked !== k && k === q.answer) cls = 'reveal';
+      h += '<tr><td data-k="' + k + '" class="' + cls + '"><span class="optkey">(' + k + ')</span>' + optsOf(it)[k] + '</td></tr>';
+    });
+    h += '</tbody></table>';
+    if (S.mode === 'mock') {
+      h += '<div class="qmeta">模考模式：交卷后统一判分</div>';
+    } else if (locked) {
+      h += B.choiceExpHtml(q);
+    } else {
+      h += '<div class="qmeta" style="margin-top:6px">点击选项作答，答完自动判分并显示解析</div>';
+    }
+    return h;
+  }
+
+  function pickedOf(id) { return rec[id] && rec[id].pick; }
+
+  function bigCardHtml(it, revealSol) {
+    var q = it.q;
+    var h = '<div class="qcard" id="qcard">';
+    h += '<div class="qhead"><span class="qbadge">综合题 ' + q.num + '</span>' +
+      '<span class="qbadge gray">' + it.year + ' 年</span>' +
+      '<span class="qmeta">' + q.score + ' 分</span>' +
+      '<span class="qmeta">' + B.chapterLabel(q) + '</span>' +
+      '<span class="qmeta">' + B.tagChips(q.tags) + '</span></div>';
+    h += '<div class="qstem">' + B.boldBlanks(esc(q.stem)) + '</div>';
+    if (q.fig) h += B.figBlock(it.year, q.fig);
+    if (q.subs && q.subs.length) {
+      h += '<div class="subs">';
+      q.subs.forEach(function (s) { h += '<div>' + B.boldBlanks(esc(s)) + '</div>'; });
+      h += '</div>';
+    }
+    if (S.mode === 'mock' && !revealSol) {
+      h += '<div class="qmeta" style="margin-top:8px">模考模式：请先自行完成，交卷后自评得分</div>';
+    } else {
+      h += B.bigSolHtml(q, it.year);
+      if (!revealSol) {
+        var r = rec[q.id];
+        h += '<div class="judge-row">' +
+          '<span class="btn" id="btnRight">✓ 我答对了</span>' +
+          '<span class="btn" id="btnWrong">✗ 我答错了</span>' +
+          (r ? '<span class="qmeta">上次：' + (r.ok === true ? '答对' : r.ok === false ? '答错' : '未记录') + '</span>' : '') +
+          '</div>';
+      }
+    }
+    return h;
+  }
+
+  function navHtml() {
+    var mockExtra = S.mode === 'mock' ? '<span class="btn primary" id="submitMock">交卷</span>' : '';
+    return '<div class="qnav no-print">' +
+      '<span class="btn" id="prevBtn">← 上一题</span>' +
+      '<span class="progress">' + (S.queue.length ? (S.pos + 1) + ' / ' + S.queue.length : '0 / 0') + '</span>' +
+      mockExtra +
+      '<span class="btn" id="nextBtn">下一题 →</span></div>';
+  }
+
+  function render() {
+    var area = $('mainArea');
+    if (S.tab === 'practice') {
+      if (!S.queue.length) {
+        area.innerHTML = '<div class="result-box"><h3>没有匹配的题目</h3><p style="color:#888">请调整左侧筛选条件</p></div>';
+        updateQueueInfo(); return;
+      }
+      var it = S.queue[S.pos];
+      area.innerHTML = (it.q.type === 'choice' ? choiceCardHtml(it) : bigCardHtml(it, false)) + navHtml();
+      bindCard(it);
+      updateQueueInfo();
+    } else if (S.tab === 'wrong') {
+      renderWrong();
+    } else if (S.tab === 'stats') {
+      renderStats();
+    }
+  }
+
+  function bindCard(it) {
+    var q = it.q;
+    B.renderMath($('mainArea'));
+    // 选项点击
+    var table = document.querySelector('#qcard .opt-table');
+    if (table && q.type === 'choice') {
+      Array.prototype.forEach.call(table.querySelectorAll('td[data-k]'), function (td) {
+        td.onclick = function () {
+          var k = td.dataset.k;
+          if (S.mode === 'mock') { S.mockAnswers[q.id] = k; render(); return; }
+          if (pickedOf(q.id)) return;
+          record(q.id, k === q.answer);
+          rec[q.id].pick = k; saveRec();
+          render();
+        };
+      });
+    }
+    // 大题自评
+    var br = $('btnRight'), bw = $('btnWrong');
+    if (br) br.onclick = function () { record(q.id, true); render(); };
+    if (bw) bw.onclick = function () { record(q.id, false); render(); };
+    // 导航
+    $('prevBtn').onclick = function () { if (S.pos > 0) { S.pos--; render(); } };
+    $('nextBtn').onclick = function () { if (S.pos < S.queue.length - 1) { S.pos++; render(); } else if (S.mode !== 'mock') { buildQueue(true); S.pos = 0; render(); } };
+    var sm = $('submitMock');
+    if (sm) sm.onclick = submitMock;
+  }
+
+  // ---------- 模考 ----------
+  $('mockBtn').onclick = function () {
+    var y = S.years.size ? Array.from(S.years)[0] : Object.keys(B.papers).sort().pop();
+    startMock(y);
+  };
+  function startMock(year) {
+    S.mode = 'mock'; S.mockYear = year; S.mockAnswers = {}; S.mockSec = 0;
+    S.queue = flat.filter(function (it) { return String(it.year) === String(year); });
+    S.pos = 0;
+    $('timer').style.display = '';
+    $('mockBtn').textContent = '退出模考';
+    $('mockBtn').onclick = exitMock;
+    clearInterval(S.mockTimer);
+    S.mockTimer = setInterval(function () {
+      S.mockSec++;
+      var m = Math.floor(S.mockSec / 60), s = S.mockSec % 60;
+      $('timer').textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }, 1000);
+    switchTab('practice');
+    render();
+    updateQueueInfo();
+  }
+  function exitMock() {
+    S.mode = 'practice'; clearInterval(S.mockTimer);
+    $('timer').style.display = 'none';
+    $('mockBtn').textContent = '整卷模考';
+    $('mockBtn').onclick = function () { startMock(S.mockYear || Object.keys(B.papers).sort().pop()); };
+    buildQueue(); switchTab('practice'); render();
+  }
+  function submitMock() {
+    clearInterval(S.mockTimer);
+    var score = 0, choiceTotal = 0, detail = '';
+    S.queue.forEach(function (it) {
+      var q = it.q;
+      if (q.type === 'choice') {
+        choiceTotal++;
+        var pick = S.mockAnswers[q.id];
+        if (pick === undefined) return; // 未作答不计入判分与记录
+        var ok = pick === q.answer;
+        if (ok) score += 1;
+        record(q.id, ok); rec[q.id].pick = pick; saveRec();
+      }
+    });
+    var html = '<div class="result-box">' +
+      '<h3>' + S.mockYear + ' 年整卷模考</h3>' +
+      '<div class="score"><span id="mockScore">' + score + '</span> / 150</div>' +
+      '<p style="color:#888">选择题自动判分 ' + score + '/' + choiceTotal + ' · 综合题请对照解析自评（每题15分）</p>' +
+      '<div style="text-align:left;margin-top:14px" id="bigJudge">';
+    S.queue.forEach(function (it) {
+      var q = it.q;
+      if (q.type !== 'big') return;
+      var r = rec[q.id];
+      html += '<div class="bar-row"><span class="bl">综合题 ' + q.num + '</span>' +
+        '<span class="btn" data-big="' + q.id + '" data-ok="1">✓ ' + (r && r.mock15 ? '' : '') + '</span>' +
+        '<span class="btn" data-big="' + q.id + '" data-ok="0">✗</span>' +
+        '<span class="bv" id="bv-' + q.id + '">' + (r && r.mock15 !== undefined ? r.mock15 + ' 分' : '未评') + '</span>' +
+        '<a class="btn ghost" href="paper.html?y=' + S.mockYear + '&ans=1">解析</a></div>';
+    });
+    html += '</div><div class="fbtns" style="margin-top:16px">' +
+      '<span class="btn primary" id="exitMockBtn">结束模考</span></div></div>';
+    $('mainArea').innerHTML = html;
+    B.renderMath($('mainArea'));
+    Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function (el) {
+      el.onclick = function () {
+        var id = el.dataset.big, ok = el.dataset.ok === '1';
+        var r = rec[id] || { c: 0, w: 0 };
+        record(id, ok);
+        rec[id].mock15 = ok ? 15 : Math.max(0, (rec[id].mock15 || 0) - 15);
+        saveRec();
+        $('bv-' + id).textContent = rec[id].mock15 + ' 分';
+        var total = score;
+        S.queue.forEach(function (it2) { var rr = rec[it2.q.id]; if (it2.q.type === 'big' && rr && rr.mock15) total += rr.mock15; });
+        $('mockScore').textContent = total;
+      };
+    });
+    $('exitMockBtn').onclick = exitMock;
+    updateQueueInfo();
+  }
+
+  // ---------- 错题本 ----------
+  function wrongList() {
+    return flat.filter(function (it) { var r = rec[it.q.id]; return r && r.ok === false; });
+  }
+  function renderWrong() {
+    var w = wrongList();
+    $('wrongInfo').textContent = '共 ' + w.length + ' 道错题（按最近一次作答）';
+    var h = '';
+    w.forEach(function (it) {
+      var q = it.q;
+      h += '<div class="wrong-item"><span>' + (q.type === 'choice' ? '选择' : '大题') + ' ' +
+        (q.type === 'choice' ? q.num : q.num) + ' · ' + it.year + '年 · ' + B.chapterLabel(q) + '</span>' +
+        '<a class="btn" data-jump="' + q.id + '">去做题</a></div>';
+    });
+    $('wrongList').innerHTML = h || '<p style="color:#999;font-size:13px">还没有错题，先去刷题吧 🎉</p>';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-jump]'), function (el) {
+      el.onclick = function () {
+        var id = el.dataset.jump;
+        S.queue = [byId[id]]; S.pos = 0; S.mode = 'practice';
+        switchTab('practice'); render();
+      };
+    });
+  }
+  $('wrongStart').onclick = function () {
+    var w = wrongList();
+    if (!w.length) return;
+    S.queue = w.slice(); S.pos = 0; S.mode = 'practice';
+    switchTab('practice'); render();
+  };
+
+  // ---------- 统计 ----------
+  function renderStats() {
+    var totalC = 0, totalW = 0;
+    var chStat = {};
+    Object.keys(rec).forEach(function (id) {
+      var r = rec[id], it = byId[id];
+      if (!it || r.c + r.w === 0) return;
+      totalC += r.c; totalW += r.w;
+      var key = it.q.chapter;
+      chStat[key] = chStat[key] || { c: 0, w: 0 };
+      chStat[key].c += r.c; chStat[key].w += r.w;
+    });
+    var total = totalC + totalW;
+    $('statTotal').innerHTML = '累计作答 <b>' + total + '</b> 次 · 答对 <b>' + totalC + '</b> · 总正确率 <b>' +
+      (total ? Math.round(totalC / total * 100) : 0) + '%</b>';
+    var h = '';
+    B.chapters.forEach(function (c) {
+      var st = chStat[c.id];
+      if (!st) return;
+      var pct = Math.round(st.c / (st.c + st.w) * 100);
+      h += '<div class="bar-row"><span class="bl">' + c.name + '</span>' +
+        '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+        '<span class="bv">' + pct + '% (' + (st.c + st.w) + '次)</span></div>';
+    });
+    $('statChapters').innerHTML = h || '<p style="color:#999;font-size:13px">暂无数据</p>';
+  }
+  $('clearRec').onclick = function () {
+    if (confirm('确定清空全部做题记录？')) { rec = {}; saveRec(); render(); }
+  };
+
+  // ---------- Tabs ----------
+  function switchTab(t) {
+    S.tab = t;
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs span'), function (el) {
+      el.classList.toggle('on', el.dataset.tab === t);
+    });
+    $('tab-practice').style.display = t === 'practice' ? '' : 'none';
+    $('tab-wrong').style.display = t === 'wrong' ? '' : 'none';
+    $('tab-stats').style.display = t === 'stats' ? '' : 'none';
+    render();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs span'), function (el) {
+    el.onclick = function () { switchTab(el.dataset.tab); };
+  });
+
+  // ---------- 主按钮 ----------
+  $('startBtn').onclick = function () { S.mode = 'practice'; buildQueue(); render(); };
+  $('randBtn').onclick = function () { S.random = !S.random; buildQueue(); render(); };
+
+  // 键盘导航
+  document.addEventListener('keydown', function (e) {
+    if (S.tab !== 'practice' || !S.queue.length) return;
+    if (e.key === 'ArrowRight') { S.pos = Math.min(S.pos + 1, S.queue.length - 1); render(); }
+    if (e.key === 'ArrowLeft') { S.pos = Math.max(S.pos - 1, 0); render(); }
+  });
+
+  // ---------- 启动 ----------
+  buildFilters();
+  buildQueue();
+  render();
+})();

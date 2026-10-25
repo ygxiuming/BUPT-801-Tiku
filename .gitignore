@@ -1,0 +1,13 @@
+# 依赖（体积大，用 npm install 恢复）
+node_modules/
+
+# 前端产物与开发快照（由 npm run sync / npm run build 生成，不入库）
+app/dist/
+app/public/data/
+app/public/vendor/
+
+# 临时与系统文件
+*.log
+.DS_Store
+Thumbs.db
+/tmp/

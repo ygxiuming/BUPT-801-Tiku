@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-10-25T04:12:23.838Z",
+  "sessionId": "session_decec2e1e6f1d7b7ba24720eedba3247",
+  "event": "PostToolUse",
+  "toolName": "Write",
+  "file": "/home/xiuming/Desktop/北邮801-通信原理/tools/gen_figures_2025.py",
+  "outcome": "static_verified",
+  "coverage": "complete",
+  "findingCount": 2,
+  "durationMs": 827,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}
