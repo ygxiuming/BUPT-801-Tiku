@@ -139,51 +139,55 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 
 # ---------------------------------------------------------------- 三（题图）：SSB 调制与相干解调框图
 def fig_q3block():
-    s = HEAD.format(w=1100, h=300) + marker('m20a')
-    Y1, Ym, Y2 = 80, 150, 220
-    # m(t) 输入、抽头与希尔伯特变换
+    """照原卷版式重绘：m(t) 抽头分两路——上路 ×cos(2πf_c t)，下路经希尔伯特变换后 ×(−sin)，
+    相加得上边带 s(t)；再加 n_w(t)、过 BPF 到 A 点，×2cos 相干解调、过 LPF 到 B 点。"""
+    s = HEAD.format(w=940, h=280) + marker('m20a')
+    Y1, YM, Y2 = 78, 140, 202          # 上支路 / 主支路 / 下支路
+    RM, RA = 15, 16                    # 乘法器 / 相加器半径
+    TAP, MULX = 100, 290               # m(t) 抽头位置、两个乘法器的竖轴
+    AX = 410                           # 合路相加器的竖轴
+
+    # ---- m(t) 输入与上路
     s += text(12, Y1 + 5, 'm(t)', anchor='start', style='i')
-    s += line(58, Y1, 312, Y1, marker='m20a')
-    s += dot(110, Y1, 3.5)
-    s += line(110, Y1, 110, 125, marker='m20a')
-    s += rect(130, 125, 140, 80)
-    s += text(200, 168, '希尔伯')
-    s += text(200, 190, '特变换')
-    s += line(200, 205, 200, Y2)
-    s += line(200, Y2, 312, Y2, marker='m20a')
-    # 两路乘法器
-    s += mul(330, Y1, 18) + mul(330, Y2, 18)
-    s += text(330, 34, 'cos(2πf_c t)', size=13)
-    s += line(330, 42, 330, Y1 - 18, marker='m20a')
-    s += text(330, 274, '−sin(2πf_c t)', size=13)
-    s += line(330, 254, 330, Y2 + 18, marker='m20a')
-    # 合路到相加器（上支路从上方进、下支路从下方进）
-    s += line(348, Y1, 430, Y1) + line(430, Y1, 430, 132, marker='m20a')
-    s += line(348, Y2, 430, Y2) + line(430, Y2, 430, 168, marker='m20a')
-    s += adder(430, Ym, 18)
-    s += line(448, Ym, 522, Ym)
-    s += text(496, Ym - 9, 's(t)', size=13, style='i')
-    # 信道噪声
-    s += adder(540, Ym, 18)
-    s += text(540, 216, 'n_w(t)', size=13)
-    s += line(540, 198, 540, 168, marker='m20a')
-    s += line(558, Ym, 600, Ym)
-    # BPF、A 点、相干乘法器、LPF、B 点
-    s += rect(600, Ym - 24, 120, 48)
-    s += text(660, Ym + 5, 'BPF', style='i')
-    s += line(720, Ym, 748, Ym)
-    s += dot(752, Ym, 4)
-    s += text(752, Ym + 24, 'A', size=13, style='i')
-    s += line(756, Ym, 800, Ym)
-    s += mul(818, Ym, 18)
-    s += text(818, 98, '2cos(2πf_c t)', size=13)
-    s += line(818, 104, 818, Ym - 18, marker='m20a')
-    s += line(836, Ym, 868, Ym)
-    s += rect(868, Ym - 24, 120, 48)
-    s += text(928, Ym + 5, 'LPF', style='i')
-    s += line(988, Ym, 1036, Ym)
-    s += dot(1040, Ym, 4)
-    s += text(1050, Ym + 24, 'B', size=13, style='i')
+    s += line(52, Y1, MULX - RM - 2, Y1, marker='m20a')
+    s += dot(TAP, Y1, 3.5)
+    # ---- 下路：抽头 → 希尔伯特变换 → 下乘法器
+    s += line(TAP, Y1, TAP, 112, marker='m20a')
+    s += rect(62, 112, 76, 52)
+    s += text(TAP, 135, '希尔伯')
+    s += text(TAP, 150, '特变换')
+    s += line(TAP, 164, TAP, Y2)
+    s += line(TAP, Y2, MULX - RM - 2, Y2, marker='m20a')
+    # ---- 两路乘法器与载波
+    s += mul(MULX, Y1, RM) + mul(MULX, Y2, RM)
+    s += text(MULX, 30, 'cos(2πf_c t)', size=13)
+    s += line(MULX, 40, MULX, Y1 - RM - 1, marker='m20a')
+    s += text(MULX, 252, '−sin(2πf_c t)', size=13)
+    s += line(MULX, 232, MULX, Y2 + RM + 1, marker='m20a')
+    # ---- 上下两支路汇入相加器得 s(t)
+    s += line(MULX + RM, Y1, AX, Y1) + line(AX, Y1, AX, YM - RA - 1, marker='m20a')
+    s += line(MULX + RM, Y2, AX, Y2) + line(AX, Y2, AX, YM + RA + 1, marker='m20a')
+    s += adder(AX, YM, RA)
+    s += line(AX + RA, YM, 484, YM, marker='m20a')
+    s += text(456, 131, 's(t)', size=13, style='i')
+    # ---- 叠加信道噪声
+    s += adder(502, YM, RA)
+    s += text(502, 226, 'n_w(t)', size=13)
+    s += line(502, 206, 502, YM + RA + 1, marker='m20a')
+    # ---- BPF → A 点 → 相干乘法器 → LPF → B 点
+    s += line(518, YM, 554, YM, marker='m20a')
+    s += rect(556, YM - 24, 96, 48) + text(604, YM + 5, 'BPF', style='i')
+    s += line(652, YM, 672, YM, marker='m20a')
+    s += dot(678, YM, 4) + text(678, 172, 'A', size=13, style='i')
+    s += line(682, YM, 699, YM, marker='m20a')
+    s += mul(716, YM, RM)
+    s += text(716, 92, '2cos(2πf_c t)', size=13)
+    s += line(716, 102, 716, YM - RM - 1, marker='m20a')
+    s += line(731, YM, 758, YM, marker='m20a')
+    s += rect(760, YM - 24, 96, 48) + text(808, YM + 5, 'LPF', style='i')
+    s += line(856, YM, 876, YM, marker='m20a')
+    s += dot(882, YM, 4) + text(882, 172, 'B', size=13, style='i')
+    s += line(886, YM, 920, YM, marker='m20a')
     return s + '</svg>'
 
 
@@ -371,39 +375,46 @@ def fig_q5gray():
 
 # ---------------------------------------------------------------- 八（题图）：卷积码编码器框图
 def fig_q8enc():
-    """与原卷一致：两个空移位寄存器、上路三抽头（1+x+x²）、下路两抽头（1+x），
-    ⊕ 悬在 D₁/D₂ 之间正上方/正下方，输出分别由顶部/右侧引出。"""
-    s = HEAD.format(w=720, h=260) + marker('m20k')
-    YS, YT, YB, R = 130, 48, 212, 26
-    AX = 340
-    D0, DW, BH = 200, 120, 64
-    s += text(12, YS + 5, 'b_0b_1b_2b_3', anchor='start', style='i')
-    s += line(130, YS, D0, YS, marker='m20k')
-    s += dot(160, YS, 3.5)
-    # 输入侧上、下抽头
-    s += line(160, YS, 160, YT)
-    s += line(160, YT, AX - R, YT, marker='m20k')
-    s += line(160, YS, 160, YB)
-    s += line(160, YB, AX - R, YB, marker='m20k')
-    # 两个空寄存器
-    s += rect(D0, YS - BH / 2, DW, BH)
-    s += line(D0 + DW, YS, D0 + DW + 20, YS)
-    s += rect(D0 + DW + 60, YS - BH / 2, DW, BH)
-    # D₁、D₂ 之间抽头
+    """照原卷版式重绘：两级空移位寄存器（b_n → D₁ → D₂）；
+    上路相加器三抽头 b_n、b_{n-1}、b_{n-2} 合成 c₁ = b_n⊕b_{n-1}⊕b_{n-2}，
+    下路相加器两抽头 b_n、b_{n-1} 合成 c₂ = b_n⊕b_{n-1}；
+    上相加器三路进（左/右/下）、输出上出，下相加器两路进（左/上）、输出右出。"""
+    s = HEAD.format(w=760, h=300) + marker('m20k')
+    YS, YT, YB = 150, 76, 224          # 输入线 / 上支路 / 下支路
+    RA = 15
+    AX = 352                           # 两级寄存器之间的抽头、两个相加器的竖轴
+    BW, BH = 104, 32
+    B1, B2 = 210, 390                  # 第一、第二级寄存器左边界
+    TAP = 150                          # 输入抽头
+
+    # ---- 输入 b0b1b2b3
+    s += text(10, YS + 5, 'b_0b_1b_2b_3', anchor='start', style='i')
+    s += line(74, YS, B1 - 2, YS, marker='m20k')
+    s += dot(TAP, YS, 3.5)
+    # ---- 输入抽头分上、下两路
+    s += line(TAP, YS, TAP, YT)
+    s += line(TAP, YT, AX - RA - 1, YT, marker='m20k')
+    s += line(TAP, YS, TAP, YB)
+    s += line(TAP, YB, AX - RA - 1, YB, marker='m20k')
+    # ---- 两级移位寄存器
+    s += rect(B1, YS - BH / 2, BW, BH)
+    s += rect(B2, YS - BH / 2, BW, BH)
+    s += line(B1 + BW, YS, B2, YS)
+    # ---- 两级之间的抽头（b_{n-1}）分别进上、下相加器
     s += dot(AX, YS, 3.5)
-    s += line(AX, YS - BH / 2, AX, YT + R, marker='m20k')
-    s += line(AX, YS + BH / 2, AX, YB - R, marker='m20k')
-    # 上、下相加器
-    s += adder(AX, YT, R) + adder(AX, YB, R)
-    # D₂ 输出反馈到上相加器（右侧）
-    RX = D0 + 2 * DW + 60
-    s += line(RX, YS, 545, YS) + line(545, YS, 545, YT)
-    s += line(545, YT, AX + R, YT, marker='m20k')
-    # 两路输出
-    s += line(AX, YT - R, AX, 10) + line(AX, 10, 600, 10, marker='m20k')
-    s += text(610, 15, 'c_10c_11c_12c_13', anchor='start', style='i')
-    s += line(AX + R, YB, 600, YB, marker='m20k')
-    s += text(610, YB + 5, 'c_20c_21c_22c_23', anchor='start', style='i')
+    s += line(AX, YS, AX, YT + RA + 1, marker='m20k')
+    s += line(AX, YS, AX, YB - RA - 1, marker='m20k')
+    # ---- 上、下相加器
+    s += adder(AX, YT, RA) + adder(AX, YB, RA)
+    # ---- 第二级输出（b_{n-2}）反馈到上相加器右侧
+    s += line(B2 + BW, YS, 536, YS) + line(536, YS, 536, YT)
+    s += line(536, YT, AX + RA + 1, YT, marker='m20k')
+    # ---- 两路输出
+    s += line(AX, YT - RA, AX, 40)
+    s += line(AX, 40, 618, 40, marker='m20k')
+    s += text(630, 45, 'c_10c_11c_12c_13', anchor='start', style='i')
+    s += line(AX + RA, YB, 618, YB, marker='m20k')
+    s += text(630, YB + 5, 'c_20c_21c_22c_23', anchor='start', style='i')
     return s + '</svg>'
 
 
