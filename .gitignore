@@ -14,3 +14,6 @@ Thumbs.db
 
 # 工具运行时的审计账本（每次调用都会写，纯噪音）
 .mimosa/
+
+# Python 运行缓存（gen_figures_*.py 导入 svgkit 时生成）
+__pycache__/
