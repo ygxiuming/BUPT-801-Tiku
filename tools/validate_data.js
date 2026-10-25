@@ -20,6 +20,9 @@ require('../data/figures/2023/_index.js');
 require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
+require('../data/figures/2022/_index.js');
+require('../data/questions/2022/paper.js');
+require('../data/questions/2022/answer.js');
 require('../data/questions/2023/paper.js');
 require('../data/questions/2023/answer.js');
 require('../data/questions/2024/paper.js');
@@ -54,6 +57,8 @@ const warns = [];
 
 // ---------------- 期望值（每年） ----------------
 const EXPECT = {
+  // 2022 原卷：一（40 分）+ 二～九（12/16/12/14/12/12/12/16 = 106 分），原卷标注合计 146 分
+  2022: { choice: 40, big: 8, score: 146 },
   2023: { choice: 50, big: 8, score: 150 },
   2024: { choice: 40, big: 9, score: 150 },
   2025: { choice: 30, big: 8, score: 150 },
@@ -194,6 +199,100 @@ for (const year of Object.keys(B.papers).sort()) {
 // ---------------- 数值抽查（答案正确性核心数值） ----------------
 function approx(a, b, eps) { return Math.abs(a - b) <= (eps || 1e-9); }
 const t = [];
+// 2022
+// 6 个概率 1/2,1/4,1/8,1/16,1/32,1/32 → 码长 1,2,3,4,5,5
+t.push(['2022(5) 哈夫曼平均码长 31/16', approx(1 * (1 / 2) + 2 * (1 / 4) + 3 * (1 / 8) + 4 * (1 / 16) + 5 * (1 / 32) + 5 * (1 / 32), 31 / 16)]);
+t.push(['2022(8) FM 卡森 B=2(β+1)fm=10kHz', approx(2 * (4 + 1) * 1, 10)]);
+t.push(['2022(9) PCM 80 kbit/s', approx(2 * 5 * 8, 80)]);
+t.push(['2022(10) 复用 6×80+60=540', approx(6 * 80 + 60, 540)]);
+t.push(['2022(11) 基带最小带宽 540/2=270', approx(540 / 2, 270)]);
+t.push(['2022(12) 64QAM Rs=9600/6=1600', approx(9600 / Math.log2(64), 1600)]);
+t.push(['2022(13) 矩形脉冲带通主瓣 2Rs=3200', approx(2 * 1600, 3200)]);
+t.push(['2022(14) RRC α=1/2 带通带宽 Rs(1+α)=2400', approx(1600 * 1.5, 2400)]);
+t.push(['2022(24) 16FSK 最小频差 Rs/2=2kHz', approx(16 / Math.log2(16) / 2, 2)]);
+t.push(['2022(32) 四进制基带 η=4/(1+1/3)=3', approx(4 / (1 + 1 / 3), 3)]);
+// 2022(37) m 序列：f1=1+x+x³、f2=1+x²+x³，c=a⊕b 的所有循环移位
+(function () {
+  const seq = (cs, init) => { const a = init.slice(); for (let n = 3; n < 14; n++) a.push((cs[0] * a[n - 1] + cs[1] * a[n - 2] + cs[2] * a[n - 3]) % 2); return a; };
+  const seen = new Set();
+  for (let i = 1; i < 8; i++) for (let j = 1; j < 8; j++) {
+    const A = seq([1, 0, 1], [(i >> 2) & 1, (i >> 1) & 1, i & 1]);
+    const B = seq([0, 1, 1], [(j >> 2) & 1, (j >> 1) & 1, j & 1]);
+    const C = A.map((v, n) => v ^ B[n]);
+    if (C.slice(0, 7).join('') !== C.slice(7, 14).join('')) return; // 周期不是 7 说明递推写错
+    for (let s = 0; s < 7; s++) seen.add(Array.from({ length: 7 }, (_, k) => C[(s + k) % 7]).join(''));
+  }
+  t.push(['2022(37) {c_n} 周期含 1000001', seen.has('1000001')]);
+  t.push(['2022(37) {c_n} 周期不含 0000000', !seen.has('0000000')]);
+})();
+// 2022 二：AM 相干解调 —— η=1/17、Ps=2.125、Pn=N0·(2W)、输出信噪比 1000（30 dB）
+t.push(['2022二 η=Pm/(A²+Pm)=1/17', approx(0.25 / (4 + 0.25), 1 / 17)]);
+t.push(['2022二 Ps=(A²+Pm)/2=2.125', approx((4 + 0.25) / 2, 2.125)]);
+t.push(['2022二 Pn=N0·2W=2.5e-4', approx(2.5e-8 * 10e3, 2.5e-4)]);
+t.push(['2022二 输出信噪比 1000（30 dB）', approx(0.25 / 2.5e-4, 1000)]);
+// 2022 六：QPSK“系统性错半格”的熵链
+t.push(['2022六 H(φ)=H(φ̂)=2', approx(Math.log2(4), 2)]);
+t.push(['2022六 H(φ̂|φ)=1、H(φ̂,φ)=3、I=1', approx(2 + 1, 3) && approx(2 - 1, 1)]);
+// 2022 七：p_X=2(1-x)、W=√X、二电平量化 {1/4, 3/4}
+t.push(['2022七 E[X²]=1/6', approx(2 * (1 / 3 - 1 / 4), 1 / 6)]);
+t.push(['2022七 F_W(1/2)=7/16', approx(2 * 0.25 - 1 / 16, 7 / 16)]);
+t.push(['2022七 E[W²]=1/3', approx(1 - 2 / 3, 1 / 3)]);
+t.push(['2022七 E[Z²]=11/32', approx((1 / 16) * (7 / 16) + (9 / 16) * (9 / 16), 11 / 32)]);
+t.push(['2022七 E[WZ]=79/240', approx((1 / 4) * (17 / 120) + (3 / 4) * (47 / 120), 79 / 240)]);
+t.push(['2022七 量化噪声 3/160', approx(11 / 32 - 2 * (79 / 240) + 1 / 3, 3 / 160)]);
+// 2022 八：(10,4) 循环码 g(x)=x⁶+x⁵+x+1 —— 系统矩阵 / 校验矩阵 / 伴随式
+(function () {
+  const G0 = [[1, 1, 0, 0, 0, 1, 1, 0, 0, 0], [0, 1, 1, 0, 0, 0, 1, 1, 0, 0], [0, 0, 1, 1, 0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0, 0, 0, 1, 1]];
+  const mul = (M, N) => M.map((r) => N[0].map((_, j) => N.reduce((s, n, k) => s ^ (n[j] & r[k]), 0)));
+  // A = 前 4 列，用高斯消元求 A⁻¹（GF(2)）
+  const A = G0.map((r) => r.slice(0, 4));
+  const Aug = A.map((r, i) => r.concat([0, 1, 2, 3].map((j) => (i === j ? 1 : 0))));
+  for (let c = 0; c < 4; c++) {
+    const p = Aug.findIndex((r, i) => i >= c && r[c]);
+    [Aug[c], Aug[p]] = [Aug[p], Aug[c]];
+    Aug.forEach((r, i) => { if (i !== c && r[c]) r.forEach((_, j) => { r[j] ^= Aug[c][j]; }); });
+  }
+  const Ai = Aug.map((r) => r.slice(4));
+  const G = [];
+  for (let i = 0; i < 4; i++) { const row = []; for (let j = 0; j < 10; j++) row.push(G0.reduce((s, g, k) => s ^ (Ai[i][k] & g[j]), 0)); G.push(row); }
+  const H = [0, 1, 2, 3, 4, 5].map((j) => G.map((r) => r[4 + j]).concat([0, 1, 2, 3, 4, 5].map((m) => (m === j ? 1 : 0))));
+  t.push(['2022八(1) GHᵀ=0', G.every((r) => H.every((h) => h.reduce((s, v, k) => s ^ (v & r[k]), 0) === 0))]);
+  // (2) 前后 5 位逐位相同
+  let same = true;
+  for (let b = 0; b < 16; b++) {
+    const c = Array.from({ length: 10 }, (_, j) => G.reduce((s, r, i) => s ^ (((b >> i) & 1) & r[j]), 0));
+    if (c.slice(0, 5).join('') !== c.slice(5).join('')) same = false;
+  }
+  t.push(['2022八(2) c4..c0 = c9..c5', same]);
+  // (3) y=1100011001 的伴随式与译码
+  const y = '1100011001'.split('').map(Number);
+  const s = H.map((h) => h.reduce((acc, v, k) => acc ^ (v & y[k]), 0));
+  t.push(['2022八(3) s=(000001)', s.join('') === '000001']);
+  t.push(['2022八(3) 译成 1100011000', y.map((v, k) => v ^ (k === 9 ? 1 : 0)).join('') === '1100011000']);
+})();
+// 2022 九：卷积码 g1=1+x²、g2=1+x+x²，接收 100010111000 的维特比译码
+(function () {
+  const step = (st, u) => [(u ^ st[1]), (u ^ st[0] ^ st[1]), [u, st[0]]];
+  const y = '100010111000'.split('').map(Number);
+  let paths = { '00': [0, ''] };
+  for (let t2 = 0; t2 < 6; t2++) {
+    const r = y.slice(2 * t2, 2 * t2 + 2);
+    const next = {};
+    for (const k of Object.keys(paths)) {
+      const st = k.split('').map(Number);
+      for (const u of [0, 1]) {
+        const o = step(st, u);
+        const d = paths[k][0] + (o[0] !== r[0]) + (o[1] !== r[1]);
+        const k2 = o[2].join('');
+        if (!next[k2] || d < next[k2][0]) next[k2] = [d, paths[k][1] + u];
+      }
+    }
+    paths = next;
+  }
+  // 编码器末两位是收尾 0，故幸存路径必须回到 00；信息位取前 4 位
+  const best = paths['00'];
+  t.push(['2022九(3) 维特比译码 1100、距离 3', best[1].slice(0, 4) === '1100' && best[0] === 3]);
+})();
 // 2025
 t.push(['哈夫曼L=1.5', approx(1 * 0.5 + 2 / 3 + 2 / 6, 1.5)]);
 t.push(['A律段落7判定', 1020 >= 512 && 1020 < 1024]);
