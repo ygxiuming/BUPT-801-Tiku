@@ -24,6 +24,9 @@ const { JSDOM } = require('/home/xiuming/.workbuddy/binaries/node/workspace/node
 
 const ROUTES = [
   ['/', '首页'],
+  ['/paper/2021', '试卷页2021'],
+  ['/practice?y=2021', '练习页2021'],
+  ['/exam?y=2021', '考试页2021'],
   ['/paper/2022', '试卷页2022'],
   ['/practice?y=2022', '练习页2022'],
   ['/exam?y=2022', '考试页2022'],
@@ -219,6 +222,23 @@ await step('考试页：点「开始考试」进入答题态', async () => {
   if (!sheet.length) throw new Error('缺少上一题/下一题导航')
   const kx = w.document.querySelectorAll('.katex').length
   if (kx < 3) throw new Error('公式只渲染了 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2021：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2021', 'prac21')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
   if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
   w.close()
 })

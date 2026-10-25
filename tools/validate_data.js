@@ -16,11 +16,14 @@ const ROOT = path.join(__dirname, '..');
 // 图库：data/figures/<年>/（_index.js 由生成器维护）
 // 题目：旧格式 <年>.js/-b.js/-big.js；新格式 <年>/paper.js + <年>/answer.js
 require('../data/chapters.js');
+require('../data/figures/2021/_index.js');
 require('../data/figures/2023/_index.js');
 require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
 require('../data/figures/2022/_index.js');
+require('../data/questions/2021/paper.js');
+require('../data/questions/2021/answer.js');
 require('../data/questions/2022/paper.js');
 require('../data/questions/2022/answer.js');
 require('../data/questions/2023/paper.js');
@@ -57,6 +60,8 @@ const warns = [];
 
 // ---------------- 期望值（每年） ----------------
 const EXPECT = {
+  // 2021 原卷：一（40 分）+ 二～八（15/15/15/15/15/15/20 = 110 分）
+  2021: { choice: 40, big: 7, score: 150 },
   // 2022 原卷：一（40 分）+ 二～九（12/16/12/14/12/12/12/16 = 106 分），原卷标注合计 146 分
   2022: { choice: 40, big: 8, score: 146 },
   2023: { choice: 50, big: 8, score: 150 },
@@ -199,6 +204,93 @@ for (const year of Object.keys(B.papers).sort()) {
 // ---------------- 数值抽查（答案正确性核心数值） ----------------
 function approx(a, b, eps) { return Math.abs(a - b) <= (eps || 1e-9); }
 const t = [];
+// 2021
+// 二：N0=1e-5 时两种 BPF 通带下的 B 点噪声功率与信噪比
+(function () {
+  const N0 = 1e-5;
+  const NB1 = N0 / 2 * 200;
+  const NB2 = N0 * 100 + N0 / 2 * 100;
+  t.push(['2021二(2) NB=1e-3、SNR=2000', approx(NB1, 1e-3) && approx(2 / NB1, 2000)]);
+  t.push(['2021二(3) NB=1.5e-3、SNR=4000/3', approx(NB2, 1.5e-3) && approx(2 / NB2, 4000 / 3)]);
+})();
+// 三：Tb=0.5 s 时相邻码元在抽样点的串扰各 2/π，合计 4/π>1 → 眼图闭合
+t.push(['2021三 Tb=0.5 时串扰 4/π>1', approx(2 * (2 / Math.PI), 4 / Math.PI) && 4 / Math.PI > 1]);
+// 五：枚举 12 个星座点求 Es、dmin；再由分布求熵与互信息
+(function () {
+  const pts = [];
+  for (const xi of [-3, -1, 1, 3]) for (const xq of [-3, -1, 1, 3]) {
+    if (Math.abs(xi) === 3 && Math.abs(xq) === 3) continue;
+    pts.push([xi, xq]);
+  }
+  const Es = pts.reduce((s, p) => s + p[0] * p[0] + p[1] * p[1], 0) / pts.length;
+  let dmin = Infinity;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+    if (d < dmin) dmin = d;
+  }
+  const H = Math.log2(12);
+  const HXI = -[4, 4, 2, 2].reduce((s, c) => s + (c / 12) * Math.log2(c / 12), 0);
+  t.push(['2021五(2) Es=22/3、dmin=2', approx(Es, 22 / 3) && approx(dmin, 2)]);
+  t.push(['2021五(3) H(X)=2+log2 3、I=log2 3−4/3',
+    approx(H, 2 + Math.log2(3)) && approx(2 * HXI - H, Math.log2(3) - 4 / 3)]);
+})();
+// 六：对 p(x)=1/3(0≤x<2)、1/6(2≤x≤4) 做数值积分
+(function () {
+  const p = (x) => (x >= 0 && x < 2 ? 1 / 3 : (x >= 2 && x <= 4 ? 1 / 6 : 0));
+  const N = 200000, dx = 4 / N;
+  let m1 = 0, m2 = 0;
+  for (let i = 0; i < N; i++) { const x = (i + 0.5) * dx, w = dx * p(x); m1 += w * x; m2 += w * x * x; }
+  t.push(['2021六 E[X]=5/3、E[X²]=4', approx(m1, 5 / 3, 1e-3) && approx(m2, 4, 1e-3)]);
+})();
+// 七：g1g2 与 x⁷+1 的因式关系；卷积码编码；两条 m 序列
+(function () {
+  const mul = (a, b) => {
+    const c = Array(a.length + b.length - 1).fill(0);
+    a.forEach((av, i) => b.forEach((bv, j) => { c[i + j] ^= av & bv; }));
+    return c;
+  };
+  const g = mul([1, 1, 0, 1], [1, 0, 1, 1]);
+  const x7p1 = Array(8).fill(0); x7p1[0] = 1; x7p1[7] = 1;
+  t.push(['2021七(1) g=x⁶+…+1、g(x+1)=x⁷+1',
+    g.join('') === '1111111' && mul(g, [1, 1]).join('') === x7p1.join('')]);
+  // 生成矩阵三行都是 1111111（xg、x²g 模 x⁷−1 后不变），枚举 8 个码字求最小非零重量
+  const ws = [];
+  for (let m = 0; m < 8; m++) {
+    let w = 0;
+    for (let p = 0; p < 7; p++) {
+      let b = 0;
+      for (let i = 0; i < 3; i++) if ((m >> i) & 1) b ^= 1;
+      w += b;
+    }
+    ws.push(w);
+  }
+  const dmin = Math.min(...ws.filter((w) => w > 0));
+  t.push(['2021七(1) dmin=7', dmin === 7]);
+  const D = [0, 0, 0]; let enc = '';
+  for (const bit of [1, 1, 1, 0, 0, 0, 0]) {
+    const [d1, d2, d3] = D;
+    enc += `${bit ^ d1 ^ d3}${bit ^ d2 ^ d3}${bit ^ d3}`;
+    D.unshift(bit); D.pop();
+  }
+  t.push(['2021七(2) 编码输出 111011001001101111000', enc === '111011001001101111000']);
+  const seq = (c, init) => {
+    const a = init.slice();
+    for (let n = 3; n < 7; n++) a.push((c[0] * a[n - 1] + c[1] * a[n - 2] + c[2] * a[n - 3]) % 2);
+    return a.join('');
+  };
+  t.push(['2021七(3) m 序列 1110100、1110010',
+    seq([1, 0, 1], [1, 1, 1]) === '1110100' && seq([0, 1, 1], [1, 1, 1]) === '1110010']);
+})();
+// 八：三个子信道的香农容量
+(function () {
+  const C1 = Math.log2(1 + 3 * 1);
+  const C2 = Math.log2(1 + 1) + Math.log2(1 + 2) + Math.log2(1 + 3);
+  const beta = 3 / (1 + 2 + 3);
+  const C3 = Math.log2(1 + beta * 1) + Math.log2(1 + beta * 4) + Math.log2(1 + beta * 9);
+  t.push(['2021八(2a) C=2 kbit/s', approx(C1, 2)]);
+  t.push(['2021八(2b) C=3+log2 3', approx(C2, 3 + Math.log2(3))]);
+  t.push(['2021八(2c) β=1/2、C=log2(99/4)', approx(beta, 0.5) && approx(C3, Math.log2(99 / 4))]);
+})();
 // 2022
 // 6 个概率 1/2,1/4,1/8,1/16,1/32,1/32 → 码长 1,2,3,4,5,5
 t.push(['2022(5) 哈夫曼平均码长 31/16', approx(1 * (1 / 2) + 2 * (1 / 4) + 3 * (1 / 8) + 4 * (1 / 16) + 5 * (1 / 32) + 5 * (1 / 32), 31 / 16)]);

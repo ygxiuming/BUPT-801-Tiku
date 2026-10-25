@@ -147,6 +147,8 @@ export default {
           : [g.options12, g.options13, g.options25, g.options26].filter(Boolean)
         if (!multi.length && g.options) multi.push(g.options)
         html += `<div class="qgroup"><div class="qline">${blank(g.stem || '')}</div>`
+        const gfig = cluster.find((cq) => cq.fig)
+        if (gfig) html += fig(gfig.fig)
         multi.forEach((o) => { html += optTable(o) })
         cluster.forEach((cq) => { html += exp(cq) })
         html += `</div>`
