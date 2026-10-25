@@ -45,8 +45,21 @@ app/                        # Vue 3 前端（vite；npm run sync 同步 data 与
   src/lib/                  # data 访问、records 记录、KaTeX 渲染、lightbox、theme、toast
 server/                     # Express：托管 app/dist + /api/pdf/<年>/(paper|ans) 在线排版
 skills/bupt801/SKILL.md     # 新年份入库的解析流程技能
-tools/                      # 图库生成脚本 + 数据校验脚本（validate_data.js 零错误才算完成）
+解析日志.md                 # 每年入库/改题/重画图的记录（来源、统计、校验、纠错、遗留）
+tools/                      # 图库生成脚本 + 数据校验 + 页面冒烟（validate_data.js 零错误才算完成）
 ```
+
+## 版本管理
+
+仓库用 git 管理，**一个年份一个提交**，入库/改题/重画图完成后立即提交并在 `解析日志.md` 追加一条记录。
+
+```bash
+git status --short
+git add data/questions/<年> data/figures/<年> app/index.html tools/ 解析日志.md
+git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
+```
+
+`node_modules/`、`app/dist/`、`app/public/` 已进 `.gitignore`（都能用 `npm install` / `npm run sync` 再生成）。
 
 ## 答案可信度
 
@@ -55,9 +68,10 @@ tools/                      # 图库生成脚本 + 数据校验脚本（validate
 
 ## 新增年份
 
-把新年份的试卷 PDF 与答案（PDF/图片）放入 `待解析/`，然后按 `skills/bupt801/SKILL.md` 的流程执行（转录 → 定答案 → 写解析 → SVG → 校验 → 实测），最后在 `app/index.html` 登记新数据 `<script>`（`app/scripts/sync-data.mjs` 会自动同步 data/ 全部文件）。
+把新年份的试卷 PDF 与答案（PDF/图片）放入 `待解析/`，然后按 `skills/bupt801/SKILL.md` 的流程执行：转录 → 定答案 → 写解析 → SVG → 校验 → 页面冒烟 → **追加 `解析日志.md`** → **git 提交**。其中最后两步不要省，`app/index.html` 也要登记新数据 `<script>`（`app/scripts/sync-data.mjs` 会自动同步 data/ 全部文件）。
 
 ## 已收录
 
+- **2023 年**：选择题 50 空（28 个共用选项组）+ 综合题 8 题（二～七各 12 分、八/九各 14 分），满分 150 分；配 16 张重绘 SVG 图（题图 6 + 解析图 10）
 - **2025 年**：单项选择题 30 题（逐选项详细解析）+ 综合题 8 题（分步推导），满分 150 分
 - **2026 年**：单项选择题 40 空（17 个选项组，其中 11 组含多套选项）+ 计算题 7 题，满分 150 分；配 5 张重绘 SVG 图

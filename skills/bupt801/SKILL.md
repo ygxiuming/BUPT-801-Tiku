@@ -19,7 +19,7 @@ agent_created: true
 | 2027 的答案到了，补解析 | 已有 paper.js，只补 answer.js |
 | 重画 2025 第九题的图 | 只改 `tools/gen_figures_2025.py` + emit + 预览核验 |
 
-**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘；④框图/线段自查遮挡；⑤`node tools/validate_data.js` 零错误零警告。
+**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘；④框图/线段自查遮挡；⑤`node tools/validate_data.js` 零错误零警告；⑥页面冒烟通过；⑦**追加 `解析日志.md`**；⑧**git 提交**。
 
 ---
 
@@ -39,13 +39,17 @@ data/questions/<年>/        paper.js（真题）+ answer.js（答案与解析�
 tools/gen_figures_<年>.py   SVG 生成器（stdout 输出 ###FILE: 分隔的多文件）
 tools/emit_figures.mjs      把生成器输出落盘
 tools/validate_data.js      数据+KaTeX+数值 校验
+tools/smoke_pages.mjs       页面冒烟（jsdom + dist，无需浏览器/网络）
+tools/svg_fit.py            viewBox 粗收（生成器内调用）
+tools/fit_figures_render.py viewBox 按渲染墨迹精收（emit 后调用）
+解析日志.md                 每年入库/改题后追加，写完即提交
 app/                        Vue3 前端（index.html 登记数据 script）
 server/                     Express + Puppeteer（试卷 PDF 生成）
 ```
 
 ---
 
-## 2. 九步流程
+## 2. 十步流程
 
 ### ① 环境预检（30 秒）
 
@@ -145,39 +149,32 @@ for f in sorted(glob.glob('/tmp/w801/prev/p-*.svg')):
 - 圆加号画成"圆圈里再一个 ⊕"双重圆（应该只画 `<circle>` + 一竖一横两条短线）
 - 内容溢出画布 / 单边留白 >30px
 
-再跑一次几何自查（文字包围盒 vs viewBox）：
+再跑几何自查（文字包围盒 vs 线段 vs viewBox）：
 
 ```bash
-node -e "
-global.window={};require('./data/figures/<年>/_index.js');
-for(const [k,svg] of Object.entries(window.BUPT801.figures['<年>'])){
-  const vb=svg.match(/viewBox='([^']+)'/)[1].split(/\s+/).map(Number);
-  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-  const mm=(x,y)=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);};
-  for(const m of svg.matchAll(/<line x1='([-\d.]+)' y1='([-\d.]+)' x2='([-\d.]+)' y2='([-\d.]+)'/g)){mm(+m[1],+m[2]);mm(+m[3],+m[4]);}
-  for(const m of svg.matchAll(/<circle cx='([-\d.]+)' cy='([-\d.]+)' r='([-\d.]+)'/g)){mm(+m[1]-+m[3],+m[2]-+m[3]);mm(+m[1]+ +m[3],+m[2]+ +m[3]);}
-  for(const m of svg.matchAll(/<rect x='([-\d.]+)' y='([-\d.]+)' width='([-\d.]+)' height='([-\d.]+)'/g)){mm(+m[1],+m[2]);mm(+m[1]+ +m[3],+m[2]+ +m[4]);}
-  console.log(k, 'viewBox', vb[2]+'x'+vb[3], '内容', [x0,y0,x1,y1].map(Math.round).join(','), '留白 L/T/R/B', [x0,y0,vb[2]-x1,vb[3]-y1].map(Math.round).join('/'));
-}"
+node tools/check_figure_overlap.js <年>     # 逐图报 线交叠/字交叠/四边留白；0 交叠 + 留白≤30 才算过
 ```
+
+**viewBox 贴边分两步，别手调**（手调最容易把中文标签裁掉）：
+
+1. 生成器末尾调 `tools/svg_fit.py` 的 `fit_svg()`：按 line/rect/circle/poly/path/text 的包围盒粗收。它**会先剔除 `<defs>`**——否则箭头 marker 的 `M0,0` 会被当成墨迹，把包围盒拉满整张画布，裁完等于没裁。
+2. emit 之后再按真实渲染墨迹精收：
+
+```bash
+/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python tools/fit_figures_render.py <年>
+```
+
+cairosvg 1:1 渲染 → PIL 取非白像素包围盒 → 四周补 16px 写回 viewBox。**量墨迹前必须把 font-family 换成 `Noto Sans CJK SC`**，否则中文整段不画、包围盒偏小，左边的"输入""r(t)"这类标签会被裁掉（脚本里已处理，手写命令时要自己记得）。
 
 > cairosvg 的已知假象：`text-anchor='middle'` 的 tspan 会按 chunk 各自居中，下标被拉开成空隙（显示成 `2cos(2πf c t)`）。**浏览器正常，不要为这个改图。** 只看线条/方框是否真的相交。
 
 ### ⑦ 登记 + 校验
 
 ```bash
-# a) app/index.html 登记数据脚本（单文件引用，无合并 bundle）
-#    图库每个文件一行（题目原图 + answer/ 解析图都要登记）：
-#    <script src="/data/figures/<年>/<年>-<题号>-<图名>.js"></script>
-#    <script src="/data/figures/<年>/answer/<年>-<题号>-<图名>.js"></script>
-#    题目两行：
+# a) app/index.html 加三行（图库 bundle 一行 + 题目两行）
+#    <script src="/data/figures/<年>.js"></script>
 #    <script src="/data/questions/<年>/paper.js"></script>
 #    <script src="/data/questions/<年>/answer.js"></script>
-#    登记后需要重新构建（引用列表在 dist 的 index.html 里）：
-#      正常环境： cd app && npm run build
-#      受限沙箱（vite/rollup 的 wasm 起不来，报 WebAssembly OOM）：
-#                node tools/build-frontend.mjs
-#    已登记文件内容的后续修改 → 刷新浏览器即生效（server 实时映射 data/）。
 
 # b) tools/validate_data.js 两处登记
 #    require('../data/figures/<年>/_index.js');
@@ -191,31 +188,79 @@ node tools/validate_data.js    # 必须 0 错误 0 警告
 
 **数值抽查的写法要求**：不要用"结果套结果"的恒等式（会自证）。用独立方法复核，例如 2026 第四题量化器就是在 `p(x)=(3-|x|)/9` 上做数值积分算 `E[X²]=3/2`、`E[XY]=29/18`、`E[Y²]=23/12`、噪声 `7/36`；第八题循环码直接程序化验算 `GHᵀ=0`、`dmin=3`、`s=(101)→ĉ=0001011`、8 个错误图样的重量分布。
 
-### ⑧ 同步 public（仅 vite dev 需要；生产 server 实时映射 data/，无需此步）
+### ⑧ 同步 public
 
 ```bash
 cd ~/Desktop/北邮801-通信原理/app && npm run sync
 ```
-沙箱里 `sync-data.mjs` 可能 EPERM，等价的兜底（逐文件拷贝，不合并；`find` 必须排除 `_*`——`_index.js` 是 Node 端静态索引，进浏览器会重复注册/污染）：
+沙箱里 `sync-data.mjs` 可能 EPERM，等价的兜底：
 
 ```bash
 cd ~/Desktop/北邮801-通信原理
 for y in <年>; do
-  mkdir -p "app/public/data/questions/$y" "app/public/data/figures/$y" "app/public/data/figures/$y/answer"
+  mkdir -p "app/public/data/questions/$y"
   cp -f "data/questions/$y/paper.js" "data/questions/$y/answer.js" "app/public/data/questions/$y/"
-  find "data/figures/$y" -name '*.js' ! -name '_*' -exec cp -f {} "app/public/data/figures/$y/" \; 2>/dev/null
-  cp -f "data/figures/$y/answer/"*.js "app/public/data/figures/$y/answer/" 2>/dev/null
+  { printf 'window.BUPT801 = window.BUPT801 || {};\nwindow.BUPT801.figures = window.BUPT801.figures || {};\n'
+    find "data/figures/$y" -name '*.js' ! -name '_*' | sort | while read -r f; do cat "$f"; echo; done
+  } > "app/public/data/figures/$y.js"
 done
 cp -f data/chapters.js app/public/data/chapters.js
 ```
+注意：`find` 必须排除 `_*`（`_index.js` 是 Node 端静态索引，进浏览器会重复注册/污染）。
 
 ### ⑨ 实测
+
+**首选**（不依赖浏览器、不受沙箱网络限制）：
+
+```bash
+node tools/build-frontend.mjs      # 没改 app/src 可跳过
+node tools/smoke_pages.mjs         # 6 条路由 + 3 个交互，全绿才算过
+```
+
+它用 jsdom 打开 `app/dist/index.html`，先 `window.eval` 所有数据脚本（**顺序不能反**，数据脚本必须早于 bundle），再 `import('dist/assets/app.js?r=N')` 让应用自己 mount，逐页断言"文字量正常 + `.katex-error` 为 0 + `window.__vueErrors` 为空"，最后跑三段交互：首页→试卷页、考试页点「开始考试」、练习页选选项→查看解析。新增/改版的页面要在 `ROUTES` 和交互块里补断言。
+
+> 沙箱内 `curl 127.0.0.1:3000` 返回 502、`npm run sync` 报 `EPERM copyfile`，**别指望起 dev server 用 curl 验**。
+
+有浏览器时再看真页面：
 
 ```bash
 cd app && npm run dev   # http://localhost:5173
 ```
+
 过这六个页面：`/`、`/paper/<年>`、`/practice?y=<年>`、`/exam?y=<年>`、`/stats`、`/figures`。
 核对：无 `.katex-error`（**选项和解析都要看**）、SVG 不重叠不裁切、判题正常、三档自评正常、图点击放大正常。
+
+### ⑩ 收尾：git 提交 + 写解析日志
+
+**这两件事做完才算"弄完"**，缺一件都不算交付。
+
+#### a) 解析日志（`解析日志.md`）
+
+1. 在"总览"表尾加一行：年份 / 来源 / 选择 / 大题 / 总分 / 图 / 校验 / 完成日。
+2. 追加一节 `## <年>`，五项必写：
+   - **来源**：`待解析/` 里的原始 PDF（页数、dpi）、答案图片位置
+   - **统计**：选择题空数、大题数（各子问分值）、总分、SVG 张数（题图/解析图各几张）
+   - **校验与实测**：`validate_data.js` 的错误/警告数、`smoke_pages.mjs` 的结论（公式数、状态）
+   - **与参考答案的分歧与纠错**：逐条写"参考答案怎么写 / 错在哪 / 本文取什么"。**自己算错返工的也要写**（例：2023 五(2) 判决域折点笔误）
+   - **遗留**：没跑通的、被沙箱挡住的、下次要先做的事
+3. 旧内容只追加不改写；改题/重画图也在对应年份下补一条带日期的短记录。
+
+#### b) git
+
+```bash
+cd ~/Desktop/北邮801-通信原理
+git rev-parse --git-dir 2>/dev/null || git init -b main   # 首次
+git status --short
+git add data/questions/<年> data/figures/<年> app/index.html tools/ 解析日志.md
+git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
+```
+
+- **提交信息**：`<type>(<scope>): <主题>` —— `feat` 入库新年份、`fix` 纠错/重画图、`docs` 文档与日志、`chore` 工具链。
+  正文写清题量、校验结果、动过的公共文件（`app/index.html`、`validate_data.js` 这类多会话共用文件要点名）。
+- **粒度**：一个年份一个提交；改图、改答案单独成提交，方便 `git revert` 单点回滚。
+- **中间态**：没校验通过也可以提交，但主题必须写 `wip(<年>): …`，别让"0 错 0 警"的记录和仓库实际状态对不上。
+- **别提交的东西**：`.gitignore` 已忽略 `node_modules/`、`app/dist/`、`app/public/`（都可再生成，进仓库只会让 diff 变噪音）。若发现 `git status` 里有这仨，先修 `.gitignore` 再 add。
+- 收尾前 `git status --short` 必须干净（或只剩明确的 `wip` 文件）。
 
 ---
 
@@ -224,11 +269,13 @@ cd app && npm run dev   # http://localhost:5173
 - [ ] 选择题 N 题 / 大题 M 题 / 总分 150（以原卷为准，同步 `sections` 分值）
 - [ ] 每道选择题有 `concl + A~D 逐项 + note`；每道大题有 `intro + 分步 + 每问 ans + summary + pitfalls`
 - [ ] 与参考答案不一致处，解析里写明差异和理由
-- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡
+- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡，`check_figure_overlap.js <年>` 0 交叠、留白 ≤30
 - [ ] `node tools/validate_data.js` → 0 错误 0 警告
 - [ ] `app/index.html` / `validate_data.js` / `chapters.js` 三处登记齐全
-- [ ] `public/data/` 与 `data/` 内容一致（`diff` 过）
-- [ ] 五个页面实测通过
+- [ ] `public/data/` 与 `data/` 内容一致（`diff` 过，或确认走 server 实时映射不需要快照）
+- [ ] 六个页面实测通过（`node tools/smoke_pages.mjs` 全绿）
+- [ ] `解析日志.md` 已追加本年一节（含纠错与遗留）
+- [ ] `git commit` 完成，`git status --short` 干净
 
 ## 4. 踩坑速查
 
@@ -245,6 +292,10 @@ cd app && npm run dev   # http://localhost:5173
 | `require(app/...)` 报 ESM 错 | `app/` 是 `type:module`，KaTeX 一律从 `server/node_modules` require |
 | Chrome 截图 EXIT=133 | 本机无 Chrome，走 cairosvg |
 | 校验器 "数值抽查失败" | 先怀疑抽查公式本身错了，再用独立数值积分复核 |
+| 图裁完中文标签没了 | 量墨迹时中文没画（cairosvg 只取第一个字体名），换 `Noto Sans CJK SC` 再量 |
+| 图怎么裁都贴不到边 | `<defs>` 里 marker 路径的 `M0,0` 被当成墨迹，`svg_fit.py` 负责剔除 |
+| `curl 127.0.0.1:3000` 返回 502 | 沙箱禁本地网络；改用 `node tools/smoke_pages.mjs` |
+| `npm run sync` 报 `EPERM copyfile` | 同上，沙箱拦文件复制；走 server 实时映射，或本地再 sync |
 
 ## 5. 多会话并行
 
