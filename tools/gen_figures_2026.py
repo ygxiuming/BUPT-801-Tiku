@@ -3,6 +3,8 @@
 #   node tools/emit_figures.mjs 2026
 import math
 
+from svgkit import PAD, tighten  # 统一的 viewBox 收边（四边等宽留白）
+
 # ---------------------------------------------------------------- 基础画笔
 def marker(mid, color='#1a1a1a'):
     return (f"<defs><marker id='{mid}' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'>"
@@ -102,12 +104,6 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
         "font-family=\"Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif\" font-size='14'>")
 
 
-def head_at(w, h, x0, y0):
-    """viewBox 贴内容边界用：内容不在 (0,0) 起点时，用左上角偏移 (x0,y0) 裁掉多余留白"""
-    base = HEAD.format(w=w, h=h)
-    return base.replace("viewBox='0 0 %d %d'" % (w, h), "viewBox='%d %d %d %d'" % (x0, y0, w, h))
-
-
 # ---------------------------------------------------------------- 二、m(t) 与 SSB 的谱
 def fig_q2psd():
     """m(t)=4cos40πt+2cos120πt 的双边幅度谱（左）与上边带 SSB 的单边谱（右）"""
@@ -125,7 +121,7 @@ def fig_q2psd():
 
     # 左：m(t) 双边谱，f=±20 → 4，f=±60 → 1
     # 幅度轴画在 f=0 处（双侧谱的惯例），不带箭头：否则细灰线+箭头容易被误读成一根谱线
-    s += line(180, BASE, 180, 68, width=1.2, color='#888')
+    s += line(180, BASE, 180, 68, width=1.1, color='#999')
     s += stem(100, 66, '4') + stem(260, 66, '4')
     s += stem(60, 20, '1') + stem(300, 20, '1')
     for x, t in ((60, '−60'), (100, '−20'), (180, '0'), (260, '20'), (300, '60')):
@@ -135,7 +131,7 @@ def fig_q2psd():
     s += text(180, 24, 'm(t) 的双边幅度谱', size=12, color='#666')
 
     # 右：上边带 SSB 单边谱，1020 → 4，1060 → 1（f 轴局部展开，不按左图比例）
-    s += line(480, BASE, 480, 68, width=1.2, color='#888')
+    s += line(480, BASE, 480, 68, width=1.1, color='#999')
     s += stem(540, 66, '4') + stem(660, 20, '1')
     for x, t in ((480, '0'), (540, '1020'), (660, '1060')):
         s += text(x, BASE + 18, t, size=12)
@@ -149,8 +145,8 @@ def fig_q2psd():
 
 # ---------------------------------------------------------------- 三、接收机框图
 def fig_q3recv():
-    # 内容实际范围 x 8~462、y 64~172：viewBox 收边，避免全宽渲染时图偏左偏上
-    s = head_at(470, 126, 0, 56) + marker('a26b')
+    # 内容实际范围 x 8~462、y 64~172：画布按内容给足，末尾 tighten() 统一收边
+    s = HEAD.format(w=470, h=190) + marker('a26b')
     Y = 88
     s += text(8, Y + 5, 'r(t)', anchor='start', style='i')
     s += line(44, Y, 88, Y, marker='a26b')
@@ -198,7 +194,7 @@ def fig_q5stem():
 # ---------------------------------------------------------------- 五、16QAM Gray 映射 + 判决域
 def fig_q5const():
     cx, cy, U = 220, 220, 34
-    s = head_at(440, 450, 20, 0) + marker('a26d')
+    s = HEAD.format(w=460, h=450) + marker('a26d')
     # ML 判决域边界：两坐标轴 ±2 处（点间距的中点）
     for v in (-2, 2):
         s += line(cx + v * U, cy - 3 * U - 34, cx + v * U, cy + 3 * U + 34,
@@ -230,7 +226,7 @@ def fig_q5const():
 
 # ---------------------------------------------------------------- 六、复基带 → 带通框图
 def fig_q6block():
-    s = HEAD.format(w=700, h=230) + marker('a26e')
+    s = HEAD.format(w=700, h=240) + marker('a26e')
     YC, YI, YQ = 115, 68, 162
     s += text(8, YC + 5, 'd(t)', anchor='start', style='i')
     s += line(46, YC, 86, YC, marker='a26e')
@@ -248,14 +244,15 @@ def fig_q6block():
     # 实部支路
     s += line(342, YI, 404, YI, marker='a26e') + text(372, YI - 8, 'I(t)', style='i')
     s += mul(418, YI, 13)
-    s += text(418, 26, 'cos(2πf_c t)', size=13)
+    s += text(418, 24, 'cos(2πf_c t)', size=13)
     s += line(418, 32, 418, YI - 14, marker='a26e')
     s += line(431, YI, 576, YI) + line(576, YI, 576, YC - 14, marker='a26e')
     # 虚部支路
     s += line(342, YQ, 404, YQ, marker='a26e') + text(372, YQ + 18, 'Q(t)', style='i')
     s += mul(418, YQ, 13)
-    s += text(418, 214, '−sin(2πf_c t)', size=13)
-    s += line(418, 208, 418, YQ + 14, marker='a26e')
+    # 载波标注放在箭头竖线左侧（右对齐到 x=410），避免与竖线/箭头头相交
+    s += text(410, 212, '−sin(2πf_c t)', size=13, anchor='end')
+    s += line(418, 216, 418, YQ + 14, marker='a26e')
     s += line(431, YQ, 576, YQ) + line(576, YQ, 576, YC + 14, marker='a26e')
     # 相加
     s += adder(576, YC, 14)
@@ -277,6 +274,9 @@ SVGS = {
     'q2psd': fig_q2psd(), 'q3recv': fig_q3recv(), 'q5stem': fig_q5stem(),
     'q5const': fig_q5const(), 'q6block': fig_q6block(),
 }
+# 全部图统一把 viewBox 收到内容边界（四边各留 18px），与 2025 同一套口径：
+# 页面里图居中、不贴边、不因画布空白而显得偏小。
+SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}
 
 # 每张图一个文件；输出用 ###FILE: 分隔，落盘用 node tools/emit_figures.mjs 2026。
 # 页面加载由 app/scripts/sync-data.mjs 把目录（不含 _ 前缀文件）合并成 public/data/figures/<年>.js。

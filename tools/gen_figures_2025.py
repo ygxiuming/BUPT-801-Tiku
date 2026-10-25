@@ -98,19 +98,19 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 
 # ------------------------------------------------------------------ 题三：SSB 相干解调
 def fig_ssb():
-    s = HEAD.format(w=440, h=125) + marker('arA')
+    s = HEAD.format(w=560, h=130) + marker('arA')
     s += text(10, 45, 's(t)', anchor='start', style='i')
-    s += line(46, 40, 70, 40, marker='arA')
-    s += rect(73, 25, 52, 30) + text(99, 45, '信道')
-    s += line(125, 40, 158, 40, marker='arA') + text(142, 32, 'r(t)', style='i')
-    s += rect(161, 25, 44, 30) + text(183, 45, 'BPF')
-    s += line(205, 40, 236, 40, marker='arA')
-    s += circle(251, 40, 13) + line(245, 34, 257, 46) + line(257, 34, 245, 46)
-    s += line(264, 40, 296, 40, marker='arA')
-    s += rect(299, 25, 46, 30) + text(322, 45, 'LPF')
-    s += line(345, 40, 400, 40, marker='arA')
-    s += text(248, 100, '2cos(2πf_c t)')
-    s += line(248, 84, 251, 57, marker='arA')
+    s += line(46, 40, 76, 40, marker='arA')
+    s += rect(79, 25, 62, 30) + text(110, 45, '信道')
+    s += line(141, 40, 196, 40, marker='arA') + text(168, 32, 'r(t)', style='i')
+    s += rect(199, 25, 56, 30) + text(227, 45, 'BPF')
+    s += line(255, 40, 306, 40, marker='arA')
+    s += circle(320, 40, 13) + line(314, 34, 326, 46) + line(326, 34, 314, 46)
+    s += line(333, 40, 390, 40, marker='arA')
+    s += rect(393, 25, 58, 30) + text(422, 45, 'LPF')
+    s += line(451, 40, 520, 40, marker='arA')
+    s += text(320, 106, '2cos(2πf_c t)')
+    s += line(320, 88, 320, 58, marker='arA')
     return s + '</svg>'
 
 
@@ -125,14 +125,14 @@ def fig_pam():
     s += text(6, 74, 'd(t)', anchor='start', style='i')
     s += line(38, 70, 64, 70, marker='arB')
     s += dot(55, 70, 3) + text(55, 94, 'A')
-    s += rect(67, 55, 80, 32) + text(107, 69, '发送滤波器') + text(107, 83, 'G_T(f)', style='i')
+    s += rect(67, 51, 80, 38) + text(107, 67, '发送滤波器') + text(107, 81, 'G_T(f)', style='i')
     s += line(147, 70, 180, 70, marker='arB') + text(163, 62, 's(t)', style='i')
-    s += rect(183, 55, 64, 32) + text(215, 69, '信道') + text(215, 83, 'C(f)', style='i')
+    s += rect(183, 51, 64, 38) + text(215, 67, '信道') + text(215, 81, 'C(f)', style='i')
     s += line(247, 70, 286, 70, marker='arB') + text(266, 62, 'y(t)', style='i')
     s += circle(300, 70, 11) + line(294, 70, 306, 70) + line(300, 64, 300, 76)
     s += line(300, 120, 300, 84, marker='arB') + text(300, 138, 'n_w(t)', style='i')
     s += line(311, 70, 346, 70, marker='arB') + text(329, 62, 'r(t)', style='i')
-    s += rect(349, 55, 80, 32) + text(389, 69, '接收滤波器') + text(389, 83, 'G_R(f)', style='i')
+    s += rect(349, 51, 80, 38) + text(389, 67, '接收滤波器') + text(389, 81, 'G_R(f)', style='i')
     s += line(429, 70, 456, 70, marker='arB') + text(444, 62, 'v(t)', style='i')
     s += dot(464, 70, 3) + text(464, 94, 'B')
     s += line(464, 70, 486, 70)
@@ -169,11 +169,11 @@ def fig_encoder():
     s += text(414, YD - 8, 'G_2', anchor='start', style='b')
 
     # ---- u → G₁ → b ----
-    s += text(10, YB - 8, 'u=(u_0u_1u_2u_3)', anchor='start', style='i')
+    s += text(10, YB - 11, 'u=(u_0u_1u_2u_3)', anchor='start', style='i')
     s += line(6, YB, 148, YB, marker='arC')
     s += rect(151, YB - 18, 44, 36) + text(173, YB + 5, 'G_1', style='b')
     s += line(197, YB, 228, YB, marker='arC')
-    s += text(234, YB - 8, 'b=(b_0b_1b_2b_3)', anchor='start', style='i')
+    s += text(234, YB - 11, 'b=(b_0b_1b_2b_3)', anchor='start', style='i')
 
     # ---- b → 延迟线 D D D ----
     s += line(332, YB, 441, YB, marker='arC')
@@ -208,7 +208,7 @@ def fig_psk8():
     for k in range(8):  # ML判决边界 22.5°+45k
         a = 22.5 + 45 * k
         x2, y2 = pt(cx, cy, 158, a)
-        s += line(cx, cy, x2, y2, dash='5,4', color='#666')
+        s += line(cx, cy, x2, y2, dash='5,4', color='#888')
     for i in range(1, 9):
         deg = 45 * i % 360
         px, py = pt(cx, cy, R, deg)
@@ -236,13 +236,13 @@ def fig_psk8new():
     LEN = math.hypot(TRI, TRI) - APEX - 0.0      # (0.580,0) → (1.280,1.280) 的斜线长度
     LEN = math.hypot(TRI - APEX, TRI)            # = 1.459（单位：R）
     s = HEAD.format(w=420, h=430)
-    s += circle(cx, cy, R, dash='4,5', color='#999', width=1.2)
-    s += circle(cx, cy, R / 2, dash='2,5', color='#bbb', width=1.0)
+    s += circle(cx, cy, R, dash='5,4', color='#999', width=1.2)
+    s += circle(cx, cy, R / 2, dash='3,4', color='#bbb', width=1.0)
 
     # ① 内-内边界：坐标轴段
     for deg in (0, 90, 180, 270):
         x2, y2 = pt(cx, cy, R * APEX, deg)
-        s += line(cx, cy, x2, y2, color='#666', dash='6,4', width=1.3)
+        s += line(cx, cy, x2, y2, color='#888', dash='5,4', width=1.2)
     # ② 内-外边界：轴三重点 → 对角三重点（半张角 61.3°）
     for adeg in (0, 90, 180, 270):
         ax, ay = pt(cx, cy, R * APEX, adeg)
@@ -250,12 +250,12 @@ def fig_psk8new():
             ux = math.cos(math.radians(adeg + sgn * 61.3))
             uy = -math.sin(math.radians(adeg + sgn * 61.3))
             s += line(ax, ay, ax + ux * R * LEN, ay + uy * R * LEN,
-                      color='#666', dash='6,4', width=1.3)
+                      color='#888', dash='5,4', width=1.2)
     # ③ 外-外边界：对角三重点沿对角线向外
     for sx in (+1, -1):
         for sy in (+1, -1):
             s += line(cx + sx * R * TRI, cy + sy * R * TRI,
-                      cx + sx * R * WD, cy + sy * R * WD, color='#666', dash='6,4', width=1.3)
+                      cx + sx * R * WD, cy + sy * R * WD, color='#888', dash='5,4', width=1.2)
 
     inner = {1: 45, 3: 135, 5: 225, 7: 315}
     outer = {8: 0, 2: 90, 4: 180, 6: 270}
@@ -298,8 +298,8 @@ def fig_ookpdf():
     c0, c1, vt = 140, 400, 270
     s = HEAD.format(w=560, h=258) + marker('arD')
     s += line(24, base, 520, base, marker='arD')
-    s += line(c0, base, c0, 74, color='#bbb', dash='2,3', width=1.1)
-    s += line(c1, base, c1, 74, color='#bbb', dash='2,3', width=1.1)
+    s += line(c0, base, c0, 74, color='#999', dash='3,4', width=1.1)
+    s += line(c1, base, c1, 74, color='#999', dash='3,4', width=1.1)
     s += poly(gauss_pts(c0, base, peak, sigma, max(26, c0 - 135), min(512, c0 + 135)))
     s += poly(gauss_pts(c1, base, peak, sigma, max(26, c1 - 135), min(512, c1 + 135)))
     s += line(vt, base - 2, vt, 96, width=1.6, dash='7,4', color='#c0392b')
@@ -353,19 +353,19 @@ def fig_q8chan():
 # ------------------------------------------------------------------ 题七：量化特性
 def fig_q7quant():
     s = HEAD.format(w=740, h=250) + marker('arF')
-    X0, XS, YB = 60, 35, 195
+    X0, XS, YB = 60, 35, 200
 
     def mx(v):
         return X0 + (v + 4) * XS
 
     s += line(X0 - 12, YB, 350, YB, marker='arF') + text(356, YB + 5, 'x', anchor='start', style='i')
-    s += line(mx(0), YB, mx(0), 75, marker='arF')
-    s += poly([(mx(-4), YB), (mx(0), 95), (mx(4), YB)], close=True, fill='#f5f5f5')
-    s += text(mx(0) - 8, 90, '1/4', anchor='end')
+    s += line(mx(0), YB, mx(0), 80, marker='arF')
+    s += poly([(mx(-4), YB), (mx(0), 100), (mx(4), YB)], close=True, fill='#f5f5f5')
+    s += text(mx(0) - 8, 95, '1/4', anchor='end')
     for v in (-4, -2, 2, 4):
         s += line(mx(v), YB, mx(v), YB + 5) + text(mx(v), YB + 22, str(v))
     s += text(mx(0), YB + 22, '0')
-    s += text(mx(0) - 62, 172, 'p(x)', style='i')   # 放进三角形内部，避开斜线
+    s += text(mx(0) - 62, 177, 'p(x)', style='i')   # 放进三角形内部，避开斜线
     X1, XS2 = 420, 35
 
     def mx2(v):
@@ -379,17 +379,17 @@ def fig_q7quant():
     s += line(mx2(0), ya, mx2(2), ya, color='#bbb', dash='2,3')
     s += poly([(mx2(-4), y_ab), (mx2(-2), y_ab), (mx2(-2), y_aa), (mx2(0), y_aa),
                (mx2(0), ya), (mx2(2), ya), (mx2(2), yb), (mx2(4), yb)])
-    for v in (-2, 2):
-        s += line(mx2(v), yb - 5, mx2(v), y_ab + 5, color='#999', dash='3,3')
+    # ±2 处已由折线的竖跳变表达，不再叠一条贯穿全高的灰虚线（视觉重复）
     s += dot(mx2(-2), y_ab, 3.5) + dot(mx2(-2), y_aa, 3.5, fill='#fff', stroke='#1a1a1a')
     s += dot(mx2(0), y_aa, 3.5) + dot(mx2(0), ya, 3.5, fill='#fff', stroke='#1a1a1a')
     s += dot(mx2(2), ya, 3.5) + dot(mx2(2), yb, 3.5, fill='#fff', stroke='#1a1a1a')
-    for yy2, nm in ((yb, 'b'), (ya, 'a'), (y_aa - 8, '−a'), (y_ab - 8, '−b')):
-        s += text(mx2(0) - 12, yy2 + 5, nm, anchor='end', style='i')
+    # 4 个电平标签统一放在对应电平线的上方 4px（右对齐到 y 轴左侧 12px）
+    for yy2, nm in ((yb, 'b'), (ya, 'a'), (y_aa, '−a'), (y_ab, '−b')):
+        s += text(mx2(0) - 12, yy2 - 4, nm, anchor='end', style='i')
     for v in (-4, -2, 2, 4):
         s += text(mx2(v), y_ab + 22, str(v))
     s += text(mx2(0), y_ab + 22, '0')
-    s += text(mx2(0) - 12, 62, 'Y=Q(x)', anchor='end', style='i')
+    s += text(mx2(0), 40, 'Y=Q(x)', style='i')   # 轴名写在 y 轴顶端上方，避开箭头
     return s + '</svg>'
 
 
@@ -472,67 +472,10 @@ def fig_q4x():
 
 
 # ------------------------------------------------------------------ viewBox 自动收边
-import re as _re
-
-CJK = _re.compile(r'[\u4e00-\u9fff\uff00-\uffef]')
+from svgkit import PAD, tighten  # 与 2026 共用同一套收边口径（四边各留 18px）
 
 
-def _charw(c, size):
-    if CJK.match(c):
-        return size * 1.0
-    if c.isupper() or c.isdigit():
-        return size * 0.62
-    return size * 0.52
 
-
-def _content_bbox(svg):
-    """扫一遍 SVG 基本图元 + 文字（估算字宽），返回内容包围盒。"""
-    xs, ys = [], []
-
-    def put(x, y):
-        xs.append(x); ys.append(y)
-
-    for m in _re.finditer(r"<line x1='([-\d.]+)' y1='([-\d.]+)' x2='([-\d.]+)' y2='([-\d.]+)'", svg):
-        put(float(m.group(1)), float(m.group(2))); put(float(m.group(3)), float(m.group(4)))
-    for m in _re.finditer(r"<circle cx='([-\d.]+)' cy='([-\d.]+)' r='([-\d.]+)'", svg):
-        cx, cy, r = float(m.group(1)), float(m.group(2)), float(m.group(3))
-        put(cx - r, cy - r); put(cx + r, cy + r)
-    for m in _re.finditer(r"<rect x='([-\d.]+)' y='([-\d.]+)' width='([-\d.]+)' height='([-\d.]+)'", svg):
-        x, y, w, h = [float(m.group(i)) for i in (1, 2, 3, 4)]
-        put(x, y); put(x + w, y + h)
-    for m in _re.finditer(r"<polygon points='([^']+)'", svg):
-        nums = [float(v) for v in _re.split(r'[\s,]+', m.group(1).strip())]
-        for i in range(0, len(nums) - 1, 2):
-            put(nums[i], nums[i + 1])
-    for m in _re.finditer(r"<path d='M([-\d.,\s]+)'", svg):
-        nums = [float(v) for v in _re.split(r'[\s,]+', m.group(1).strip())]
-        for i in range(0, len(nums) - 1, 2):
-            put(nums[i], nums[i + 1])
-    for m in _re.finditer(r"<text x='([-\d.]+)' y='([-\d.]+)' text-anchor='(\w+)'([^>]*)>(.*?)</text>", svg, _re.S):
-        x, y, anchor, attrs, inner = float(m.group(1)), float(m.group(2)), m.group(3), m.group(4), m.group(5)
-        base = int((_re.search(r"font-size='(\d+)'", attrs) or [0, 14])[1])
-        chunks = _re.findall(r"<tspan[^>]*font-size='(\d+)'[^>]*>([^<]*)</tspan>", inner)
-        if chunks:
-            w = sum(_charw(c, int(sz)) for sz, txt in chunks for c in txt)
-        else:
-            w = sum(_charw(c, base) for c in _re.sub(r'<[^>]+>', '', inner))
-        x0 = x - w / 2 if anchor == 'middle' else (x - w if anchor == 'end' else x)
-        put(x0, y - base * 0.80); put(x0 + w, y + base * 0.2)
-    if not xs:
-        return None
-    return min(xs), min(ys), max(xs), max(ys)
-
-
-def tighten(svg, margin=18):
-    """把 viewBox 收到内容边界 + margin，避免整幅图在全宽渲染时偏左/偏下或被裁。"""
-    bb = _content_bbox(svg)
-    if not bb:
-        return svg
-    x0, y0, x1, y1 = bb
-    vx, vy = x0 - margin, y0 - margin
-    vw, vh = (x1 - x0) + 2 * margin, (y1 - y0) + 2 * margin
-    return _re.sub(r"viewBox='0 0 [-\d.]+ [-\d.]+'",
-                   "viewBox='%d %d %d %d'" % (round(vx), round(vy), round(vw), round(vh)), svg, count=1)
 
 
 # (key, 题号, 是否解析配图, 描述)。题目原图放 data/figures/<年>/，解析配图放 answer/ 子目录。
@@ -556,8 +499,8 @@ SVGS = {
     'q8chan': fig_q8chan(), 'q7quant': fig_q7quant(), 'q2psd': fig_q2psd(),
     'q3psd': fig_q3psd(), 'q4x': fig_q4x(),
 }
-# 全部图统一把 viewBox 收到内容边界（留 14px），全宽渲染时不会偏左/被裁
-SVGS = {k: tighten(v) for k, v in SVGS.items()}
+# 全部图统一把 viewBox 收到内容边界（四边各留 18px），页面里居中不贴边
+SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}
 
 # 每张图一个文件；输出用 ###FILE: 分隔，落盘用 node tools/emit_figures.mjs 2025。
 # 页面加载由 app/scripts/sync-data.mjs 把目录（不含 _ 前缀文件）合并成 public/data/figures/<年>.js。

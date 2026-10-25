@@ -30,6 +30,12 @@ const ROUTES = [
   ['/paper/2024', '试卷页2024'],
   ['/practice?y=2024', '练习页2024'],
   ['/exam?y=2024', '考试页2024'],
+  ['/paper/2025', '试卷页2025'],
+  ['/practice?y=2025', '练习页2025'],
+  ['/exam?y=2025', '考试页2025'],
+  ['/paper/2026', '试卷页2026'],
+  ['/practice?y=2026', '练习页2026'],
+  ['/exam?y=2026', '考试页2026'],
   ['/stats', '统计页'],
   ['/figures', '图库页']
 ]
@@ -127,6 +133,7 @@ for (let i = 0; i < ROUTES.length; i++) {
 }
 
 // ---- 交互 ----
+let pageSeq = 0
 async function openPage(route, tag) {
   const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>', {
     url: 'http://127.0.0.1:3000' + route,
@@ -136,7 +143,8 @@ async function openPage(route, tag) {
   const w = dom.window
   globalsFor(w)
   for (const src of scripts) w.eval(fs.readFileSync(localFile(src), 'utf8'))
-  await import(pathToFileURL(path.join(DIST, 'assets', 'app.js')).href + '?tag=' + tag)
+  // 缓存参数必须每次唯一：ESM 模块只执行一次，tag 重复会让 app 不重新 mount（页面空白）
+  await import(pathToFileURL(path.join(DIST, 'assets', 'app.js')).href + '?tag=' + tag + '-' + (++pageSeq))
   await sleep(140)
   return w
 }
@@ -187,6 +195,23 @@ await step('考试页：点「开始考试」进入答题态', async () => {
 
 await step('练习页2024：选选项 → 查看解析', async () => {
   const w = await openPage('/practice?y=2024', 'prac')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2026：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2026', 'prac26')
   const opt = w.document.querySelector('td[data-k]')
   if (!opt) throw new Error('找不到选项单元格 td[data-k]')
   click(w, opt)
