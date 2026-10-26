@@ -43,6 +43,9 @@ require('../data/questions/2017/paper.js');
 require('../data/questions/2017/answer.js');
 require('../data/questions/2019/paper.js');
 require('../data/questions/2019/answer.js');
+require('../data/figures/2018/_index.js');
+require('../data/questions/2018/paper.js');
+require('../data/questions/2018/answer.js');
 require('../data/figures/2016/_index.js');
 require('../data/questions/2016/paper.js');
 require('../data/questions/2016/answer.js');
@@ -85,6 +88,8 @@ const EXPECT = {
   2020: { choice: 40, big: 8, score: 150 },
   // 2019 原卷：一（50 空 × 1 分 = 50 分）+ 二～六（14×5 = 70）+ 七、八（15×2 = 30）= 150 分
   2019: { choice: 50, big: 7, score: 150 },
+  // 2018 原卷：一（50 空 × 1 分 = 50 分）+ 二、四、五、六、七（14×5 = 70）+ 三、八（15×2 = 30）= 150 分
+  2018: { choice: 50, big: 7, score: 150 },
   // 2016 原卷：一（30 空，原卷印“共 20 分”但实有 30 空，按 1 分/空 = 30 分）+ 二～六（12×5 = 60）+ 七～十二（10×6 = 60）= 150 分
   2016: { choice: 30, big: 11, score: 150 }
 };
@@ -483,6 +488,111 @@ t.push(['2026三(3) 门限 -3Tb、Pe=Q(√(E_b/N0))', approx((2 - 8) / 2, -3) &&
   const pats = leaders.map((e) => c0.map((x, i) => x ^ e[i]));
   pats.forEach((p) => { w[p.reduce((s2, x) => s2 + x, 0)]++; });
   t.push(['2026八(3) 8 图样重量分布 3重1个/2重3个/4重4个', pats.length === 8 && w[3] === 1 && w[2] === 3 && w[4] === 4]);
+})();
+
+// ---------- 2018 ----------
+(function () {
+  const N = 400000;
+  const trap = (f, a, b) => { let s = 0; const h = (b - a) / N; for (let i = 0; i < N; i++) s += f(a + (i + 0.5) * h); return s * h; };
+  const L2 = Math.log2;
+
+  // 二：折叠谱 P_nc 的面积 = 噪声功率（A 点取到 6kHz、B 点取到 5kHz）
+  const pnc = (f) => { const x = Math.abs(f); return x <= 1e3 ? 1e-6 : x <= 6e3 ? 0.5e-6 : 0; };
+  const PnA = trap(pnc, -6e3, 6e3), PnB = trap(pnc, -5e3, 5e3);
+  t.push(['2018二(3) P_nc 折叠后 |f|≤1k 为 N0、1~6k 为 N0/2', approx(pnc(500), 1e-6) && approx(pnc(3e3), 0.5e-6) && approx(pnc(7e3), 0)]);
+  t.push(['2018二(4) PnA=7mW、PnB=6mW', approx(PnA, 7e-3, 1e-7) && approx(PnB, 6e-3, 1e-7)]);
+  t.push(['2018二(4) S/N A=3e3、B=3.5e3', approx(21 / PnA, 3e3, 1) && approx(21 / PnB, 3.5e3, 1)]);
+  // R_m(τ)=21 sinc²(5000τ) ⇔ 带宽 5 kHz 的三角形谱（数值傅里叶反变换复核）
+  const Tri = (f) => (Math.abs(f) <= 5e3 ? (21 / 5000) * (1 - Math.abs(f) / 5e3) : 0);
+  const sc2 = (x) => (x === 0 ? 1 : Math.pow(Math.sin(Math.PI * x) / (Math.PI * x), 2));
+  const Rc = (tau) => trap((f) => Tri(f) * Math.cos(2 * Math.PI * f * tau), -5e3, 5e3);
+  t.push(['2018二(1) 三角谱反变换 = R_m(τ)（带宽 5kHz 成立）',
+    Math.abs(Rc(0) - 21) < 0.05 && Math.abs(Rc(1e-4) - 21 * sc2(0.5)) < 0.05 && Math.abs(Rc(2e-4) - 0) < 0.05]);
+
+  // 三：g(t) 能量、匹配滤波器输出与 Pe 的两种写法互推
+  const g = (t2) => (t2 >= 0 && t2 <= 1 ? 2 / Math.sqrt(5) : t2 > 1 && t2 <= 2 ? 1 / Math.sqrt(5) : 0);
+  const Eg = trap((x) => g(x) * g(x), -1, 3);
+  const N0 = 0.7;
+  t.push(['2018三(1) E_g=1 J', approx(Eg, 1, 1e-3)]);
+  t.push(['2018三(2) h(t)=g(2-t) 与 g 同能量', approx(trap((x) => g(2 - x) * g(2 - x), -1, 3), Eg, 1e-9)]);
+  t.push(['2018三(3) σ²=N0/2 → p 归一化系数 1/√(πN0)', approx(Math.sqrt(2 * Math.PI * (N0 / 2)), Math.sqrt(Math.PI * N0), 1e-9)]);
+  t.push(['2018三(5) ½erfc(√(1/N0)) 与 Q(√(2/N0)) 同参', approx(Math.sqrt(2 / N0) / Math.SQRT2, Math.sqrt(1 / N0), 1e-12)]);
+
+  // 四：坐标→能量/最小距离/判决域
+  const S = { 1: [0, 0], 2: [-1, 1], 3: [1, -1], 4: [1, 0], 5: [1, 1], 6: [-1, -1], 7: [0, 1], 8: [-1, 0] };
+  const ids = Object.keys(S);
+  let dmin = Infinity;
+  ids.forEach((a) => ids.forEach((b) => { if (a !== b) dmin = Math.min(dmin, Math.hypot(S[a][0] - S[b][0], S[a][1] - S[b][1])); }));
+  const EsBar = ids.reduce((s, k) => s + S[k][0] ** 2 + S[k][1] ** 2, 0) / 8;
+  t.push(['2018四(1) dmin=1', approx(dmin, 1, 1e-12)]);
+  t.push(['2018四(3) 平均符号能量 11/8', approx(EsBar, 11 / 8, 1e-12)]);
+  const near = (p, k) => Math.hypot(p[0] - S[k][0], p[1] - S[k][1]);
+  const win = (p, excl) => ids.filter((k) => k !== '1' && k !== excl).every((k) => near(p, 1) <= near(p, k) + 1e-9);
+  t.push(['2018四(3) 正方形角(0.5,0.5) 属 s1、(0.51,0) 不属', win([0.5, 0.5]) && !win([0.51, 0])]);
+  t.push(['2018四(4) 剔除 s7 后 (0,0.9) 属 s1、(0,0.6) 等概时不属', win([0, 0.9], '7') && !win([0, 0.6])]);
+
+  // 五：采样率→码率→符号率→带宽
+  const bits = 8;
+  t.push(['2018五(1) RA=64k、RB=32k、RC=192k', 8e3 * bits === 64e3 && 4e3 * bits === 32e3 && (2 * 64e3 + 2 * 32e3) === 192e3]);
+  const fH = 4e3, Bm = 1.5e3, fL = fH - Bm, k = Math.floor(fH / Bm);
+  t.push(['2018五(1) 带通抽样 k=2 且 fs=4k 落在 [2fH/k, 2fL/(k-1)] 区', k === 2 && 2 * fH / k <= 4e3 + 1 && 4e3 <= 2 * fL / (k - 1) + 1]);
+  const Rs = 192e3 / 4, alpha = 1;
+  t.push(['2018五(2) Rs=48kBaud、单边带宽 48k', approx(Rs, 48e3) && approx(Rs * (1 + alpha) / 2, 48e3)]);
+  t.push(['2018五(2) α=1 时无平坦段 (Rs(1-α)/2=0)', approx(Rs * (1 - alpha) / 2, 0)]);
+
+  // 六：由联合表独立算熵/互信息，并与闭式对碰
+  const J = [[1 / 8, 0, 1 / 4, 0], [0, 1 / 8, 0, 1 / 8], [1 / 16, 0, 1 / 8, 0], [0, 1 / 16, 0, 1 / 8]];
+  const ent = (arr) => arr.filter((p) => p > 0).reduce((s, p) => s - p * L2(p), 0);
+  const flat = J.reduce((s, r) => s.concat(r), []);
+  const Hxy = ent(flat), px = J.map((r) => r.reduce((a, b) => a + b, 0));
+  const py = [0, 1, 2, 3].map((c) => J.reduce((s, r) => s + r[c], 0));
+  const Hx = ent(px), Hy = ent(py);
+  t.push(['2018六(1) H[X,Y]=23/8、H[X]=H[Y]=25/8-¾log₂3', approx(Hxy, 23 / 8, 1e-12) && approx(Hx, 25 / 8 - 0.75 * L2(3), 1e-12) && approx(Hx, Hy, 1e-12)]);
+  t.push(['2018六(1) H[Y|X]=(3log₂3-1)/4、I=27/8-1.5log₂3', approx(Hxy - Hx, (3 * L2(3) - 1) / 4, 1e-12) && approx(Hx + Hy - Hxy, 27 / 8 - 1.5 * L2(3), 1e-12)]);
+  t.push(['2018六(1) 表格归一且 Σp=1', approx(flat.reduce((a, b) => a + b, 0), 1, 1e-12)]);
+  const lens = [2, 3, 3, 3, 3, 3, 4, 4];
+  const p8 = flat.filter((p) => p > 0).sort((a, b) => b - a);
+  const Rbar = p8.reduce((s, p, i) => s + p * lens[i], 0);
+  t.push(['2018六(2) Kraft=1、R̄=23/8=H[X,Y]', approx(lens.reduce((s, l) => s + 2 ** -l, 0), 1, 1e-12) && approx(Rbar, 23 / 8, 1e-12)]);
+
+  // 七：量化噪声闭式 vs 数值积分
+  const p7 = (x) => (Math.abs(x) <= 2 ? (2 - Math.abs(x)) / 4 : 0);
+  const nq = (a) => { const y = (x) => (x >= a ? 1 + a / 2 : x >= 0 ? a / 2 : x >= -a ? -a / 2 : -1 - a / 2); return trap((x) => (x - y(x)) ** 2 * p7(x), -2, 2); };
+  const nqClosed = (a) => (1 - 2 * a + 1.5 * a * a - 0.25 * a ** 3) / 3;
+  t.push(['2018七(1) S=2/3', approx(trap((x) => x * x * p7(x), -2, 2), 2 / 3, 1e-4)]);
+  t.push(['2018七(2) 闭式与数值在 a=0.3/0.8/1.4 一致', [0.3, 0.8, 1.4].every((a) => approx(nq(a), nqClosed(a), 1e-3))]);
+  t.push(['2018七(3) a=1 → Nq=1/12、S/Nq=8', approx(nqClosed(1), 1 / 12, 1e-12) && approx((2 / 3) / (1 / 12), 8, 1e-9)]);
+  const a4 = 2 - Math.SQRT2;
+  t.push(['2018七(4) a=2-√2 使内层概率=1/4（四电平等概）', approx(a4 / 2 - a4 * a4 / 8, 1 / 4, 1e-12) && a4 > 0 && a4 < 2]);
+
+  // 八：GF(2) 多项式与循环码/卷积码
+  const mul2 = (a, b) => { const r = new Array(a.length + b.length - 1).fill(0); for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) r[i + j] ^= a[i] & b[j]; return r; };
+  const F = [[1, 0, 0, 1, 1], [1, 1, 1, 1, 1], [1, 1, 0, 0, 1], [1, 1, 1], [1, 1]];
+  t.push(['2018八 五式相乘 = x^15+1', (() => { const p = F.reduce((a, b) => mul2(a, b), [1]); return p.length === 16 && p[15] === 1 && p[0] === 1 && p.slice(1, 15).every((v) => v === 0); })()]);
+  const degs = [];
+  for (let m = 0; m < 32; m++) { let g2 = [1]; for (let i = 0; i < 5; i++) if (m & (1 << i)) g2 = mul2(g2, F[i]); degs.push(g2.length - 1); }
+  t.push(['2018八(1) 非平凡 (15,k) 码 30 个', degs.filter((d) => d > 0 && d < 15).length === 30]);
+  const byK = {};
+  degs.forEach((d) => { if (d > 0 && d < 15) byK[15 - d] = (byK[15 - d] || 0) + 1; });
+  t.push(['2018八(1) k=4..11 各 3 个、k=1,2,3,12,13,14 各 1 个', [4, 5, 6, 7, 8, 9, 10, 11].every((kk) => byK[kk] === 3) && [1, 2, 3, 12, 13, 14].every((kk) => byK[kk] === 1)]);
+  const g153 = mul2(mul2(F[0], F[1]), F[2]);
+  t.push(['2018八(2) g=x^12+x^9+x^6+x^3+1', g153.length === 13 && [0, 3, 6, 9, 12].every((i) => g153[i] === 1) && g153.filter((v) => v).length === 5]);
+  const sh = (g2, s) => { const r = new Array(15).fill(0); for (let i = 0; i < g2.length; i++) r[i + s] ^= g2[i]; return r; };
+  const rows = [sh(g153, 2), sh(g153, 1), sh(g153, 0)];
+  t.push(['2018八(3) 系统阵首三列为单位阵', rows[0][14] === 1 && rows[1][13] === 1 && rows[2][12] === 1 && rows[0][13] + rows[0][12] + rows[1][14] + rows[1][12] + rows[2][14] + rows[2][13] === 0]);
+  const cws = [];
+  for (let m = 0; m < 8; m++) { const v = new Array(15).fill(0); for (let i = 0; i < 3; i++) if (m & (1 << i)) for (let j = 0; j < 15; j++) v[j] ^= rows[i][j]; cws.push(v); }
+  const wt = (v) => v.reduce((s, x) => s + x, 0);
+  const dist = (a, b) => wt(a.map((x, i) => x ^ b[i]));
+  let dm8 = Infinity;
+  cws.forEach((a, i) => cws.forEach((b, j) => { if (i < j) dm8 = Math.min(dm8, dist(a, b)); }));
+  t.push(['2018八(4) 8 码字重量 {0,5×3,10×3,15}、dmin=5', cws.map(wt).sort((x, y) => x - y).join() === '0,5,5,5,10,10,10,15' && dm8 === 5]);
+  const G1 = [1, 0, 0, 1, 1], G2 = [1, 1, 0, 0, 1];
+  const u = [1, 0, 0, 0, 0, 0, 0];
+  const tap = (G, i) => G.reduce((s, c, j) => s ^ (c && u[i - j] ? 1 : 0), 0);
+  const out = [0, 1, 2, 3, 4].map((i) => '' + tap(G1, i) + tap(G2, i)).join(' ');
+  t.push(['2018八(5) 输入 10000… → 11 01 00 10 11', out === '11 01 00 10 11']);
+  t.push(['2018八(5) K=5 → 状态数 2^4=16', 2 ** 4 === 16]);
 })();
 
 // ---------- 2017 ----------
