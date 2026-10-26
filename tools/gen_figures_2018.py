@@ -529,45 +529,82 @@ def fig_q5moddem():
     return s + '</svg>'
 
 
-# ---- 六(2)：哈夫曼编码树 ----
+# ---- 六(2)：哈夫曼编码树（横向“阶梯”版式，与原卷参考图同款） ----
 def fig_q6huf():
-    """哈夫曼树（竖向、正交折线）。8 个联合符号：1/4×1、1/8×5、1/16×2，
-    码长 2 / 3×5 / 4×2，平均 (1/4×2 + 5×1/8×3 + 2×1/16×4) = 23/8。
-    码字与参考答案、解析正文一致（左支 0、右支 1）：
-    (B,d)=000、(C,c)=001、(A,a)=010、(B,b)=011、(A,c)=10、(D,d)=110、
-    (C,a)=1110、(D,b)=1111。"""
-    s = HEAD.format(w=780, h=470) + marker('a18h')
-    YL = 350
-    N = {'root': (346, 95, '1'), 'n1': (195, 165, '1/2'), 'n2': (110, 235, '1/4'),
-         'n3': (280, 235, '1/4'), 'n4': (497, 165, '1/2'), 'n5': (575, 235, '1/4'),
-         'n6': (640, 305, '1/8')}
-    leaves = [('Bd', 70, '(B,d)', '1/8', '000'), ('Cc', 150, '(C,c)', '1/8', '001'),
-              ('Aa', 240, '(A,a)', '1/8', '010'), ('Bb', 320, '(B,b)', '1/8', '011'),
-              ('Ac', 420, '(A,c)', '1/4', '10'), ('Dd', 510, '(D,d)', '1/8', '110'),
-              ('Ca', 600, '(C,a)', '1/16', '1110'), ('Db', 680, '(D,b)', '1/16', '1111')]
-    pos = {k: (v[0], v[1]) for k, v in N.items()}
-    pos.update({k: (x, YL) for k, x, *_ in leaves})
-    edges = [('root', 'n1', '0'), ('root', 'n4', '1'), ('n1', 'n2', '0'), ('n1', 'n3', '1'),
-             ('n2', 'Bd', '0'), ('n2', 'Cc', '1'), ('n3', 'Aa', '0'), ('n3', 'Bb', '1'),
-             ('n4', 'Ac', '0'), ('n4', 'n5', '1'), ('n5', 'Dd', '0'), ('n5', 'n6', '1'),
-             ('n6', 'Ca', '0'), ('n6', 'Db', '1')]
-    # 连线走“竖—横”折线（斜线会让 0/1 标签被线穿过），标签放竖直段一侧 9px
-    R = 5.0
-    for f, t, bit in edges:
-        (xp, yp), (xc, yc) = pos[f], pos[t]
-        s += line(xc, yc - R, xc, yp, width=1.2)
-        s += line(xc, yp, xp + (R if xp > xc else -R), yp, width=1.2)
-        s += text(xc + (9 if bit == '1' else -9), (yp + yc) / 2 + 4, bit, size=12, color='#555')
-    for k, (x, y, pr) in N.items():                     # 节点：圆 + 合并后的概率
-        s += circle(x, y, 4, width=1.4)
-        s += text(x + 8, y - 7, pr, size=11, anchor='start', color='#888')
-    for k, x, name, pr, code in leaves:
-        s += dot(x, YL, 4)
-        s += text(x, YL + 22, f'{name} {pr}', size=12, style='i')
-        s += text(x, YL + 40, code, size=12, color='#1d43c4')
-    s += text(12, 30, '联合符号概率（叶按码字升序；左支 0、右支 1）', size=12, anchor='start', color='#666')
-    s += text(12, 434, '平均码长 = 1/4×2 + 5×1/8×3 + 2×1/16×4 = 23/8 比特/符号对'
-              '（哈夫曼树不唯一，码字不唯一，码长分布一致即可）', size=12, anchor='start', color='#666')
+    """哈夫曼树：叶在左（符号＋概率）、根在右、码字列在最右。
+
+    8 个联合符号：1/4×1、1/8×5、1/16×2 → 码长 2、3×5、4×2；
+    平均码长 = 1/4×2 + 5×1/8×3 + 2×1/16×4 = 23/8 比特/符号。
+    行序与参考图一致（概率降序），码字与解析正文一致：
+    {A,c}=10、{A,a}=010、{B,b}=011、{B,d}=000、{C,c}=001、{D,d}=110、
+    {C,a}=1110、{D,b}=1111。
+    版式照参考图走“阶梯”：母节点与较高那一支同一行（于是同一行上会依次出现
+    1/8 → 1/4 → 1/2 的合并链），较低那一支用一根竖杆接上来；母概率写在竖杆右侧，
+    0/1 标在各自引线上方，由码字逐位反推，与右侧码字列一一对上
+    （竖杆被别的引线横穿处断开 12px，表示两线不相连）。
+    """
+    leaves = [('Ac', '{A,c}', '1/4', '10'),
+              ('Aa', '{A,a}', '1/8', '010'),
+              ('Bb', '{B,b}', '1/8', '011'),
+              ('Bd', '{B,d}', '1/8', '000'),
+              ('Cc', '{C,c}', '1/8', '001'),
+              ('Dd', '{D,d}', '1/8', '110'),
+              ('Ca', '{C,a}', '1/16', '1110'),
+              ('Db', '{D,b}', '1/16', '1111')]
+    # (母, 上支, 下支, 母概率, 上支标号, 下支标号)；列序 = 自下而上的合并次序
+    merges = [('M1', 'Ca', 'Db', '1/8', '0', '1'),      # 1/16 + 1/16
+              ('M2', 'Dd', 'M1', '1/4', '0', '1'),      # 1/8 + 1/8
+              ('M3', 'Bd', 'Cc', '1/4', '0', '1'),      # 1/8 + 1/8
+              ('M4', 'Aa', 'Bb', '1/4', '0', '1'),      # 1/8 + 1/8
+              ('M5', 'M4', 'M3', '1/2', '1', '0'),      # 1/4 + 1/4
+              ('M6', 'Ac', 'M2', '1/4', '0', '1'),      # 1/4 + 1/4
+              ('RT', 'M5', 'M6', '', '0', '1')]         # 1/2 + 1/2
+    Y0, DY = 44, 52                        # 叶行基线 / 行距
+    XN, XP, XW = 88, 96, 132               # 符号名（右对齐）/ 概率（左对齐）/ 引线起点
+    C0, GAP, LW = 190, 76, 39              # 第 1 列 / 列距 / 母概率占位宽
+    CX = 706                               # 码字列
+
+    y = {k: Y0 + i * DY for i, (k, *_1) in enumerate(leaves)}
+    x_in = {k: XW for k, *_1 in leaves}    # 本节点引线的起点（在本节点标签右侧）
+    col = {}
+    for i, (mid, u, l, pr, bu, bl) in enumerate(merges, 1):
+        col[mid] = C0 + (i - 1) * GAP if mid != 'RT' else C0 + 6 * GAP + 20
+        y[mid] = min(y[u], y[l])           # 母节点落在较高那一支的同一行（阶梯式）
+        x_in[mid] = col[mid] + LW
+    parent = {}
+    for mid, u, l, *_1 in merges:
+        parent[u] = parent[l] = mid
+    bars = [(col[m[0]], min(y[m[1]], y[m[2]]), max(y[m[1]], y[m[2]])) for m in merges]
+    wires = [(x_in[k], col[parent[k]], y[k]) for k in y if k in parent]
+
+    s = HEAD.format(w=760, h=470)
+    for x0, x1, yy in wires:                                 # 引线：本节点标签右侧 → 母竖杆
+        s += line(x0, yy, x1, yy, width=1.4)
+    for bx, b0, b1 in bars:                                  # 竖杆：被别的引线横穿处断 12px
+        cuts = sorted(yy for x0, x1, yy in wires
+                      if x0 + 2 < bx < x1 - 2 and b0 + 7 < yy < b1 - 7)
+        segs, cur = [], b0
+        for yy in cuts:
+            segs.append((cur, yy - 6))
+            cur = yy + 6
+        segs.append((cur, b1))
+        for a_, b_ in segs:
+            s += line(bx, a_, bx, b_, width=1.4)
+    s += line(col['RT'], y['RT'], col['RT'] + 24, y['RT'], width=1.4)   # 根出线 → 码字列
+    for mid, u, l, pr, bu, bl in merges:
+        cx = col[mid]
+        s += text(cx - 8, y[u] - 6, bu, size=11, anchor='end', color='#444')
+        s += text(cx - 8, y[l] - 6, bl, size=11, anchor='end', color='#444')
+        if pr:                                               # 根的概率 1 不写
+            s += text(cx + 7, y[mid] + 4, pr, size=12, anchor='start')
+    for k, name, pr, code in leaves:
+        s += text(XN, y[k] + 4, name, size=12, anchor='end', style='i')
+        s += text(XP, y[k] + 4, pr, size=12, anchor='start')
+        s += text(CX, y[k] + 4, code, size=12, anchor='start', color='#1d43c4')
+    s += text(CX, Y0 - 24, '码字', size=11, anchor='start', color='#8a8a8a')
+    s += text(10, y['Db'] + 44, '平均码长 = 1/4×2 + 5×1/8×3 + 2×1/16×4 = 23/8 比特/符号'
+              '（哈夫曼树不唯一，码字不唯一，码长分布一致即可）',
+              size=12, anchor='start', color='#444')
     return s + '</svg>'
 
 
