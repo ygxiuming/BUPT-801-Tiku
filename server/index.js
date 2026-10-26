@@ -118,8 +118,13 @@ function registerPdfRoute(yKey, paper) {
 Object.keys(B.papers).sort().forEach((yKey) => registerPdfRoute(yKey, B.papers[yKey]))
 
 // ---- 题库数据实时供给：/data/** 直接映射项目 data/ 目录（改数据/图后刷新即生效，无需重新构建）----
+// no-cache = 浏览器每次都带条件请求校验（变了拿新的，没变 304）——否则 _index.js 这类
+// 被监听自动重建的文件会被浏览器启发式缓存卡住，出现"改了图刷新还是旧的"。
 const realData = fs.realpathSync(path.join(ROOT, 'data'))
-app.use('/data', express.static(realData, { fallthrough: false }))
+app.use('/data', express.static(realData, {
+  fallthrough: false,
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}))
 
 // ---- 前端静态资源（限制在 dist 内）----
 const realDist = fs.realpathSync(DIST)
