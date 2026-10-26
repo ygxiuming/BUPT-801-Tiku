@@ -5,9 +5,8 @@
 差异清零才算画完。重绘渲染优先 Inkscape（中文/tspan 上下标/text-anchor 全部正确，
 没有 cairosvg 的下标假象），Inkscape 不在或渲染失败时兜底 cairosvg。
 
-产出（都在 待解析/ 下，gitignore 不入库）：
-    待解析/crops/<年>/<key>.cmp.png   每张图一个对照文件（左原卷 / 右重绘，共高缩放）
-    待解析/crops/<年>/_cmp-<年>.png   整年对照总表（一次 Read 看全）
+产出（待解析/ 下，gitignore 不入库）：
+    待解析/crops/<年>/_cmp-<年>.png   整年对照总表，一整张大图：每个卡片左原卷 / 右重绘（共高缩放）
 
 用法（在项目根目录执行）：
     python tools/compare_figures.py 2015                      # 全部题图（kind=paper）
@@ -207,12 +206,10 @@ def main():
         sys.exit('没有可对照的图。缺裁图：%s\n先裁：python tools/crop_orig.py <页png> <x,y,w,h> --out 待解析/crops/%s/<key>.png'
                  % (','.join(missing) or '(无匹配 key)', year))
 
-    cmp_dir = check_under(crops_year_dir(year), [crops_root_rt])
-    os.makedirs(cmp_dir, exist_ok=True)
     workdir = tempfile.mkdtemp(prefix='w801-cmp-')
     pad, tag_h, lab_h, gap = 12, 24, 26, 28
     CAP, MW = a.maxh, a.maxw
-    cards, written = [], []
+    cards = []
     try:
         for k, crop in picked:
             meta = data[k].get('meta', {})
@@ -261,10 +258,6 @@ def main():
                 d.rectangle([pad + dx - 1, y - 1, pad + dx + p.width, y + p.height],
                             outline=(190, 190, 190), width=1)
             cards.append(card)
-
-            cmp_png = check_under(os.path.join(cmp_dir, '%s.cmp.png' % k), [crops_root_rt])
-            card.save(cmp_png)
-            written.append(os.path.relpath(cmp_png, ROOT))
     finally:
         os.chdir(ROOT)
         shutil.rmtree(workdir, ignore_errors=True)
@@ -298,8 +291,6 @@ def main():
     sheet.save(sheet_dst)
     print('%s: %d/%d 张有裁图；总表 -> %s (%dx%d)' %
           (year, len(cards), len(cards) + len(missing), os.path.relpath(sheet_dst, ROOT), SW, SH))
-    for w in written:
-        print('  ' + w)
     if missing:
         print('缺裁图（跳过，先 crop_orig.py 补）：' + ', '.join(missing))
 

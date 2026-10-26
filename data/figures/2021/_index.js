@@ -1,4 +1,5 @@
-// 2021 图库注册表 —— 由 tools/emit_figures.mjs 自动生成；源文件是本目录（含 answer/）的 *.svg，勿手改
+// 2021 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
+// 源文件是本目录（含 answer/）的 *.svg（唯一维护对象），勿手改本文件
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};

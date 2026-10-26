@@ -39,7 +39,8 @@ data/figures/<年>/          图库：单图一 .svg 真身（首行 <!-- figure
                             + answer/ 子目录 + _index.js（emit 自动生成的注册表，勿手改）
 data/questions/<年>/        paper.js（真题）+ answer.js（答案与解析）
 tools/gen_figures_<年>.py   SVG 生成器（stdout 输出 ###FILE: 分隔的多文件）
-tools/emit_figures.mjs      落盘：生成器输出 → .svg 真身 + 重建 _index.js；--from-svg 由现有 .svg 重建
+tools/emit_figures.mjs      落盘：生成器输出 → .svg 真身 + 重建 _index.js；--from-svg 由现有 .svg 重建。
+                            server 在跑时改 .svg 存盘会自动重建（fig_registry + fs.watch），无需手动跑
 tools/crop_orig.py          原卷裁图助手（页 PNG + x,y,w,h → 待解析/crops/<年>/<key>.png）
 tools/compare_figures.py    **对照**：左原卷/右重绘 + 总表（需先有裁图）；--overlay 叠加、--grid 网格
 tools/dump_figures.js       图库 JSON 导出（compare_figures.py 的数据通道；新年份加一行 require）
@@ -149,7 +150,7 @@ SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}   # 四边各留 18px
 /home/xiuming/.workbuddy/binaries/python/envs/default/bin/python tools/compare_figures.py <年>
 ```
 
-   Read 总表（`待解析/crops/<年>/_cmp-<年>.png`）和可疑单图的 `.cmp.png`（左原卷/右重绘），逐图列
+   Read 总表（`待解析/crops/<年>/_cmp-<年>.png`，一整张大图：每个卡片左原卷/右重绘），逐图列
    **差异清单：拓扑、器件顺序、箭头方向、标注文字、相对位置/比例**——改生成器 → 重新 emit → 重比，
    直到清单清零。有意改动（修正原卷笔误、参考解析画错）写进 `sol.pitfalls` 与解析日志，注明理由。
 
@@ -331,7 +332,8 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 四边留白 8/30 不均、图看着偏左 | 这张图没走 `svgkit.tighten()`，或还在用 `svg_fit`/`fit_figures_render` 旧链路；新图统一 `tighten(v, PAD)` |
 | 收紧留白后标签与箭头贴住 | 文字盒是"上 0.8em / 下 0.2em"，箭头起点必须落在文字盒之外 ≥6px；垂直箭头别让文字居中压在箭线上，改成右对齐/左对齐到线侧 |
 | compare 提示"缺裁图" | `待解析/crops/<年>/<key>.png` 不存在；先 crop_orig.py 裁图留档，compare 只对照有裁图的题图 |
-| 手改了 .svg 但页面/校验没变 | 注册表是生成物：`node tools/emit_figures.mjs <年> --from-svg` 重建 `_index.js`；别手改 `_index.js` |
+| 手改了 .svg 但页面/校验没变 | 注册表是自动缓存：**server 在跑时存盘即自动重建**（监听 svg 变化），没起 server 就 `node tools/emit_figures.mjs <年> --from-svg`；别手改 `_index.js` |
+| Inkscape 手调后图不显示/校验报错 | 首行 `<!-- figureMeta {...} -->` 注释被改坏或删了（emit 靠它注册）；从 git 恢复注释再存，或照 `_TEMPLATE.md` 补回 |
 | 图整块消失（新链路） | 该年 `_index.js` 没重建，或 `app/index.html` 缺该年一行；改过 index.html 必须 `node tools/build-frontend.mjs` |
 | 框里两行字贴框底 | 框高 30 只够单行。双行文字用框高 38、行基线间距 14~15、距上下边各 ≥4px |
 | 同类元素三种画法（`#666`/`#bbb`、`6,4`/`2,3`） | 按第 5 节色表/线型表统一，别在图里自创；改动时用 `grep -n "color='#"` 一次性扫平 |

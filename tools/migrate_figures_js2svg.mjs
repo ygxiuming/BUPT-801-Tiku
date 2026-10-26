@@ -44,9 +44,9 @@ for (const year of YEARS) {
       .map((s) => keyByStem[s.replace(/^require\(['"]\.\//, '').replace(/\.js['"]\)$/, '').replace(/^.*\//, '')])
       .filter(Boolean)
   } catch { /* 无旧表 */ }
-  const n = rebuildIndex(join(figRoot, year), year, hint)
+  const r = rebuildIndex(join(figRoot, year), year, hint)
   converted += pairs.length
-  console.log(year + ': ' + pairs.length + ' 图转 .svg，_index.js 重建（' + n + ' 项）')
+  console.log(year + ': ' + pairs.length + ' 图转 .svg，_index.js 重建（' + r.count + ' 项）')
 }
 
 for (const js of toDelete) unlinkSync(js)

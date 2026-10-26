@@ -24,7 +24,7 @@ data/
 ### 关键约定
 
 - **题目与答案分离**：paper.js 不含 `answer/exp/sol`；answer.js 按题目 id 存答案与解析。加载后由 `hydrateAnswers()` 就地合并回题目对象（前端 `app/src/lib/data.js`，server `server/lib/load-data.js`，校验器 `tools/validate_data.js` 三处同逻辑）。
-- **图库两层：.svg 真身 + 自动注册表**：`<年>-<题号>-<图名>.svg` 是唯一编辑对象（首行 figureMeta 注释带 key/q/kind/desc）；`_index.js` 由 `node tools/emit_figures.mjs <年>`（或 `--from-svg`）重建，注册 `figures["年"][key]` 与 `figureMeta["年"][key]`。题目数据里 `fig: "key"`（q.fig 题图 / sol.steps[].fig 解析图）与文件名解耦。
+- **图库两层：.svg 真身 + 自动注册表**：`<年>-<题号>-<图名>.svg` 是**唯一维护对象**（首行 figureMeta 注释带 key/q/kind/desc；Inkscape 手调后直接存盘）；`_index.js` 是自动生成的缓存——server 启动时全量对齐 + 运行中监听 .svg 变化自动重建（`tools/fig_registry.js`），没起 server 就跑 `node tools/emit_figures.mjs <年> --from-svg`。注册 `figures["年"][key]` 与 `figureMeta["年"][key]`。题目数据里 `fig: "key"`（q.fig 题图 / sol.steps[].fig 解析图）与文件名解耦。
 - **选项组多套选项**：2026 起组内可声明 `optionSets: ["options5","options6"]` 且题目用 `oKey` 指定用哪套；2025 旧约定（`options12/13/25/26` 按 blank 号）继续兼容。渲染端（PaperView / print-html.js）先看 optionSets 再回退旧键。
 - **公式**：`$...$` / `$$...$$`（KaTeX）；JS 字符串里反斜杠双写。渲染层统一做 HTML 转义（公式里的裸 `<` 会被 innerHTML 当标签吞掉）。
 - **数据一律是挂 `window.BUPT801` 的 .js**（不用 fetch/json）。

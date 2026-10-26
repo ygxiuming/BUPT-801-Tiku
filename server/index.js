@@ -11,6 +11,46 @@ const ROOT = path.dirname(path.dirname(__filename))
 const DIST = path.join(ROOT, 'app', 'dist')
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome'
 
+// ---- 图库注册表自动同步：.svg 是唯一维护对象，_index.js 只是自动生成的缓存 ----
+// 启动时全量对齐一次；运行中监听 .svg 变化（Inkscape 手调存盘 → 自动重建 → 浏览器刷新即生效）。
+// 任何失败只告警不退出（同步不了时 _index.js 保持上次内容，页面照常工作）。
+module.paths.unshift(ROOT) // require('tools/...') 从项目根解析（require(变量)/路径 .. 字面量会被 Mimosa 拦）
+const figRegistry = require('tools/fig_registry.js')
+const FIG_ROOT = path.join(ROOT, 'data', 'figures')
+
+function syncFigures(years, tag) {
+  const changed = []
+  for (const y of years) {
+    try {
+      const r = figRegistry.rebuildIndex(path.join(FIG_ROOT, y), y, null)
+      if (r.changed) changed.push(y)
+    } catch (e) {
+      console.warn('图库注册表同步失败（' + y + '）：' + e.message)
+    }
+  }
+  if (changed.length) console.log('[' + tag + '] 图库注册表已从 .svg 重建：' + changed.join(', '))
+  return changed
+}
+
+const FIG_YEARS = (() => {
+  try { return fs.readdirSync(FIG_ROOT).filter((y) => /^\d{4}$/.test(y)) } catch { return [] }
+})()
+
+let figWatchTimer = null
+try {
+  fs.watch(FIG_ROOT, { recursive: true }, (_ev, name) => {
+    if (!name || !String(name).endsWith('.svg')) return
+    clearTimeout(figWatchTimer)
+    // 防抖：编辑器保存常连写多次；只重建受影响年份（目录名即年份，answer/ 子目录同理）
+    figWatchTimer = setTimeout(() => {
+      const year = String(name).split(path.sep)[0].split('/')[0]
+      syncFigures(/^\d{4}$/.test(year) ? [year] : FIG_YEARS, 'svg 变更')
+    }, 300)
+  })
+} catch (e) {
+  console.warn('图库 .svg 监听不可用（不影响启动）：' + e.message)
+}
+
 const app = express()
 app.use(express.json())
 
@@ -91,6 +131,7 @@ app.get(/^\/(?!api\/|data\/).*/, (req, res) => {
 })
 
 app.listen(PORT, () => {
+  syncFigures(FIG_YEARS, '启动')
   console.log('北邮801题库服务已启动: http://127.0.0.1:' + PORT)
   console.log('PDF 接口: /api/pdf/<年份>/paper 或 /api/pdf/<年份>/ans')
 })

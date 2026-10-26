@@ -39,9 +39,12 @@ node tools/check_figs.mjs                     # 自检
 
 | 类型 | 路径 | 额外操作 |
 |---|---|---|
-| 题目原图（卷面框图） | `data/figures/<年>/<年>-<题号>-<图名>.svg` | 跑 `emit --from-svg <年>` 重建注册表 |
+| 题目原图（卷面框图） | `data/figures/<年>/<年>-<题号>-<图名>.svg` | 见下面的生效方式 |
 | 解析配图 | `data/figures/<年>/answer/<年>-<题号>-<图名>.svg` | 同上 |
 
+**生效方式**（`_index.js` 是自动缓存，唯一维护对象是 .svg）：
+- **server 在跑（生产 3000 端口）**：改完 .svg 直接存盘——server 监听 svg 变化自动重建注册表，刷新浏览器即生效；
+- **没起 server**：`node tools/emit_figures.mjs <年> --from-svg` 手动重建；
 - **新年份**第一张图：另需在 `app/index.html` 加一行 `<script src="/data/figures/<年>/_index.js">`
   并 `node tools/build-frontend.mjs`；已有年份加图不需要动 index.html。
 - **由生成器维护的图**别手改 `.svg`（下次 emit 会被生成器输出覆盖）；要长期手改的 key 从生成器
