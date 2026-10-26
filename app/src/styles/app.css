@@ -841,15 +841,34 @@ html[data-theme="dark"] .paper-sheet { box-shadow: var(--shadow-2); }
 .bigq .subs { margin: 4px 0 4px 1.6em; }
 .bigq .subs div { margin: 2px 0; }
 .qgroup { scroll-margin-top: 160px; }
-/* 选择题的题号徽标 / 选项表所属空号：没有这两行，第一大题只有一串「● 题干」，
-   读者既看不出第几题，也分不清连着排的四张选项表各属哪一空。 */
-.qno {
-  display: inline-block; margin: 16px 0 0 0; padding: 1px 8px 2px;
-  font-size: 12px; font-weight: 800; letter-spacing: .4px; line-height: 1.6;
-  color: var(--brand-ink); background: rgba(127, 157, 255, .14);
-  border: 1px solid var(--brand-line); border-radius: 6px;
+/* 选择题的题号 / 空号：行首写「1．」，一题多空时在题号后补一个「空 n」小标。
+   缩进用悬挂式（padding + 负 text-indent），长题干折行后与正文左缘对齐，
+   不会缩到题号后面去 —— 这是「README 式」和「正式卷面」的分界。 */
+.qline.qn { padding-left: 2.1em; text-indent: -2.1em; }
+.qline.qn::before { content: none; }
+.qline.qn .qnr {
+  display: inline-block; min-width: 1.5em; margin-right: .35em;
+  font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums;
 }
-.opt-cap { margin: 8px 0 0 1.6em; font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .5px; }
+.qline.qn .qblk {
+  margin-right: .4em; padding: 0 5px 1px; border-radius: 4px;
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  background: rgba(127, 157, 255, .12); border: 1px solid var(--brand-line);
+}
+.bigq .qnum .pts { font-weight: 400; font-size: 14.5px; color: var(--muted); }
+.opt-cap { margin: 8px 0 0 2.1em; font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .5px; }
+
+/* 大题小问：一行一问，悬挂缩进 + 编号加粗。
+   以前用 margin:2px + 行高 2.05 一排到底，几个小问糊成一段，读不出「问到第几问」。 */
+.bigq .subs { margin: 10px 0 6px 2.1em; }
+.bigq .subs .sub-row { padding-left: 2.5em; text-indent: -2.5em; margin: 9px 0; }
+.bigq .subs .sub-row.lv2 { padding-left: 4.2em; text-indent: -2.3em; }
+.bigq .subs .sub-grp {
+  margin: 14px 0 4px; padding-left: 0; font-weight: 700; color: var(--ink);
+  break-inside: avoid;
+}
+.bigq .subs .subno { font-weight: 800; color: var(--ink); margin-right: .3em; font-variant-numeric: tabular-nums; }
+.bigq .subs .sub-row + .sub-grp { margin-top: 18px; }
 
 /* 跨页/阅读友好：试卷内解析用浅底 */
 .paper-sheet .ans { color: #16181d; font-family: var(--font); }
@@ -916,8 +935,12 @@ html[data-theme="dark"] .paper-sheet { box-shadow: var(--shadow-2); }
 .qcard .opt-table td.sel-right { background: var(--ok-soft); border-color: var(--ok); box-shadow: inset 3px 0 0 var(--ok); }
 .qcard .opt-table td.sel-wrong { background: var(--bad-soft); border-color: var(--bad); box-shadow: inset 3px 0 0 var(--bad); }
 .qcard .opt-table td.reveal { background: var(--ok-soft); border-color: var(--ok-line); }
+/* 题卡里的小问与试卷页同一套版式（一行一问、悬挂缩进） */
 .qsubs { margin: 10px 0 0 1.6em; font-family: var(--font-serif); font-size: 15.5px; }
-.qsubs div { margin: 4px 0; }
+.qsubs .sub-row { padding-left: 2.5em; text-indent: -2.5em; margin: 9px 0; }
+.qsubs .sub-row.lv2 { padding-left: 4.2em; text-indent: -2.3em; }
+.qsubs .sub-grp { margin: 14px 0 4px; font-weight: 700; }
+.qsubs .subno { font-weight: 800; margin-right: .3em; font-variant-numeric: tabular-nums; }
 .qactions { display: flex; gap: 8px; align-items: center; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line); flex-wrap: wrap; }
 .qhint { color: var(--muted); font-size: 13px; }
 .qnav { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }

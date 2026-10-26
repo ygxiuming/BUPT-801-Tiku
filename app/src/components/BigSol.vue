@@ -3,7 +3,7 @@
     <div class="ans-title">参考解析 <span class="ans-meta">{{ label }}</span></div>
     <div class="ans-concl math-zone" v-html="md(q.sol.intro)"></div>
     <details class="sol-step" v-for="(st, i) in q.sol.steps" :key="i" :open="openSteps">
-      <summary class="math-zone" v-html="md(st.q)"></summary>
+      <summary class="math-zone" v-html="md(normSubNo(st.q))"></summary>
       <div class="step-body">
         <div
           class="step-line math-zone"
@@ -23,7 +23,7 @@
 
 <script>
 import FigBlock from './FigBlock.vue'
-import { chapterLabel, mdBlock, mdBlocks } from '../lib/data.js'
+import { chapterLabel, mdBlock, mdBlocks, normSubNo } from '../lib/data.js'
 
 export default {
   name: 'BigSol',
@@ -38,6 +38,9 @@ export default {
   },
   methods: {
     md: mdBlock,
+    // 模板里的裸标识符只会解析到组件实例，不会解析到模块作用域：
+    // 不在这里挂一份，`normSubNo(st.q)` 会被编译成 this.normSubNo(...) → 直接抛 TypeError
+    normSubNo,
     blocks(body) { return mdBlocks(body) },
     // pitfalls 有的是数组、有的是字符串，统一成一段文本
     blockText(v) { return Array.isArray(v) ? v.join('\n') : v }

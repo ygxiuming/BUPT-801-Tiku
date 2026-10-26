@@ -121,6 +121,62 @@ export function boldBlanks(s) {
   return escHtml(s).replace(/（(\d+)）/g, '（<strong class="blank">$1</strong>）')
 }
 
+/* ---------- 卷面编号（选择题 / 大题小问） ----------
+   选择题按「题号」编号：一题对应一个空（2018/2025/2026），也可能一题含多个空
+   （2017/2019/2021/2022/2024 的 num≠blank），所以行首写题号、空号另标。
+   大题小问按「（1）（2）」，少数年份的大题是「两道小题各带自己的小问」——
+   那种行首是「1、」「2、」，属于一级标题，不是小问，要和 (n) 分两档缩进。 */
+
+// 连续数字折叠成 a–b；不连续用顿号。入参可以是字符串或数字，重复项自动去重
+export function numRange(nums) {
+  const a = [...new Set(nums.map(Number).filter((n) => !Number.isNaN(n)))].sort((x, y) => x - y)
+  if (!a.length) return ''
+  if (a.length === 1) return String(a[0])
+  const cont = a.every((v, i) => i === 0 || v === a[i - 1] + 1)
+  return cont ? a[0] + '–' + a[a.length - 1] : a.join('、')
+}
+
+// 小问行拆成 { lv, no, text }：
+//   lv 0 = 一级标题（「1、设某线性分组码…」），lv 1 = 小问（「（1）写出…」）
+//   no 保留原编号（统一成全角），text 是去掉编号后的正文
+// 数据里 2016~2026 全部写的是半角 (1)，考试卷面是「（1）」——
+// 渲染时统一收口成全角，不去改 300 多条原始数据（导入时手写半角也无所谓）。
+export function normSubNo(s) {
+  return String(s == null ? '' : s).replace(/^\s*[（(]\s*([0-9]+)\s*[)）]\s*/, (m, n) => '（' + n + '）')
+}
+
+export function subRow(s) {
+  const t = String(s == null ? '' : s).trim()
+  let m = /^[（(]\s*([0-9]+)\s*[)）]\s*/.exec(t)
+  if (m) return { lv: 1, no: '（' + m[1] + '）', text: t.slice(m[0].length) }
+  m = /^([0-9]+)\s*[、.．]\s*/.exec(t)
+  if (m) return { lv: 0, no: m[1] + '、', text: t.slice(m[0].length) }
+  return { lv: 1, no: '', text: t }
+}
+
+// subs 数组 → 渲染行；grp 表示这一行属于前面某个「1、」一级标题，缩进要再深一级
+export function subsRows(subs) {
+  let grp = false
+  return (subs || []).map((s) => {
+    const r = subRow(s)
+    if (r.lv === 0) { grp = true; return Object.assign({}, r, { grp: true }) }
+    return Object.assign({}, r, { grp })
+  })
+}
+
+// 小问 HTML（试卷页与题卡共用一份，避免两处缩进/编号各自长一套）：
+// 每行悬挂缩进，编号加粗；「1、」是一级标题（不缩进、上下留白更大）
+export function subsHtml(subs, cls) {
+  const rows = subsRows(subs)
+  if (!rows.length) return ''
+  const body = rows.map((r) => {
+    if (r.lv === 0) return `<div class="sub-grp"><b class="subno">${r.no}</b>${boldBlanks(r.text)}</div>`
+    const no = r.no ? `<b class="subno">${r.no}</b>` : ''
+    return `<div class="sub-row${r.grp ? ' lv2' : ''}">${no}${boldBlanks(r.text)}</div>`
+  }).join('')
+  return `<div class="${cls || 'subs'}">${body}</div>`
+}
+
 /* ---------- 解析正文的轻量 Markdown ----------
    数据里只用到两种语法，没必要引第三方解析器：
      1. 行内 **粗体**（跳过 $...$ / $$...$$ 内部，避免吃掉公式里的星号）

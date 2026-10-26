@@ -59,7 +59,27 @@ export function figureSvg(year, key) {
   if (!s) return s
   const meta = (window.BUPT801.figureMeta || {})[String(year)] || {}
   const desc = (meta[key] && meta[key].desc) || key
-  return withTitle(scopeIds(s, nextFigPrefix(year, key)), desc)
+  return withTitle(inlineFigure(scopeIds(s, nextFigPrefix(year, key))), desc)
+}
+
+/* 正文里的图件尺寸 —— 这里是「图看着特别大」的唯一根因与唯一修法。
+   生成器输出的 svg 只有 viewBox、没有 width/height，而 `.figblock svg{max-width:100%}`
+   对这种「无固有尺寸」的替换元素不起作用：浏览器按 SVG 默认 width=100% 处理，
+   于是 227px 宽的星座图被拉到 800px 正文宽（放大 3.5 倍，字大得离谱）。
+   修法：按 viewBox 算出固有尺寸再显式写死 width/height，并按下面的区间夹一次：
+     - 比 MAX 宽的大图（如 1236px 的实测眼图）缩到 680，仍比正文窄，点击可放大看细节
+     - 比 MIN 窄的小图（249px 的量化特性）抬到 320，避免字小到看不清
+     - 中间的按 1:1 出图，卷面里图与正文的字号才协调 */
+export const FIG_INLINE = { min: 320, max: 680 }
+export function inlineFigure(svgStr, maxW = FIG_INLINE.max, minW = FIG_INLINE.min) {
+  const m = /viewBox=['"]([^'"]+)['"]/.exec(svgStr || '')
+  if (!m) return svgStr
+  const p = m[1].trim().split(/\s+/).map(Number)
+  const w = p[2], h = p[3]
+  if (!w || !h) return svgStr
+  const W = Math.min(Math.max(w, minW), maxW)
+  // fitSvg 会先剥掉旧的 width/height/style 再按比例注入，正好复用
+  return fitSvg(svgStr, W, (W * h) / w)
 }
 
 // 给 SVG 注入 <title>：读屏与浏览器悬浮提示都能拿到图的语义名称。

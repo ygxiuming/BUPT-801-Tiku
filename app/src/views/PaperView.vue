@@ -61,7 +61,7 @@
 
 <script>
 import Icon from '../components/Icon.vue'
-import { papers, escHtml, mdBlock, mdBlocks } from '../lib/data.js'
+import { papers, escHtml, mdBlock, mdBlocks, numRange, subsHtml, normSubNo } from '../lib/data.js'
 import { renderMath, figureSvg } from '../lib/render.js'
 import { APP_BASE } from '../router.js'
 
@@ -126,7 +126,7 @@ export default {
       }
       const bigSol = (q) => {
         const steps = (q.sol.steps || []).map((st) =>
-          `<details class="sol-step" open><summary>${mdBlock(st.q)}</summary><div class="step-body">` +
+          `<details class="sol-step" open><summary>${mdBlock(normSubNo(st.q))}</summary><div class="step-body">` +
           mdBlocks(st.body).map((b) => `<div class="step-line${b.t === 'table' ? ' step-table' : ''}">${b.html}</div>`).join('') +
           (st.fig ? `<figure class="figblock">${figureSvg(this.year, st.fig)}</figure>` : '') +
           (st.ans ? `<div class="step-ans">${mdBlock(st.ans)}</div>` : '') +
@@ -157,12 +157,17 @@ export default {
           ? g.optionSets.map((k) => g[k]).filter(Boolean)
           : [g.options12, g.options13, g.options25, g.options26].filter(Boolean)
         if (!multi.length && g.options) multi.push(g.options)
-        // 题号徽标：本组覆盖的空号（2017/2019 等年份 num≠blank，一律以题干里的（N）为准）
+        // 题号：本组覆盖的题号（num）与空号（blank）分开算 —— 2017/2019/2021/2022/2024
+        // 存在「一题多空」（num 重复、blank 递增），只写一个会把别处对不上。
+        const nums = cluster.map((cq) => cq.num)
         const bs = cluster.map((cq) => cq.blank)
-        const cont = bs.every((b, k) => k === 0 || b === bs[k - 1] + 1)
-        const qlab = bs.length === 1 ? String(bs[0]) : cont ? bs[0] + '–' + bs[bs.length - 1] : bs.join('、')
-        html += `<div class="qgroup"><div class="qno" title="本组覆盖第 ${bs.join('、')} 空">${qlab}</div>` +
-          `<div class="qline">${blank(g.stem || '')}</div>`
+        const numLab = numRange(nums)
+        const blankLab = numRange(bs)
+        // 题号 ≠ 空号时才补「空 n」，否则纯属噪音
+        const extra = numLab === blankLab ? '' : `<span class="qblk">空 ${blankLab}</span>`
+        // 行首写题号（悬挂缩进，折行后与正文左缘对齐），选项表前标空号——
+        // 这样任取一段卷面都能读出「第几题、第几空」，不再靠范围徽标去猜
+        html += `<div class="qgroup"><div class="qline qn"><span class="qnr">${numLab}．</span>${extra}${blank(g.stem || '')}</div>`
         const gfig = cluster.find((cq) => cq.fig)
         if (gfig) html += fig(gfig.fig)
         multi.forEach((o, k) => {
@@ -170,7 +175,9 @@ export default {
           const hit = cluster.filter((cq) => cq.oKey && g[cq.oKey] === o)
           const own = hit.length ? hit.map((cq) => cq.blank)
             : multi.length === cluster.length ? [cluster[k].blank] : bs
-          html += optTable(o, own.map((b) => `（${b}）`).join(''))
+          // 一套选项服务多个空时写明「共用选项」：四张表连着排才分得清
+          const tag = own.map((b) => `（${b}）`).join('') + (own.length > 1 ? '共用选项' : '选项')
+          html += optTable(o, tag)
         })
         cluster.forEach((cq) => { html += exp(cq) })
         html += `</div>`
@@ -182,10 +189,10 @@ export default {
       html += `<div class="sec-title" id="sec-big">二、${s1.name}（共${s1.score}分）</div>`
       if (s1.intro) html += `<div class="sec-intro">${escHtml(s1.intro)}</div>`
       big.forEach((q) => {
-        html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．（${q.score}分）<a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
+        html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．<span class="pts">（${q.score}分）</span><a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
           `<div class="stem">${blank(q.stem)}</div>`
         if (q.fig) html += fig(q.fig)
-        if (q.subs && q.subs.length) html += `<div class="subs">${q.subs.map((s) => `<div>${blank(s)}</div>`).join('')}</div>`
+        if (q.subs && q.subs.length) html += subsHtml(q.subs, 'subs')
         html += bigSol(q) + `</div>`
       })
       return html
