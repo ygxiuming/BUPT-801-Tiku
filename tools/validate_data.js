@@ -49,6 +49,9 @@ require('../data/questions/2018/answer.js');
 require('../data/figures/2016/_index.js');
 require('../data/questions/2016/paper.js');
 require('../data/questions/2016/answer.js');
+require('../data/figures/2015/_index.js');
+require('../data/questions/2015/paper.js');
+require('../data/questions/2015/answer.js');
 
 // KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）
 const katex = require(path.join(ROOT, 'server/node_modules/katex/dist/katex.min.js'));
@@ -91,7 +94,9 @@ const EXPECT = {
   // 2018 原卷：一（50 空 × 1 分 = 50 分）+ 二、四、五、六、七（14×5 = 70）+ 三、八（15×2 = 30）= 150 分
   2018: { choice: 50, big: 7, score: 150 },
   // 2016 原卷：一（30 空，原卷印“共 20 分”但实有 30 空，按 1 分/空 = 30 分）+ 二～六（12×5 = 60）+ 七～十二（10×6 = 60）= 150 分
-  2016: { choice: 30, big: 11, score: 150 }
+  2016: { choice: 30, big: 11, score: 150 },
+  // 2015 原卷：一（40 空 × 1 分 = 40 分）+ 二～十二（10×11 = 110）= 150 分
+  2015: { choice: 40, big: 11, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -1425,6 +1430,49 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   t.push(['2016十二 R_c=[1,3/7,-1/7×4,3/7]', Rc.every((v, i) => approx(v, exp[i]))]);
   t.push(['2016十二 ΣR_c=9/7=(Σc)²/7', approx(Rc.reduce((s, v) => s + v, 0), 9 / 7) && approx(Math.pow(C.reduce((s, v) => s + v, 0), 2) / 7, 9 / 7)]);
   t.push(['2016十二 R_c(±1)=3/7 ≠ -1/7（与纯 m 序列不同）', approx(Rc[1], 3 / 7) && !approx(Rc[1], -1 / 7)]);
+})();
+
+// 2015
+(function () {
+  const integ = (fn, lo, hi, N) => { const h = (hi - lo) / N; let s = 0; for (let i = 0; i < N; i++) s += fn(lo + (i + 0.5) * h) * h; return s; };
+  // 十：阶梯密度 p=1 于 [-0.5,0)、p=2 于 [0,0.25]（分段积分，避免中点法跨断点误差）
+  const Nq = (a, b) => integ((x) => (x - b) * (x - b), -0.5, 0, 20000) + 2 * integ((x) => (x - a) * (x - a), 0, 0.25, 20000);
+  t.push(['2015十 ∫p=1（分段积分）', approx(0.5 * 1 + 0.25 * 2, 1)]);
+  t.push(['2015十 E[X]=-1/16', approx(integ((x) => x, -0.5, 0, 1000) + 2 * integ((x) => x, 0, 0.25, 1000), -1 / 16, 1e-12)]);
+  t.push(['2015十 E[X²]=5/96', approx(integ((x) => x * x, -0.5, 0, 200000) + 2 * integ((x) => x * x, 0, 0.25, 200000), 5 / 96, 1e-9)]);
+  // 二电平量化噪声 Nq(a,b)=∫(x-b)²·1 + ∫(x-a)²·2，数值网格搜索复核最优 (a,b)
+  t.push(['2015十 b=-1/8,a=1/8 → Nq=1/48', approx(Nq(1 / 8, -1 / 8), 1 / 48, 1e-9)]);
+  let best = { a: 0, b: 0, v: Infinity };
+  for (let i = -60; i <= 0; i++) for (let j = 0; j <= 25; j++) {
+    const a = j / 100, b = i / 100, v = Nq(a, b);
+    if (v < best.v) best = { a, b, v };
+  }
+  t.push(['2015十 网格搜索最优 b≈-1/4、a≈1/8', Math.abs(best.b + 0.25) < 0.011 && Math.abs(best.a - 0.125) < 0.011]);
+  t.push(['2015十 Nq_min=5/384', approx(Nq(1 / 8, -1 / 4), 5 / 384, 1e-9)]);
+  // 九：s1 在原点、s2..s4 在半径 1 的正三角形顶点 → Es=3/4；D1 顶点 (0,-1) 到三邻点等距
+  const s1 = [0, 0], s2 = [0, 1], s3 = [-Math.sqrt(3) / 2, -0.5], s4 = [Math.sqrt(3) / 2, -0.5];
+  const d2 = (p, q) => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2;
+  t.push(['2015九 Es=(0+1+1+1)/4=3/4', approx((d2(s1, [0, 0]) + d2(s2, [0, 0]) + d2(s3, [0, 0]) + d2(s4, [0, 0])) / 4, 3 / 4)]);
+  const vt = [0, -1];
+  t.push(['2015九 D1 顶点到 s1/s3/s4 等距=1', approx(Math.sqrt(d2(vt, s1)), 1) && approx(Math.sqrt(d2(vt, s3)), 1) && approx(Math.sqrt(d2(vt, s4)), 1)]);
+  t.push(['2015九 s2s3 边距=√3', approx(Math.sqrt(d2(s2, s3)), Math.sqrt(3))]);
+  // 十二：Y=X+Z1+Z2（三者独立 ±1 等概），枚举 8 种组合
+  const cnt = {};
+  for (const x of [-1, 1]) for (const z1 of [-1, 1]) for (const z2 of [-1, 1]) {
+    const y = x + z1 + z2; cnt[y] = (cnt[y] || 0) + 1 / 8;
+  }
+  t.push(['2015十二 P(Y)={±3:1/8, ±1:3/8}', approx(cnt[3], 1 / 8) && approx(cnt[1], 3 / 8) && approx(cnt[-1], 3 / 8) && approx(cnt[-3], 1 / 8)]);
+  const hb = (p) => -p * Math.log2(p);
+  const HY = 2 * hb(1 / 8) + 2 * hb(3 / 8);
+  t.push(['2015十二 H(Y)=¾log₂(16/3)≈1.811', approx(HY, 0.75 * Math.log2(16 / 3), 1e-12) && approx(HY, 1.8113, 1e-3)]);
+  t.push(['2015十二 H(Y|X)=H(Z1+Z2)=1.5', approx(2 * hb(1 / 4) + hb(1 / 2), 1.5)]);
+  t.push(['2015十二 I=H(Y)-1.5≈0.311', approx(HY - 1.5, 0.3113, 1e-3)]);
+  // Z2 固定：Y=X+Z1+c → P(Y)={1/4,1/2,1/4}，H(Y)=1.5；给定 X 时 Y 二值等概 → H(Y|X)=1 → I=0.5
+  t.push(['2015十二 Z2 固定 → I=1.5-1=0.5', approx((2 * hb(1 / 4) + hb(1 / 2)) - 1, 0.5)]);
+  // 八：D[Z]=(4/Tb²)(N0/2)(Tb/2)=N0/Tb；A=2√Tb 时 A/σ = 2Tb/√N0
+  const Tb = 2e-3, N0 = 3e-4;
+  t.push(['2015八 D[Z]=N0/Tb 恒等式', approx((4 / (Tb * Tb)) * (N0 / 2) * (Tb / 2), N0 / Tb, 1e-15)]);
+  t.push(['2015八 A=2√Tb → A/σ=2Tb/√N0', approx((2 * Math.sqrt(Tb)) / Math.sqrt(N0 / Tb), 2 * Tb / Math.sqrt(N0), 1e-12)]);
 })();
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });
