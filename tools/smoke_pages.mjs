@@ -53,6 +53,9 @@ const ROUTES = [
   ['/paper/2026', '试卷页2026'],
   ['/practice?y=2026', '练习页2026'],
   ['/exam?y=2026', '考试页2026'],
+  ['/paper/2019', '试卷页2019'],
+  ['/practice?y=2019', '练习页2019'],
+  ['/exam?y=2019', '考试页2019'],
   ['/paper/2020', '试卷页2020'],
   ['/practice?y=2020', '练习页2020'],
   ['/exam?y=2020', '考试页2020'],
@@ -305,6 +308,23 @@ await step('练习页2024：选选项 → 查看解析', async () => {
 
 await step('练习页2026：选选项 → 查看解析', async () => {
   const w = await openPage('/practice?y=2026', 'prac26')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2019：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2019', 'prac19')
   const opt = w.document.querySelector('td[data-k]')
   if (!opt) throw new Error('找不到选项单元格 td[data-k]')
   click(w, opt)

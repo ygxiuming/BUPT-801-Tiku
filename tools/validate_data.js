@@ -21,6 +21,7 @@ require('../data/figures/2023/_index.js');
 require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
+require('../data/figures/2019/_index.js');
 require('../data/figures/2022/_index.js');
 require('../data/figures/2020/_index.js');
 require('../data/questions/2020/paper.js');
@@ -37,6 +38,8 @@ require('../data/questions/2025/paper.js');
 require('../data/questions/2025/answer.js');
 require('../data/questions/2026/paper.js');
 require('../data/questions/2026/answer.js');
+require('../data/questions/2019/paper.js');
+require('../data/questions/2019/answer.js');
 
 // KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）
 const katex = require(path.join(ROOT, 'server/node_modules/katex/dist/katex.min.js'));
@@ -71,7 +74,9 @@ const EXPECT = {
   2024: { choice: 40, big: 9, score: 150 },
   2025: { choice: 30, big: 8, score: 150 },
   2026: { choice: 40, big: 7, score: 150 },
-  2020: { choice: 40, big: 8, score: 150 }
+  2020: { choice: 40, big: 8, score: 150 },
+  // 2019 原卷：一（50 空 × 1 分 = 50 分）+ 二～六（14×5 = 70）+ 七、八（15×2 = 30）= 150 分
+  2019: { choice: 50, big: 7, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -850,6 +855,188 @@ t.push(['2020三 PnB=300N0、SNR=1000', approx(200 * 1e-5 + 100 * 1e-5, 3e-3) &&
 })();
 // 九：Rb=12、α=2W/Rs-1=1/3、η=3
 t.push(['2020九 Rb=12、α=1/3、η=3', approx(1 + 2 + 3 + 6, 12) && approx(2 * 4 / 6 - 1, 1 / 3) && approx(12 / 4, 3)]);
+
+// ---------------- 2019 数值抽查（独立方法复核） ----------------
+// 三：把 G_1/G_2 当解析式直接数值积分，独立于解析推导复核四个功率
+(function () {
+  const T = 1, N = 400000, h = 4 / N;   // f ∈ [-2, 2]，T=1 时 1/T=1
+  const G1 = (f) => (Math.abs(f) <= 0.5 ? T : 0);
+  const G2 = (f) => (Math.abs(f) <= 1 ? T / 2 : 0);
+  let px = 0, py = 0, ps1 = 0, ps2 = 0;
+  for (let i = 0; i < N; i++) {
+    const f = -2 + (i + 0.5) * h;
+    px += G1(f) ** 2 * h / T;
+    py += G2(f) ** 2 * h / T;
+    ps1 += (G1(f) - G2(f)) ** 2 * h / T;
+    ps2 += (G1(f) ** 2 + G2(f) ** 2) * h / T;
+  }
+  t.push(['2019三(1)(2) Px=1、Py=1/2', approx(px, 1, 1e-6) && approx(py, 0.5, 1e-6)]);
+  t.push(['2019三(3) Ps1=1/2（相干相减）', approx(ps1, 0.5, 1e-6)]);
+  t.push(['2019三(4) Ps2=3/2（复信号|G1|²+|G2|²）', approx(ps2, 1.5, 1e-6)]);
+})();
+// 三：三角谱的奈奎斯特速率——按 1/T 平移叠加判常数，验证只能用 2000 Baud
+(function () {
+  const tri = (f) => Math.max(0, 1 - Math.abs(f) / 2000);
+  const isConst = (T, f0) => {
+    let lo = Infinity, hi = -Infinity;
+    for (let k = 0; k < 400; k++) {
+      const f = -f0 + (2 * f0) * k / 399;
+      let s = 0;
+      for (let n = -4; n <= 4; n++) s += tri(f - n / T);
+      lo = Math.min(lo, s); hi = Math.max(hi, s);
+    }
+    return hi - lo < 1e-9;
+  };
+  t.push(['2019(3) 三角谱 R=2000 Baud 无串扰、3000 有串扰', isConst(0.0005, 900) && !isConst(1 / 3000, 900)]);
+})();
+// 四：sin² 能量 = T/2；匹配滤波输出的归一门限 (E1/2)²/σ² = E1/(2N0)
+(function () {
+  const T = 1, N = 200000, h = T / N;
+  let e1 = 0;
+  for (let i = 0; i < N; i++) { const x = (i + 0.5) * h; e1 += Math.sin(2 * Math.PI * x / T) ** 2 * h; }
+  const N0 = 2, sigma2 = N0 * e1 / 2, thr = e1 / 2;
+  t.push(['2019四(1)(3) E1=T/2、门限²/σ²=E1/(2N0)', approx(e1, 0.5, 1e-6) && approx(thr * thr / sigma2, e1 / (2 * N0), 1e-9)]);
+})();
+// 五：四点坐标 → dmin=1，且 s1 到 s2/s3/s4 都恰为 1（s1 正是 Voronoi 顶点）
+(function () {
+  const P = { s1: [Math.sqrt(3) / 2, 0.5], s2: [Math.sqrt(3) / 2, -0.5], s3: [Math.sqrt(3), 0], s4: [0, 1] };
+  const d = (a, b) => Math.hypot(P[a][0] - P[b][0], P[a][1] - P[b][1]);
+  const keys = Object.keys(P);
+  let dmin = Infinity;
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) dmin = Math.min(dmin, d(keys[i], keys[j]));
+  t.push(['2019五(2) dmin=1', approx(dmin, 1, 1e-9)]);
+  t.push(['2019五(3) s1 到 s2/s3/s4 均为 1（判决域顶点退化在 s1 上）',
+    approx(d('s1', 's2'), 1, 1e-9) && approx(d('s1', 's3'), 1, 1e-9) && approx(d('s1', 's4'), 1, 1e-9)]);
+  // 判决域判据：|y|≤√3x-2（顶点 2/√3 起张角 120° 的右向楔形）只含 s3；
+  // 同时用“离谁最近”逐点复核，确认三条平分线的取舍正确（s4 的平分线不起作用）
+  const inD3 = (p) => Math.abs(p[1]) <= Math.sqrt(3) * p[0] - 2;
+  const nearest = (p) => keys.reduce((b, k) => (d(k, 's3') !== undefined && Math.hypot(p[0] - P[k][0], p[1] - P[k][1]) < Math.hypot(p[0] - P[b][0], p[1] - P[b][1]) ? k : b), 's1');
+  const far = [[3, 0], [4, 2], [5, -3], [2.5, 0.2]];
+  t.push(['2019五(3) 楔形只含 s3，且与“最近点”判据一致',
+    inD3(P.s3) && !inD3(P.s1) && !inD3(P.s2) && !inD3(P.s4) && far.every((q) => inD3(q) === (nearest(q) === 's3'))]);
+})();
+// 六：H(Y|X)=log2 5-1.6、容量 0.8（再用 p 网格暴力最大化互信息复核）
+(function () {
+  const H2 = (p) => -p * Math.log2(p) - (1 - p) * Math.log2(1 - p);
+  t.push(['2019六(2) H(Y|X)=log2 5-1.6=0.7219', approx(H2(0.8), Math.log2(5) - 1.6, 1e-12)]);
+  // 互信息：I = H(Y) - H(Y|X)，Y 的三项由 p 唯一决定
+  const HY = (p) => {
+    const ps = [0.8 * p, 0.8 * (1 - p), 0.2];
+    return -ps.reduce((s, q) => s + (q > 0 ? q * Math.log2(q) : 0), 0);
+  };
+  let best = -1, bp = 0;
+  for (let i = 0; i <= 2000; i++) { const p = i / 2000, I = HY(p) - H2(0.8); if (I > best) { best = I; bp = p; } }
+  t.push(['2019六(4) C=max I=0.8（p=1/2）', approx(best, 0.8, 1e-6) && approx(bp, 0.5, 1e-3)]);
+})();
+// 七：p(x)=1-|x| 上按区间数值积分（先算各段 m0/m1/m2，再拼 N_q），并暴力搜最优 (a,b)
+(function () {
+  const N = 400000;
+  const pdf = (x) => 1 - Math.abs(x);
+  const seg = [[-1, -0.5], [-0.5, 0], [0, 0.5], [0.5, 1]];
+  const mom = seg.map(([l, r]) => {
+    const hh = (r - l) / N;
+    let m0 = 0, m1 = 0, m2 = 0;
+    for (let i = 0; i < N; i++) { const x = l + (i + 0.5) * hh, w = pdf(x) * hh; m0 += w; m1 += x * w; m2 += x * x * w; }
+    return { m0, m1, m2 };
+  });
+  const M0 = mom.reduce((s, m) => s + m.m0, 0);
+  const M1 = mom.reduce((s, m) => s + m.m1, 0);
+  const M2 = mom.reduce((s, m) => s + m.m2, 0);
+  const lv = (a, b) => [-b, -a, a, b];
+  const Nq = (a, b) => {
+    const L = lv(a, b);
+    let sq = 0, xy = 0;
+    L.forEach((y, k) => { sq += y * y * mom[k].m0; xy += y * mom[k].m1; });
+    return M2 - 2 * xy + sq;
+  };
+  const Sq = (a, b) => lv(a, b).reduce((s, y, k) => s + y * y * mom[k].m0, 0);
+  t.push(['2019七(1)(2) S=1/6、P(0~1/2)=3/8、P(1/2~1)=1/8',
+    approx(M2, 1 / 6, 1e-6) && approx(mom[2].m0, 3 / 8, 1e-6) && approx(mom[3].m0, 1 / 8, 1e-6)]);
+  t.push(['2019七(3) 均匀量化 a=1/4,b=3/4 → Sq=3/16、Nq=1/48',
+    approx(Sq(0.25, 0.75), 3 / 16, 1e-6) && approx(Nq(0.25, 0.75), 1 / 48, 1e-6)]);
+  // 暴力搜（步长 1e-3）：确认 (2/9, 2/3) 是全局最小点
+  let bn = Infinity, ba = 0, bb = 0;
+  for (let i = 1; i < 500; i++) for (let j = 501; j < 1000; j++) {
+    const v = Nq(i / 1000, j / 1000);
+    if (v < bn) { bn = v; ba = i / 1000; bb = j / 1000; }
+  }
+  t.push(['2019七(4) 最优 a=2/9、b=2/3、Nq=1/54',
+    approx(ba, 2 / 9, 1.2e-3) && approx(bb, 2 / 3, 1.2e-3) && approx(bn, 1 / 54, 2e-5) &&
+    approx(1 / 6 / bn, 9, 2e-3)]);
+})();
+// 八：GF(2) 上复核 H 的列、GHᵀ=0、dmin=3、伴随式与卷积码输出
+(function () {
+  const H = [[1, 1, 1, 0, 1, 0, 0], [0, 1, 1, 1, 0, 1, 0], [1, 1, 0, 1, 0, 0, 1]];
+  const cols = [];
+  for (let j = 0; j < 7; j++) cols.push(H.map((r) => r[j]).join(''));
+  const nz = cols.filter((c) => c !== '000');
+  t.push(['2019八1(1) H 的 7 列非零且两两不同', nz.length === 7 && new Set(cols).size === 7]);
+  const G = [[1, 0, 0, 0, 1, 0, 1], [0, 1, 0, 0, 1, 1, 1], [0, 0, 1, 0, 1, 1, 0], [0, 0, 0, 1, 0, 1, 1]];
+  let ok = true;
+  for (const r of G) for (let j = 0; j < 3; j++) {
+    let s = 0;
+    for (let k = 0; k < 7; k++) s ^= r[k] & H[j][k];
+    if (s !== 0) ok = false;
+  }
+  t.push(['2019八1(2) GHᵀ=0', ok]);
+  // 枚举全部 16 个码字求 dmin
+  let dmin = 99;
+  for (let m = 1; m < 16; m++) {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) if ((m >> i) & 1) for (let k = 0; k < 7; k++) c[k] ^= G[i][k];
+    dmin = Math.min(dmin, c.reduce((s, v) => s + v, 0));
+  }
+  t.push(['2019八1 dmin=3', dmin === 3]);
+  const y = [0, 1, 1, 0, 0, 0, 0];
+  const syn = [0, 1, 2].map((j) => { let s = 0; for (let k = 0; k < 7; k++) s ^= y[k] & H[j][k]; return s; }).join('');
+  const e = '0000001';
+  const synE = [0, 1, 2].map((j) => { let s = 0; for (let k = 0; k < 7; k++) s ^= (+e[k]) & H[j][k]; return s; }).join('');
+  t.push(['2019八1(3) s(0110000)=001、s(0000001)=001', syn === '001' && synE === syn]);
+  // 卷积码：模 2 多项式乘法（u=1+x²+x³，g1=1+x+x³，g2=1+x²+x³）再按拍交织
+  const mul2 = (u, g) => {
+    const out = new Array(u.length + g.length - 1).fill(0);
+    u.forEach((ub, i) => g.forEach((gb, j) => { if (ub && gb) out[i + j] ^= 1; }));
+    return out.slice(0, u.length);      // 输入末尾的 0 已把寄存器冲干净，取前 7 拍
+  };
+  const u = [1, 0, 1, 1, 0, 0, 0];
+  const c1 = mul2(u, [1, 1, 0, 1]), c2 = mul2(u, [1, 0, 1, 1]);
+  const c = c1.map((v, i) => '' + v + c2[i]).join('');
+  t.push(['2019八2(2) c1=1111111、c2=1000101、c=11101010111011',
+    c1.join('') === '1111111' && c2.join('') === '1000101' && c === '11101010111011']);
+  // 移位寄存器逐拍复核同一结果
+  let D = [0, 0, 0], out = '';
+  for (const ub of u) {
+    out += '' + (ub ^ D[0] ^ D[2]) + (ub ^ D[1] ^ D[2]);
+    D = [ub, D[0], D[1]];
+  }
+  t.push(['2019八2(2) 移位寄存器逐拍一致', out === c]);
+})();
+// 选择题：13 折线量化间隔比 64、AM 效率 1/3、带通采样 6 kHz、2FSK 相干正交 500 Hz
+t.push(['2019(11) 13折线 Δmax/Δmin=(1/2/16)/(1/128/16)=64', approx((0.5 / 16) / (1 / 128 / 16), 64)]);
+t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
+(function () {
+  // 带通采样：把 15~18 kHz 内每个频率折叠到 [-fs/2, fs/2) 再取绝对值（实信号的 ±f 不可分辨），
+  // 若映射不是单射就说明混叠。fs=6 kHz（=2B，f_H/B=6 恰为整数）单射；fs=5.5 kHz 时
+  // 15000 与 18000 都落到 1500 Hz → 混叠。这样判据与“谱副本两两不交”等价但更好验。
+  const alias = (fs) => {
+    const seen = new Set();
+    for (let i = 0; i <= 600; i++) {
+      const f = 15000 + 3000 * i / 600;
+      let r = f % fs; if (r > fs / 2) r -= fs;
+      const key = Math.abs(r).toFixed(3);
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+    return false;
+  };
+  t.push(['2019(43) fs=6 kHz 不混叠、5.5 kHz 混叠', !alias(6000) && alias(5500) && !alias(7200)]);
+})();
+(function () {
+  // 2FSK 相干正交：∫_0^T cos(2πΔf t)dt=0，T=1 ms → Δf=1/(2T)=500 Hz；Δf=1/T 也正交但非最小
+  const T = 1e-3, N = 200000, h = T / N;
+  const r = (df) => { let s = 0; for (let i = 0; i < N; i++) s += Math.cos(2 * Math.PI * df * (i + 0.5) * h) * h; return s; };
+  t.push(['2019(37) Δf=500 Hz 时相关≈0', Math.abs(r(1 / (2 * T))) < 1e-6 && approx(1 / (2 * T), 500)]);
+})();
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });
 console.log('\n数值抽查: ' + t.map(([n, ok]) => (ok ? '✓' : '✗') + n).join(' '));
