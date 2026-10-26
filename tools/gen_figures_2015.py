@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # 生成 2015年试卷 SVG 图库（每图一个文件，输出用 ###FILE: 分隔）：
 #   node tools/emit_figures.mjs 2015
+# 2026-10-26 全部 12 张对照原卷（待解析/灰虎考研北邮801历年真题答案2015年.pdf）重绘：
+#   拓扑、器件、标注以原卷为准（三题调制器补 cos 载波、六题补抽样开关与 X(f) 标距线、
+#   八题积分器 1/T_b∫( )dt、五题双驼峰包络+离散谱线、七题编码器抽头+换接开关、
+#   九题判决域=实线三角形+虚线圆+斜线阴影、四题 2/4 电平变换+抽样开关+双线并拢）。
 import math
 
 from svgkit import PAD, tighten  # 统一的 viewBox 收边（四边等宽留白）
@@ -105,6 +109,22 @@ def adder(cx, cy, r=13):
             + line(cx, cy - r * .77, cx, cy + r * .77))
 
 
+def sigma_adder(cx, cy, r=13):
+    """原卷画法的 Σ 相加器（2015 四/十二）：圆圈内写 Σ"""
+    return circle(cx, cy, r) + text(cx, cy + 5, 'Σ', size=13)
+
+
+def term(cx, cy, r=4.5):
+    """开关端子／换接端子：小空圆"""
+    return circle(cx, cy, r, fill='#fff')
+
+
+def switch_sample(xl, xr, y):
+    """抽样开关：两端子空圆 + 自右上摆向左端子的闸柄（箭头落在左端子上）"""
+    return (term(xl, y) + term(xr, y)
+            + line(xr + 6, y - 34, xl + 4, y - 5, marker='arR'))
+
+
 def dimh(x1, x2, y, lbl=None, size=12, ly=None):
     """水平标注线（双箭头）+ 上方文字"""
     s = (f"<line x1='{x1:.1f}' y1='{y:.1f}' x2='{x2:.1f}' y2='{y:.1f}' stroke='#1a1a1a' stroke-width='1.1' "
@@ -114,13 +134,44 @@ def dimh(x1, x2, y, lbl=None, size=12, ly=None):
     return s
 
 
-def dimv(x, y1, y2, lbl=None, size=12, lx=None, anchor='start'):
-    """竖直标注线（双箭头）+ 右侧文字"""
-    s = (f"<line x1='{x:.1f}' y1='{y1:.1f}' x2='{x:.1f}' y2='{y2:.1f}' stroke='#1a1a1a' stroke-width='1.1' "
-         f"marker-start='url(#arL)' marker-end='url(#arR)'/>")
-    if lbl:
-        s += text((lx if lx is not None else x + 7), (y1 + y2) / 2 + 4, lbl, size=size, anchor=anchor)
-    return s
+def hatch_poly(pts, step=9, holes=(), width=1.0, color='#1a1a1a'):
+    """凸多边形内 45° 斜线阴影（不用 pattern，几何自查可见），holes 为 (x0,y0,x1,y1) 挖空矩形"""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    out = []
+    n = len(pts)
+    c = min(xs) - max(ys)
+    while c <= max(xs) - min(ys):
+        ts = []
+        for i in range(n):
+            x1p, y1p = pts[i]
+            x2p, y2p = pts[(i + 1) % n]
+            den = (y2p - y1p) - (x2p - x1p)
+            if abs(den) < 1e-9:
+                continue
+            s_ = (x1p - y1p - c) / den
+            if -1e-9 <= s_ <= 1 + 1e-9:
+                ts.append(x1p + s_ * (x2p - x1p))
+        ts.sort()
+        segs = [(ts[i], ts[i + 1]) for i in range(0, len(ts) - 1, 2)]
+        for (hx0, hy0, hx1, hy1) in holes:
+            new = []
+            for (a, b) in segs:
+                lo = max(hx0, hy0 + c)
+                hi = min(hx1, hy1 + c)
+                if hi <= a or lo >= b:
+                    new.append((a, b))
+                    continue
+                if a < lo:
+                    new.append((a, min(lo, b)))
+                if hi < b:
+                    new.append((max(hi, a), b))
+            segs = new
+        for (a, b) in segs:
+            if b - a > 2:
+                out.append(line(a, a - c, b, b - c, width=width, color=color))
+        c += step
+    return ''.join(out)
 
 
 HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
@@ -128,23 +179,27 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 
 
 # ================================================================ 三、SSB 接收链（题图）
+# 原卷：m(t)→[上边带SSB调制](cos 2πf_c t 自下方入)→s(t)→⊕(n_w 自下)→BPF→⊗(2cos 自下)→LPF→
 def fig_p3ssb():
     Y = 56
-    s = HEAD.format(w=780, h=140) + MK
-    s += text(8, Y + 5, 'm(t)', anchor='start', style='i')
+    s = HEAD.format(w=640, h=150) + MK
+    s += text(6, Y + 5, 'm(t)', anchor='start', style='i')
     s += line(44, Y, 66, Y, marker='arR')
-    s += rect(66, Y - 24, 128, 48) + text(130, Y + 5, '上边带SSB调制', size=13)
-    s += text(204, Y - 10, 's(t)', anchor='start', style='i')
-    s += line(212, Y, 252, Y, marker='arR')
+    s += rect(66, Y - 24, 150, 48) + text(141, Y + 5, '上边带SSB调制', size=13)
+    # 调制器载波自下方汇入
+    s += text(141, 124, 'cos(2πf_c t)', size=13)
+    s += line(141, 112, 141, Y + 25, marker='arR')
+    s += text(224, Y - 10, 's(t)', anchor='start', style='i')
+    s += line(232, Y, 252, Y, marker='arR')
     s += adder(265, Y)
-    s += text(257, 128, 'n_w(t)', anchor='end', style='i')
-    s += line(265, 120, 265, Y + 13, marker='arR')
+    s += text(257, 128, 'n_w(t)', anchor='end', size=13, style='i')
+    s += line(265, 118, 265, Y + 13, marker='arR')
     s += line(278, Y, 322, Y, marker='arR')
     s += rect(322, Y - 21, 64, 42) + text(354, Y + 5, 'BPF')
     s += line(386, Y, 424, Y, marker='arR')
     s += mul(437, Y)
-    s += text(437, 16, '2cos(2πf_c t)', size=13)
-    s += line(437, 26, 437, Y - 13, marker='arR')
+    s += text(437, 124, '2cos(2πf_c t)', size=13)
+    s += line(437, 112, 437, Y + 13, marker='arR')
     s += line(450, Y, 494, Y, marker='arR')
     s += rect(494, Y - 21, 64, 42) + text(526, Y + 5, 'LPF')
     s += line(558, Y, 600, Y, marker='arR')
@@ -152,290 +207,330 @@ def fig_p3ssb():
 
 
 # ================================================================ 六、基带传输链（题图）
+# 原卷：d(t)=Σaₙδ(t−nT_s)→[发送滤波器 G_T(f)]→s(t)→[接收滤波器 G_R(f)]→y(t)→抽样开关(t=nT_s)；
+# 下方 X(f) 双箭头标距线横跨两只滤波器
 def fig_p6base():
     Y = 56
-    s = HEAD.format(w=740, h=150) + MK
-    s += text(6, Y - 12, 'd(t) = Σ a_n δ(t-nT_s)', anchor='start', size=13, style='i')
-    s += line(210, Y, 240, Y, marker='arR')
-    s += rect(240, Y - 24, 116, 48) + text(298, Y - 2, '发送滤波器', size=13) + text(298, Y + 16, 'G_T(f)', size=13, style='i')
-    s += text(372, Y - 10, 's(t)', anchor='start', style='i')
-    s += line(380, Y, 412, Y, marker='arR')
-    s += rect(412, Y - 24, 116, 48) + text(470, Y - 2, '接收滤波器', size=13) + text(470, Y + 16, 'G_R(f)', size=13, style='i')
-    s += text(544, Y - 10, 'y(t)', anchor='start', style='i')
-    s += line(552, Y, 590, Y, marker='arR')
-    s += text(596, Y - 12, '抽样', anchor='start', size=13)
-    s += text(596, Y + 16, 't = nT_s', anchor='start', size=12, style='i')
-    s += text(346, 128, 'X(f) = G_T(f)G_R(f)', size=12, color='#666')
+    s = HEAD.format(w=700, h=150) + MK
+    s += text(206, Y + 5, 'd(t) = Σ a_n δ(t-nT_s)', anchor='end', size=13, style='i')
+    s += line(214, Y, 244, Y, marker='arR')
+    s += rect(244, Y - 24, 116, 48) + text(302, Y - 4, '发送滤波器', size=13) + text(302, Y + 16, 'G_T(f)', size=13, style='i')
+    s += text(368, Y - 10, 's(t)', anchor='start', style='i')
+    s += line(366, Y, 402, Y, marker='arR')
+    s += rect(408, Y - 24, 116, 48) + text(466, Y - 4, '接收滤波器', size=13) + text(466, Y + 16, 'G_R(f)', size=13, style='i')
+    s += text(532, Y - 10, 'y(t)', anchor='start', style='i')
+    s += line(530, Y, 566, Y, marker='arR')
+    s += switch_sample(578, 608, Y)
+    s += line(612, Y, 648, Y, marker='arR')
+    s += text(552, Y - 48, 't = nT_s', anchor='start', size=13, style='i')
+    s += dimh(244, 524, Y + 58)
+    s += text(384, Y + 49, 'X(f)', size=13, style='i')
     return s
 
 
 # ================================================================ 八、相关接收机（题图）
+# 原卷：s₁,s₂→⊕(n_w 自下)→r(t)→⊗(2cos 自下)→[1/T_b·∫₀^Tb ( )dt]→y→判决
 def fig_p8recv():
     Y = 60
-    s = HEAD.format(w=700, h=160) + MK
-    s += text(6, Y - 26, 's_1(t), s_2(t)', anchor='start', size=13, style='i')
-    s += line(112, Y - 20, 140, Y - 20, marker='arR')
-    s += adder(153, Y - 20)
-    s += line(153, Y + 44, 153, Y - 7, marker='arR')
-    s += text(145, Y + 48, 'n_w(t)', anchor='end', size=13, style='i')
-    s += text(178, Y - 29, 'r(t)', anchor='start', size=13, style='i')
-    s += line(185, Y - 20, 222, Y - 20, marker='arR')
-    s += mul(235, Y - 20)
-    s += text(235, 137, '2cos(2πf_c t)', size=13)
-    s += line(235, 120, 235, Y - 7, marker='arR')
-    s += line(248, Y - 20, 286, Y - 20, marker='arR')
-    s += rect(286, Y - 44, 128, 48)
-    s += text(350, Y - 26, '积分', size=13)
-    s += text(350, Y - 6, '(1/T_b)∫_0^{T_b}', size=12, style='i')
-    s += text(432, Y - 30, 'y', anchor='start', style='i')
-    s += line(414, Y - 20, 452, Y - 20, marker='arR')
-    s += rect(452, Y - 44, 76, 48) + text(490, Y - 20, '判决', size=13)
-    s += line(528, Y - 20, 566, Y - 20, marker='arR')
+    s = HEAD.format(w=620, h=160) + MK
+    s += text(6, Y + 5, 's_1(t), s_2(t)', anchor='start', size=13, style='i')
+    s += line(110, Y, 138, Y, marker='arR')
+    s += adder(152, Y)
+    s += text(144, Y + 64, 'n_w(t)', anchor='end', size=13, style='i')
+    s += line(152, Y + 54, 152, Y + 13, marker='arR')
+    s += text(172, Y - 10, 'r(t)', anchor='start', style='i')
+    s += line(168, Y, 206, Y, marker='arR')
+    s += mul(220, Y)
+    s += text(220, Y + 70, '2cos(2πf_c t)', size=13)
+    s += line(220, Y + 58, 220, Y + 13, marker='arR')
+    s += line(233, Y, 268, Y, marker='arR')
+    # 积分器：1/T_b（上下分式） + ∫ 上下限 + ( )dt
+    s += rect(268, Y - 24, 156, 48)
+    s += text(296, Y - 5, '1', size=11)
+    s += line(285, Y + 2, 307, Y + 2, width=1.1)
+    s += text(287, Y + 20, 'T_b', size=11, anchor='start', style='i')
+    s += text(330, Y + 11, '∫', size=30)
+    s += text(344, Y - 11, 'T_b', size=10, anchor='start', style='i')
+    s += text(344, Y + 24, '0', size=10, anchor='start')
+    s += text(366, Y + 6, '( )dt', size=13, anchor='start')
+    s += line(424, Y, 458, Y, marker='arR')
+    s += text(466, Y - 10, 'y', anchor='start', style='i')
+    s += line(462, Y, 494, Y, marker='arR')
+    s += rect(494, Y - 21, 64, 42) + text(526, Y + 5, '判决', size=13)
+    s += line(558, Y, 594, Y, marker='arR')
     return s
 
 
 # ================================================================ 九、星座图（题图）
+# 原卷：实线正三角形 s₂s₃s₄（重心在原点），s₁ 在原点；f₂ 轴向下穿过三角形底边
 def fig_p9const():
     U = 92
     cx, cy = 250, 210
-    s = HEAD.format(w=460, h=380) + MK
-    # 正三角形（虚线辅助）
+    s = HEAD.format(w=490, h=400) + MK
     tri = [(cx, cy - U), (cx - 0.866 * U, cy + 0.5 * U), (cx + 0.866 * U, cy + 0.5 * U)]
-    s += poly(tri, close=True, width=1.2, dash='5,4', stroke='#888')
-    # 坐标轴
-    s += line(56, cy, 430, cy, marker='arR')
-    s += line(cx, 356, cx, 40, marker='arR')
-    s += text(436, cy + 5, 'f_1(t)', anchor='start', size=13, style='i')
-    s += text(cx + 8, 36, 'f_2(t)', anchor='start', size=13, style='i')
-    # 星座点
-    pts = [(cx, cy, 's_1', -12, 18, 'end'),
-           (cx, cy - U, 's_2', -12, -8, 'end'),
-           (tri[1][0], tri[1][1], 's_3', -12, 16, 'end'),
-           (tri[2][0], tri[2][1], 's_4', 12, 16, 'start')]
-    for x, y, nm, dx, dy, an in pts:
+    s += poly(tri, close=True, width=1.6)
+    s += line(60, cy, 446, cy, marker='arR')
+    s += line(cx, 366, cx, 44, marker='arR')
+    s += text(452, cy + 5, 'f_1(t)', anchor='start', size=13, style='i')
+    s += text(cx + 8, 40, 'f_2(t)', anchor='start', size=13, style='i')
+    for x, y, nm, dx, dy, an in [(cx, cy, 's_1', 10, -8, 'start'),
+                                 (cx, cy - U, 's_2', -11, -6, 'end'),
+                                 (tri[1][0], tri[1][1], 's_3', -11, 5, 'end'),
+                                 (tri[2][0], tri[2][1], 's_4', 11, 5, 'start')]:
         s += dot(x, y, 4)
         s += text(x + dx, y + dy, nm, size=13, anchor=an, style='i')
     return s
 
 
 # ================================================================ 十、阶梯密度（题图）
+# 原卷：p(x) 轴立在 x=0；高度 1、2 标在轴左侧对应高度处；b、a 两点在轴上，x 刻度同一行
 def fig_p10pdf():
-    X0, Y0 = 200, 230
-    s = HEAD.format(w=480, h=300) + MK
-    s += line(40, Y0, 452, Y0, marker='arR')
-    s += line(X0, Y0 + 20, X0, 52, marker='arR')
-    s += text(458, Y0 + 5, 'x', anchor='start', style='i')
-    s += text(X0 + 8, 46, 'p(x)', anchor='start', size=13, style='i')
-    s += text(X0 - 8, Y0 + 18, 'O', anchor='end', size=12)
-    y1, y2 = Y0 - 60, Y0 - 120
-    # 阶梯：-0.5→0 高 1；0→0.25 高 2
-    s += line(X0 - 90, y1, X0, y1)
-    s += line(X0 - 90, y1, X0 - 90, Y0)
+    X0, Y0 = 210, 240
+    y1, y2 = Y0 - 70, Y0 - 140
+    s = HEAD.format(w=400, h=320) + MK
+    s += line(60, Y0, 330, Y0, marker='arR')
+    s += line(X0, Y0 + 24, X0, 58, marker='arR')
+    s += text(338, Y0 + 5, 'x', anchor='start', style='i')
+    s += text(X0, 50, 'p(x)', size=13, style='i')
+    # 阶梯：[-0.5,0) 高 1；[0,0.25] 高 2（轴身兼两步的内侧边）
+    s += line(X0 - 120, y1, X0, y1)
+    s += line(X0 - 120, y1, X0 - 120, Y0)
     s += line(X0, y1, X0, y2)
-    s += line(X0, y2, X0 + 45, y2)
-    s += line(X0 + 45, y2, X0 + 45, Y0)
-    for xx, lab in ((X0 - 90, '-0.5'), (X0 + 45, '0.25')):
-        s += text(xx, Y0 + 20, lab, size=12)
-    s += text(155, y1 - 9, '1', size=13)
-    s += text(222, y2 - 9, '2', size=13)
-    # b、a 两个电平点
-    s += dot(X0 - 45, Y0, 3.6)
-    s += text(X0 - 45, Y0 + 38, 'b', size=13, style='i')
-    s += dot(X0 + 22, Y0, 3.6)
-    s += text(X0 + 22, Y0 + 38, 'a', size=13, style='i')
+    s += line(X0, y2, X0 + 60, y2)
+    s += line(X0 + 60, y2, X0 + 60, Y0)
+    s += text(X0 - 10, y2 - 6, '2', size=13, anchor='end')
+    s += text(X0 - 10, y1 - 6, '1', size=13, anchor='end')
+    for xx, lab, sz, st, an in [(90, '-0.5', 12, '', 'middle'), (160, 'b', 13, 'i', 'middle'),
+                                (202, 'O', 12, '', 'end'), (240, 'a', 13, 'i', 'middle'),
+                                (270, '0.25', 12, '', 'middle')]:
+        s += text(xx, Y0 + 22, lab, size=sz, style=st, anchor=an)
+    s += dot(160, Y0, 3.6)
+    s += dot(240, Y0, 3.6)
     return s
 
 
 # ================================================================ 十二、信道框图（题图）
+# 原卷：X→Σ(Z₁ 自下)→Σ(Z₂ 自下)→Y，相加器为圆圈内 Σ
 def fig_p12chan():
     Y = 60
-    s = HEAD.format(w=520, h=130) + MK
-    s += text(6, Y + 5, 'X', anchor='start', style='i')
-    s += line(22, Y, 60, Y, marker='arR')
-    s += adder(73, Y)
-    s += line(73, Y + 44, 73, Y + 13, marker='arR')
-    s += text(73, Y + 60, 'Z_1', size=13, style='i')
+    s = HEAD.format(w=310, h=145) + MK
+    s += text(10, Y + 5, 'X', anchor='start', style='i')
+    s += line(24, Y, 58, Y, marker='arR')
+    s += sigma_adder(72, Y)
     s += line(86, Y, 152, Y, marker='arR')
-    s += adder(165, Y)
-    s += line(165, Y + 44, 165, Y + 13, marker='arR')
-    s += text(165, Y + 60, 'Z_2', size=13, style='i')
-    s += line(178, Y, 248, Y, marker='arR')
+    s += sigma_adder(166, Y)
+    s += line(180, Y, 246, Y, marker='arR')
     s += text(256, Y + 5, 'Y', anchor='start', style='i')
+    s += line(72, Y + 52, 72, Y + 13, marker='arR')
+    s += text(63, Y + 68, 'Z_1', anchor='start', size=13, style='i')
+    s += line(166, Y + 52, 166, Y + 13, marker='arR')
+    s += text(157, Y + 68, 'Z_2', anchor='start', size=13, style='i')
     return s
 
 
 # ================================================================ 三(2) s(t) 功率谱（解析图）
+# 原卷：P_s(f) 轴立在中央 O，±f_c 处两个 sin² 驼峰，轴上 1/100 刻度（分式），刻度 f_c−1000…f_c+1000
 def fig_a3ps():
-    AX, CX = 210, 320
-    s = HEAD.format(w=700, h=260) + MK
-    s += line(40, AX, 664, AX, marker='arR')
-    s += line(CX, AX, CX, 40, marker='arR')
-    s += text(CX + 10, 36, 'P_s(f)', anchor='start', size=13, style='i')
-    s += text(670, AX + 5, 'f', anchor='start', style='i')
+    AX, CX = 210, 360
+    D, W, H = 215, 190, 105   # 载波间距、驼峰全宽、峰高
+    s = HEAD.format(w=790, h=280) + MK
+    s += line(50, AX, 730, AX, marker='arR')
+    s += line(CX, AX, CX, 48, marker='arR')
+    s += text(CX + 10, 44, 'P_s(f)', anchor='start', size=13, style='i')
+    s += text(738, AX + 5, 'f', anchor='start', style='i')
+    s += text(748, AX + 5, '(Hz)', anchor='start', size=12)
     s += text(CX - 8, AX + 18, 'O', anchor='end', size=12)
-    D, W, H = 190, 130, 130
-    for c in (CX - D - W / 2, CX + D + W / 2):
+    for c in (CX - D, CX + D):
         pts = [(c - W / 2 + W * i / 40, AX - H * math.sin(math.pi * i / 40) ** 2) for i in range(41)]
         s += poly(pts, width=1.8)
-        s += line(c - W / 2, AX, c - W / 2, AX - H, width=1.2)
-        s += line(c + W / 2, AX, c + W / 2, AX - H, width=1.2)
-    s += line(CX - D - W, AX, CX - D - W, AX + 5, width=1.2)
-    s += line(CX + D + W, AX, CX + D + W, AX + 5, width=1.2)
-    s += text(CX - D - W / 2, AX + 20, '-f_c', size=12, style='i')
-    s += text(CX + D + W / 2, AX + 20, 'f_c', size=12, style='i')
-    s += text(CX - D - W - 14, AX + 20, '-f_c-1k', size=11, style='i', anchor='end')
-    s += text(CX + D + W + 14, AX + 20, 'f_c+1k', size=11, style='i', anchor='start')
-    s += text(CX + D + W / 2 + 8, AX - H - 10, '1/100', size=12, anchor='start', color='#c00')
+    # 峰值 1/100：轴上刻度 + 右侧分式
+    s += line(CX - 5, AX - H, CX + 5, AX - H, width=1.2)
+    s += text(CX + 12, AX - H - 1, '1', size=12, anchor='start')
+    s += line(CX + 11, AX - H + 5, CX + 31, AX - H + 5, width=1.1)
+    s += text(CX + 12, AX - H + 19, '100', size=12, anchor='start')
+    s += text(CX - D, AX + 22, '-f_c', size=12, style='i')
+    s += text(CX + D, AX + 22, 'f_c', size=12, style='i')
+    s += text(CX - D - W / 2, AX + 22, '-f_c-1000', size=11, style='i')
+    s += text(CX + D + W / 2, AX + 22, 'f_c+1000', size=11, style='i')
     return s
 
 
-# ================================================================ 四、16QAM 发送框图（解析图，抄 2016 a7tx）
+# ================================================================ 四、16QAM 发送框图（解析图）
+# 原卷：→[串并转换](竖排字)→两路各 [2/4 电平变换]→[根升余/弦成型](α=0.25)→⊗(cos 上/−sin 下)→Σ(+、+)→S_QAM(t)
 def fig_a4tx():
-    YI, YQ, YC = 74, 158, 116
-    s = HEAD.format(w=760, h=230) + MK
-    s += text(6, YC + 5, 'b_n', anchor='start', style='i')
-    s += line(34, YC, 60, YC, marker='arR')
-    s += rect(60, YC - 30, 64, 60) + text(92, YC - 4, '串并') + text(92, YC + 14, '转换')
-    s += line(124, YC, 136, YC)
-    s += line(136, YI, 136, YQ) + dot(136, YC, 3)
-    s += line(136, YI, 152, YI, marker='arR')
-    s += line(136, YQ, 152, YQ, marker='arR')
-    for yy in (YI, YQ):
-        s += rect(152, yy - 19, 96, 38) + text(200, yy + 5, '4 电平映射', size=13)
-        s += line(248, yy, 276, yy, marker='arR')
-        s += rect(276, yy - 19, 116, 38) + text(334, yy + 5, '根升余弦成形', size=13)
-    s += text(334, YI - 28, 'α = 0.25', size=12)
-    s += line(392, YI, 424, YI, marker='arR')
-    s += line(392, YQ, 424, YQ, marker='arR')
-    s += mul(438, YI, 13)
-    s += mul(438, YQ, 13)
-    s += text(438, 34, 'cos(2πf_c t)', size=13)
-    s += line(438, 42, 438, YI - 14, marker='arR')
-    s += text(426, 212, '-sin(2πf_c t)', size=13, anchor='end')
-    s += line(438, 218, 438, YQ + 14, marker='arR')
-    s += line(451, YI, 520, YI) + line(520, YI, 520, YC - 13, marker='arR')
-    s += line(451, YQ, 520, YQ) + line(520, YQ, 520, YC + 13, marker='arR')
-    s += adder(520, YC, 13)
-    s += line(533, YC, 578, YC, marker='arR')
-    s += text(586, YC + 5, 's_{QAM}(t)', anchor='start', style='i')
+    YI, YQ, YC = 74, 162, 118
+    s = HEAD.format(w=580, h=245) + MK
+    s += line(16, YC, 46, YC, marker='arR')
+    s += rect(46, YI - 12, 46, YQ - YI + 24)
+    for k, ch in enumerate('串并转换'):
+        s += text(69, YI + 10 + 25 * k, ch, size=13)
+    for yy, carr, clbl in ((YI, 'top', 'cos(2πf_c t)'), (YQ, 'bot', '-sin(2πf_c t)')):
+        s += line(92, yy, 124, yy, marker='arR')
+        s += rect(124, yy - 19, 84, 38) + text(166, yy - 4, '2/4', size=13) + text(166, yy + 11, '电平变换', size=13)
+        s += line(208, yy, 238, yy, marker='arR')
+        s += rect(238, yy - 19, 76, 38) + text(276, yy - 4, '根升余', size=13) + text(276, yy + 11, '弦成型', size=13)
+        s += text(276, yy - 30, 'α = 0.25', size=12)
+        s += line(314, yy, 346, yy, marker='arR')
+        s += mul(360, yy, 13)
+        if yy == YI:
+            s += text(360, yy - 54, clbl, size=13)
+            s += line(360, yy - 46, 360, yy - 13, marker='arR')
+        else:
+            s += text(360, yy + 62, clbl, size=13)
+            s += line(360, yy + 46, 360, yy + 13, marker='arR')
+        s += line(373, yy, 428, yy)
+    s += line(428, YI, 428, YC - 13, marker='arR')
+    s += line(428, YQ, 428, YC + 13, marker='arR')
+    s += sigma_adder(428, YC, 13)
+    s += text(418, YI - 7, '+', size=12)
+    s += text(418, YQ + 16, '+', size=12)
+    s += line(441, YC, 488, YC, marker='arR')
+    s += text(496, YC + 5, 'S_QAM(t)', anchor='start', style='i')
     return s
 
 
-# ================================================================ 四、16QAM 接收框图（解析图，抄 2016 a7rx）
+# ================================================================ 四、16QAM 接收框图（解析图）
+# 原卷：r(t)→分路→⊗(cos 上/−sin 下)→[根升余/弦匹配](α=0.25)→抽样开关→[四进制判决]
+#       →双线并入 [并串转换](竖排字)→
 def fig_a4rx():
-    YI, YQ, YC = 74, 158, 116
-    s = HEAD.format(w=720, h=230) + MK
-    s += text(2, YC + 5, 'r(t)', anchor='start', style='i')
-    s += line(38, YC, 62, YC, marker='arR')
-    s += dot(62, YC, 3)
-    s += line(62, YI, 62, YQ)
-    s += line(62, YI, 96, YI, marker='arR')
-    s += line(62, YQ, 96, YQ, marker='arR')
-    s += mul(110, YI, 13) + mul(110, YQ, 13)
-    s += text(110, 34, 'cos(2πf_c t)', size=13)
-    s += line(110, 42, 110, YI - 14, marker='arR')
-    s += text(98, 212, '-sin(2πf_c t)', size=13, anchor='end')
-    s += line(110, 218, 110, YQ + 14, marker='arR')
-    for yy in (YI, YQ):
-        s += line(123, yy, 152, yy, marker='arR')
-        s += rect(152, yy - 19, 132, 38) + text(218, yy + 5, '根升余弦匹配滤波', size=13)
-        s += line(284, yy, 312, yy, marker='arR')
-        s += rect(312, yy - 19, 80, 38) + text(352, yy + 5, '四进制判决', size=13)
-        s += line(392, yy, 428, yy, marker='arR')
-    s += text(352, YI - 28, 'α = 0.25', size=12)
-    s += rect(428, YI - 18, 64, YQ - YI + 36) + text(460, YC - 4, '并串') + text(460, YC + 14, '转换')
-    s += line(492, YC, 536, YC, marker='arR')
-    s += text(544, YC + 5, 'b_n', anchor='start', style='i')
+    YI, YQ, YC = 74, 162, 118
+    s = HEAD.format(w=550, h=245) + MK
+    s += text(8, YC + 5, 'r(t)', anchor='start', style='i')
+    s += line(40, YC, 60, YC, marker='arR')
+    s += dot(60, YC, 3)
+    s += line(60, YI, 60, YQ)
+    for yy, clbl in ((YI, 'cos(2πf_c t)'), (YQ, '-sin(2πf_c t)')):
+        s += line(60, yy, 88, yy, marker='arR')
+        s += mul(102, yy, 13)
+        if yy == YI:
+            s += text(102, yy - 54, clbl, size=13)
+            s += line(102, yy - 46, 102, yy - 13, marker='arR')
+        else:
+            s += text(102, yy + 62, clbl, size=13)
+            s += line(102, yy + 46, 102, yy + 13, marker='arR')
+        s += line(115, yy, 146, yy, marker='arR')
+        s += rect(146, yy - 19, 76, 38) + text(184, yy - 4, '根升余', size=13) + text(184, yy + 11, '弦匹配', size=13)
+        s += text(184, yy - 30, 'α = 0.25', size=12)
+        s += line(222, yy, 250, yy, marker='arR')
+        s += switch_sample(260, 290, yy)
+        s += line(294, yy, 322, yy, marker='arR')
+        s += rect(322, yy - 19, 76, 38) + text(360, yy - 4, '四进制', size=13) + text(360, yy + 11, '判决', size=13)
+        # 四进制判决每路出 2 bit：双线并入并串转换
+        s += line(398, yy - 7, 434, yy - 7, marker='arR')
+        s += line(398, yy + 7, 434, yy + 7, marker='arR')
+    s += rect(438, YI - 16, 46, YQ - YI + 32)
+    for k, ch in enumerate('并串转换'):
+        s += text(461, YI + 10 + 25 * k, ch, size=13)
+    s += line(484, YC, 518, YC, marker='arR')
     return s
 
 
-# ================================================================ 五(3) FM 功率谱线族（解析图）
+# ================================================================ 五(3) FM 功率谱（解析图）
+# 原卷：P_s(f) 轴立在中央 O，±f_c 两个驼峰包络，峰内两根超出包络的离散谱线（箭头）
+#       与自线根内弯落轴的虚线；右驼峰下标 f_c-10k、f_c、f_c+10k
 def fig_a5ps():
-    AX, CX = 200, 330
-    s = HEAD.format(w=700, h=250) + MK
-    s += line(40, AX, 664, AX, marker='arR')
-    s += line(40, AX, 40, 40, marker='arR')
-    s += text(48, 36, 'P_s(f)', anchor='start', size=13, style='i')
-    s += text(670, AX + 5, 'f', anchor='start', style='i')
-    DX = 26
-    for k in range(-5, 6):
-        hgt = 150 if k == 0 else max(18, 128 - abs(k) * 24)
-        s += line(CX + k * DX, AX, CX + k * DX, AX - hgt, width=1.8)
-    s += text(CX, AX + 20, 'f_c', size=12, style='i')
-    s += text(CX - 5 * DX - 6, AX + 20, 'f_c-10k', size=11, style='i', anchor='end')
-    s += text(CX + 5 * DX + 6, AX + 20, 'f_c+10k', size=11, style='i', anchor='start')
-    s += dimh(CX, CX + DX, 60)
-    s += text(CX + DX + 10, 64, 'f_m = 2kHz', size=11, anchor='start')
-    s += text(CX + 7 * DX + 20, AX - 60, '卡森带内间隔 f_m 的线谱', size=11, anchor='start', color='#666')
+    AX, CX = 210, 360
+    W, H = 110, 100   # 半宽(=10k)、峰高
+    s = HEAD.format(w=770, h=285) + MK
+    s += line(26, AX, 724, AX, marker='arR')
+    s += line(CX, AX, CX, 48, marker='arR')
+    s += text(CX + 10, 44, 'P_s(f)', anchor='start', size=13, style='i')
+    s += text(732, AX + 5, 'f', anchor='start', style='i')
+    s += text(CX - 8, AX + 18, 'O', anchor='end', size=12)
+    for c in (CX - 215, CX + 215):
+        pts = [(c + W * t, AX - H * (1 - t * t)) for t in [i * 0.05 for i in range(-20, 21)]]
+        s += poly(pts, width=1.8)
+        # 两根最高的离散谱线（±0.6W 处）穿出包络
+        for dx in (-0.6 * W, 0.6 * W):
+            s += line(c + dx, AX - 0.64 * H, c + dx, AX - 1.2 * H, width=1.6, marker='arR')
+            # 自线根内弯落至轴的虚线
+            sx = c + dx + (14 if dx < 0 else -14)
+            ex = c + dx * 0.42
+            s += (f"<path d='M{c + dx:.1f},{AX - 0.64 * H:.1f} Q{sx:.1f},{AX - 0.15 * H:.1f} {ex:.1f},{AX:.1f}' "
+                  f"fill='none' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/>")
+    s += line(CX + 215, AX - 5, CX + 215, AX + 5, width=1.2)
+    s += text(CX + 215 - W, AX + 22, 'f_c-10k', size=12, style='i')
+    s += text(CX + 215, AX + 22, 'f_c', size=12, style='i')
+    s += text(CX + 215 + W, AX + 22, 'f_c+10k', size=12, style='i')
+    s += text(CX - 215, AX + 22, '-f_c', size=12, style='i')
     return s
 
 
 # ================================================================ 七(3) 卷积码编码器（解析图）
+# 原卷：u→D₀→D₁，上下两只 ⊕；上路抽头 u、D₀ 后、D₁ 后（g₁=1+x+x²），
+#       下路抽头 D₀ 后、D₁ 后（g₂=x+x²）；c₁/c₂ 经换接开关（X 形双闸柄）合并输出
 def fig_a7enc():
-    Y = 124
-    s = HEAD.format(w=560, h=250) + MK
-    s += text(6, Y + 5, 'u', anchor='start', style='i')
-    s += line(18, Y, 56, Y, marker='arR')
-    s += rect(56, Y - 21, 56, 42) + text(84, Y + 6, 'D_0', style='i')
-    s += line(112, Y, 142, Y, marker='arR')
-    s += rect(142, Y - 21, 56, 42) + text(170, Y + 6, 'D_1', style='i')
-    s += line(198, Y, 268, Y) + dot(268, Y, 3)
-    # g1 = 1+x+x^2：抽头 u(左)、D_0 后(中)、D_1 后(右)
-    A, AY = 350, 54
+    Y, AY, BY, A = 130, 56, 204, 280
+    s = HEAD.format(w=600, h=265) + MK
+    s += text(10, Y + 5, 'u', anchor='start', style='i')
+    s += line(22, Y, 52, Y, marker='arR')
+    s += rect(52, Y - 21, 56, 42) + text(80, Y + 6, 'D_0', style='i')
+    s += line(108, Y, 138, Y, marker='arR')
+    s += rect(138, Y - 21, 56, 42) + text(166, Y + 6, 'D_1', style='i')
+    s += line(194, Y, 320, Y) + dot(320, Y, 3)
+    # 寄存器间抽头：上入上路 ⊕、下入下路 ⊕
+    s += line(123, Y, 123, AY + 13, marker='arR')
+    s += line(123, Y, 123, BY - 13, marker='arR')
+    s += dot(123, Y, 3)
+    # 输入抽头：上摆后从左入上路 ⊕
+    s += dot(37, Y, 3)
+    s += line(37, Y, 37, AY) + line(37, AY, A - 13, AY, marker='arR')
+    # D₁ 后抽头：右端上下分叉，从右入两只 ⊕
+    s += line(320, AY, 320, BY)
+    s += line(320, AY, A + 13, AY, marker='arR')
+    s += line(320, BY, A + 13, BY, marker='arR')
     s += adder(A, AY, 13)
-    s += line(72, Y, 72, AY) + line(72, AY, A - 13, AY, marker='arR')
-    s += dot(72, Y, 3)
-    s += line(A, Y, A, AY + 13) + dot(A, Y, 3)
-    s += line(268, Y, 268, AY) + line(268, AY, A + 13, AY, marker='arR')
-    s += text(A + 22, AY - 16, 'g_1', anchor='start', style='i')
-    s += line(A, AY - 13, A, 20) + line(A, 20, 470, 20, marker='arR')
-    s += text(478, 25, 'c_1', anchor='start', style='i')
-    # g2 = x+x^2：抽头 D_0 后、D_1 后（不含 u）
-    BY = 194
     s += adder(A, BY, 13)
-    s += line(128, Y, 128, BY) + line(128, BY, A - 13, BY, marker='arR')
-    s += dot(128, Y, 3)
-    s += line(268, Y, 268, BY) + line(268, BY, A + 13, BY, marker='arR')
-    s += text(A + 22, BY + 20, 'g_2', anchor='start', style='i')
-    s += line(A, BY + 13, A, 228) + line(A, 228, 470, 228, marker='arR')
-    s += text(478, 233, 'c_2', anchor='start', style='i')
+    # 上路输出 c₁、下路输出 c₂，引至右侧换接端子
+    s += line(A, AY - 13, A, 24) + line(A, 24, 452, 24) + line(452, 24, 452, 86)
+    s += line(A, BY + 13, A, 236) + line(A, 236, 452, 236) + line(452, 236, 452, 174)
+    s += term(452, 92) + text(438, 97, 'c_1', anchor='end', size=13, style='i')
+    s += term(452, 168) + text(438, 173, 'c_2', anchor='end', size=13, style='i')
+    # 换接开关：枢轴空圆 + 交叉双闸柄分别指向 c₁/c₂
+    s += term(508, Y)
+    s += line(522, 148, 466, 98, marker='arR')
+    s += line(522, 112, 466, 162, marker='arR')
+    s += line(512, Y, 556, Y, marker='arR')
     return s
 
 
-# ================================================================ 九(2) s_1 判决域（解析图）
+# ================================================================ 九(2) s₁ 判决域（解析图）
+# 原卷：D₁ 为倒三角（顶点 (±0.866U,−0.5U)、(0,+U)），斜线阴影 + 实线轮廓；
+#       虚线等能量圆过 s₂s₃s₄；b₁₃/b₁₄ 过上顶点的虚线延长线；实线三角形 s₂s₃s₄
 def fig_a9region():
     U = 92
-    cx, cy = 250, 210
-    s = HEAD.format(w=480, h=400) + MK
-    # D1：s1 的 Voronoi 单胞是有界三角形，顶点为三条中垂线的交点
-    a1 = (cx - 0.866 * U, cy - 0.5 * U)   # b12 ∩ b13
-    a2 = (cx + 0.866 * U, cy - 0.5 * U)   # b12 ∩ b14
-    a3 = (cx, cy + U)                     # b13 ∩ b14
-    s += f"<polygon points='{a1[0]:.1f},{a1[1]:.1f} {a2[0]:.1f},{a2[1]:.1f} {a3[0]:.1f},{a3[1]:.1f}' fill='#efefef' stroke='none'/>"
-    # 三条中垂线（虚线，向两端略延伸）
-    b12 = ((cx - 1.1 * U, cy - 0.5 * U), (cx + 1.1 * U, cy - 0.5 * U))
-    e13 = 0.08
-    b13 = ((a1[0] - e13 * (a3[0] - a1[0]), a1[1] - e13 * (a3[1] - a1[1])),
-           (a3[0] + e13 * (a3[0] - a1[0]), a3[1] + e13 * (a3[1] - a1[1])))
-    b14 = ((a2[0] - e13 * (a3[0] - a2[0]), a2[1] - e13 * (a3[1] - a2[1])),
-           (a3[0] + e13 * (a3[0] - a2[0]), a3[1] + e13 * (a3[1] - a2[1])))
-    for p1, p2 in (b12, b13, b14):
-        s += line(p1[0], p1[1], p2[0], p2[1], width=1.2, dash='5,4', color='#888')
-    # 坐标轴
-    s += line(56, cy, 452, cy, marker='arR')
-    s += line(cx, 376, cx, 40, marker='arR')
-    s += text(458, cy + 5, 'f_1(t)', anchor='start', size=13, style='i')
-    s += text(cx + 8, 36, 'f_2(t)', anchor='start', size=13, style='i')
-    # 星座点 + 三角形
+    cx, cy = 250, 205
+    a1 = (cx - 0.866 * U, cy - 0.5 * U)
+    a2 = (cx + 0.866 * U, cy - 0.5 * U)
+    a3 = (cx, cy + U)
+    s = HEAD.format(w=510, h=370) + MK
+    # 等能量虚线圆
+    s += circle(cx, cy, U, dash='5,4', color='#888', width=1.2)
+    # b₁₃/b₁₄ 越过上顶点的虚线延长
+    for p_top in (a1, a2):
+        dx, dy = p_top[0] - a3[0], p_top[1] - a3[1]
+        n = math.hypot(dx, dy)
+        s += line(p_top[0], p_top[1], p_top[0] + 55 * dx / n, p_top[1] + 55 * dy / n,
+                  width=1.2, dash='5,4', color='#888')
+    # D₁ 斜线阴影（s₁ 标注处挖空）
+    hole = (255, 182, 285, 204)
+    s += hatch_poly([a1, a2, a3], step=9, holes=[hole])
+    s += f"<polygon points='{a1[0]:.1f},{a1[1]:.1f} {a2[0]:.1f},{a2[1]:.1f} {a3[0]:.1f},{a3[1]:.1f}' fill='none' stroke='#1a1a1a' stroke-width='1.6'/>"
+    # 实线正三角形 s₂s₃s₄
     tri = [(cx, cy - U), (cx - 0.866 * U, cy + 0.5 * U), (cx + 0.866 * U, cy + 0.5 * U)]
-    s += poly(tri, close=True, width=1.2, dash='5,4', stroke='#888')
-    for x, y, nm, dx, dy, an in [(cx, cy, 's_1', -12, 18, 'end'),
-                                 (cx, cy - U, 's_2', -12, -8, 'end'),
-                                 (tri[1][0], tri[1][1], 's_3', -12, 16, 'end'),
-                                 (tri[2][0], tri[2][1], 's_4', 12, 16, 'start')]:
+    s += poly(tri, close=True, width=1.6)
+    # 坐标轴：f₂ 轴至倒三角下顶点，随后虚线穿出圆
+    s += line(58, cy, 446, cy, marker='arR')
+    s += line(cx, 46, cx, a3[1], marker='arR')
+    s += line(cx, a3[1], cx, a3[1] + 39, width=1.1, dash='3,4', color='#999')
+    s += text(452, cy + 5, 'f_1(t)', anchor='start', size=13, style='i')
+    s += text(cx + 8, 42, 'f_2(t)', anchor='start', size=13, style='i')
+    for x, y, nm, dx, dy, an in [(cx, cy, 's_1', 10, -8, 'start'),
+                                 (cx, cy - U, 's_2', -11, -6, 'end'),
+                                 (tri[1][0], tri[1][1], 's_3', -11, 5, 'end'),
+                                 (tri[2][0], tri[2][1], 's_4', 11, 5, 'start')]:
         s += dot(x, y, 4)
         s += text(x + dx, y + dy, nm, size=13, anchor=an, style='i')
-    s += text(cx - 8, cy - 0.28 * U, 'D_1', size=12, color='#555', anchor='end')
     return s
 
 
@@ -450,7 +545,7 @@ FIGS = [
     ('a3ps', '三', True, 'SSB 已调信号功率谱'),
     ('a4tx', '四', True, '16QAM 发送端框图'),
     ('a4rx', '四', True, '16QAM 接收端框图'),
-    ('a5ps', '五', True, 'FM 信号功率谱线族'),
+    ('a5ps', '五', True, 'FM 信号功率谱（包络+离散谱线）'),
     ('a7enc', '七', True, '(2,1,3) 卷积码编码器框图'),
     ('a9region', '九', True, 's1 的最佳判决域'),
 ]
