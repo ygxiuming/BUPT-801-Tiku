@@ -85,5 +85,11 @@ export function fitSvg(svgStr, maxW, maxH) {
   const W = Math.max(40, Math.round(w * k)), H = Math.max(30, Math.round(h * k))
   s = s.replace(/(<svg\b[^>]*?)\s+width=["'][^"']*["']/i, '$1')
   s = s.replace(/(<svg\b[^>]*?)\s+height=["'][^"']*["']/i, '$1')
+  // 个别图在正文里用 style='max-width:…' 限宽（图本身坐标系很窄，不限宽会被撑到正文宽）；
+  // 放大弹窗与图库缩略图要按 maxW×maxH 精确适配，这里把这条约束剥掉，否则放大后仍是限宽尺寸。
+  s = s.replace(/(<svg\b[^>]*?)\s+style=["']([^"']*)["']/i, (m0, head, st) => {
+    const rest = st.replace(/max-width\s*:[^;]*;?/gi, '').replace(/;\s*$/, '').trim()
+    return rest ? head + ' style="' + rest + '"' : head
+  })
   return s.replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')
 }

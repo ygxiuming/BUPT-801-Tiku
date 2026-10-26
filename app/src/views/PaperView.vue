@@ -108,16 +108,18 @@ export default {
       const B = window.BUPT801
       const p = this.p
       const blank = (s) => escHtml(s).replace(/（(\d+)）/g, '（<strong class="blank">$1</strong>）')
-      const optTable = (o) => {
+      // 一张选项表服务哪几个空（多空共用一套选项时按「（1）（2）」并列标出）——
+      // 不加这行，四张表连着排、解析又只写「答案：C」，读者分不清哪张表对哪一空。
+      const optTable = (o, tag) => {
         const cells = ['A', 'B', 'C', 'D'].filter((k) => o[k] !== undefined)
           .map((k) => `<td><span class="optkey">(${k})</span>${escHtml(o[k])}</td>`)
         let rows = ''
         for (let i = 0; i < cells.length; i += 2) rows += '<tr>' + cells[i] + (cells[i + 1] || '<td></td>') + '</tr>'
-        return `<table class="opt-table"><tbody>${rows}</tbody></table>`
+        return (tag ? `<div class="opt-cap">${tag}</div>` : '') + `<table class="opt-table"><tbody>${rows}</tbody></table>`
       }
       const exp = (q) => {
         const keys = ['A', 'B', 'C', 'D'].filter((k) => q.exp.opts && q.exp.opts[k])
-        return `<div class="ans" id="ans-${q.id}"><div class="ans-title">答案：<span class="ans-letter">${q.answer}</span><span class="ans-meta">${B.chapters.find((c) => c.id === q.chapter)?.name || ''}</span></div>` +
+        return `<div class="ans" id="ans-${q.id}"><div class="ans-title"><span class="ans-qno">第 ${q.blank} 空</span>答案：<span class="ans-letter">${q.answer}</span><span class="ans-meta">${B.chapters.find((c) => c.id === q.chapter)?.name || ''}</span></div>` +
           `<div class="ans-concl">${mdBlock(q.exp.concl)}</div><div class="ans-opts">` +
           keys.map((k) => `<div class="opt-exp${k === q.answer ? ' right' : ''}"><b>(${k})</b>${mdBlock(q.exp.opts[k])}</div>`).join('') +
           `</div>${q.exp.note ? `<div class="ans-note"><b>💡 提示：</b>${mdBlock(q.exp.note)}</div>` : ''}</div>`
@@ -155,10 +157,21 @@ export default {
           ? g.optionSets.map((k) => g[k]).filter(Boolean)
           : [g.options12, g.options13, g.options25, g.options26].filter(Boolean)
         if (!multi.length && g.options) multi.push(g.options)
-        html += `<div class="qgroup"><div class="qline">${blank(g.stem || '')}</div>`
+        // 题号徽标：本组覆盖的空号（2017/2019 等年份 num≠blank，一律以题干里的（N）为准）
+        const bs = cluster.map((cq) => cq.blank)
+        const cont = bs.every((b, k) => k === 0 || b === bs[k - 1] + 1)
+        const qlab = bs.length === 1 ? String(bs[0]) : cont ? bs[0] + '–' + bs[bs.length - 1] : bs.join('、')
+        html += `<div class="qgroup"><div class="qno" title="本组覆盖第 ${bs.join('、')} 空">${qlab}</div>` +
+          `<div class="qline">${blank(g.stem || '')}</div>`
         const gfig = cluster.find((cq) => cq.fig)
         if (gfig) html += fig(gfig.fig)
-        multi.forEach((o) => { html += optTable(o) })
+        multi.forEach((o, k) => {
+          // 优先用 oKey 反查这张表到底服务哪一空；查不到再按顺序/整组兜底
+          const hit = cluster.filter((cq) => cq.oKey && g[cq.oKey] === o)
+          const own = hit.length ? hit.map((cq) => cq.blank)
+            : multi.length === cluster.length ? [cluster[k].blank] : bs
+          html += optTable(o, own.map((b) => `（${b}）`).join(''))
+        })
         cluster.forEach((cq) => { html += exp(cq) })
         html += `</div>`
         i = j

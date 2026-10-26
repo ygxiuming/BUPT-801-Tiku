@@ -1,7 +1,9 @@
 <template>
   <div class="qcard" ref="rootEl">
     <div class="qhead">
-      <span class="badge brand" v-if="q.type === 'choice'">选择题 {{ q.num }}</span>
+      <!-- 徽标用「空号」而不是 num：2017/2019/2021/2022/2024 存在 num≠blank（多空共用一题），
+           写 num 会与题干里的（N）对不上，练习时找不到是哪一空。 -->
+      <span class="badge brand" v-if="q.type === 'choice'" :title="'第 ' + q.num + ' 题 · 第 ' + q.blank + ' 空'">选择题 {{ q.blank }}</span>
       <span class="badge brand" v-else>综合题 {{ q.num }}</span>
       <span class="badge gray">{{ item.year }} 年</span>
       <span class="badge gray" v-if="q.type === 'big'">{{ q.score }} 分</span>

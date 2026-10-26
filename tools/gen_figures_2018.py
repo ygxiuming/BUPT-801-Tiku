@@ -144,36 +144,52 @@ def fig_q14xf():
     return s + '</svg>'
 
 
-# ---- 选择题（28）：四种载波提取方案 ----
-def _cw_panel(x, y, label, seq):
-    """seq: [('in',), ('box',txt), ('nbox',t1,t2), ('out',)]；yc 为信号线高度"""
-    yc = y + 15
-    s = text(x, yc + 5, label, anchor='start', style='bi')
-    cx = x + 26
-    for item in seq:
-        if item[0] == 'in':
-            s += line(cx, yc, cx + 24, yc, marker='a18w')
-            cx += 24
-        elif item[0] == 'out':
-            s += line(cx, yc, cx + 30, yc, marker='a18w')
-            cx += 30
-        elif item[0] == 'box':
-            s += box1(cx, yc - 15, 66, item[1])
-            cx += 66
-        else:
-            s += box2(cx, yc - 19, 104, item[1], item[2])
-            cx += 104
+# ---- 选择题（28）：四种载波提取方案（原卷为 2×2 网格：A/B 上排，C/D 下排） ----
+CW_H = 38          # 方框统一高（容得下「窄带滤波/或锁相环」两行）
+CW_GAP = 14        # 级间连线长度（框与框不能贴边，否则边框重合看着像一个框）
+CW_ARROW = 26      # 进出箭头长度
+
+
+def _cw_box(x, yc, w, txt):
+    """载波提取方框：单行字居中；两行字（用 '\n' 分隔）时字号降一档，保持行距 14"""
+    s = rect(x, yc - CW_H / 2, w, CW_H)
+    if '\n' in txt:
+        l1, l2 = txt.split('\n')
+        s += text(x + w / 2, yc - 3, l1, size=12.5)
+        s += text(x + w / 2, yc + 11, l2, size=11)
+    else:
+        s += text(x + w / 2, yc + 4.5, txt, size=13)
     return s
 
 
+def _cw_row(x, yc, label, blocks):
+    """一行框图：工号 → 箭头 → 方框 → … → 箭头。blocks=[(文字, 宽), …]，返回 (svg, 右端 x)"""
+    s = text(x, yc + 5, label, size=14, anchor='start', style='bi')
+    cx = x + 20
+    s += line(cx, yc, cx + CW_ARROW, yc, marker='a18w')
+    cx += CW_ARROW
+    for i, (txt, w) in enumerate(blocks):
+        if i:
+            s += line(cx, yc, cx + CW_GAP, yc)
+            cx += CW_GAP
+        s += _cw_box(cx, yc, w, txt)
+        cx += w
+    s += line(cx, yc, cx + CW_ARROW, yc, marker='a18w')
+    return s, cx + CW_ARROW
+
+
 def fig_q28cw():
-    s = HEAD.format(w=430, h=250) + marker('a18w')
-    NB = ('nbox', '窄带滤波', '或锁相环')
-    s += _cw_panel(20, 30, 'A', [('in',), ('box', '平方'), NB, ('out',)])
-    s += _cw_panel(20, 95, 'B', [('in',), ('box', '平方'), ('out',)])
-    s += _cw_panel(20, 145, 'C', [('in',), NB, ('out',)])
-    s += _cw_panel(20, 205, 'D', [('in',), NB, ('box', '平方'), ('out',)])
-    return s + '</svg>'
+    W1, W2 = 56, 96                        # 平方框 / 窄带滤波框的宽度（窄的那个要放两行字）
+    NB = '窄带滤波\n或锁相环'
+    s = HEAD.format(w=520, h=176) + marker('a18w')
+    y1, y2 = 40, 120                        # 上下两排信号线的高度
+    c2 = 268                                # 右列起点
+    s += _cw_row(6, y1, 'A', [('平方', W1), (NB, W2)])[0]
+    s += _cw_row(c2, y1, 'B', [('平方', W1)])[0]
+    s += _cw_row(6, y2, 'C', [(NB, W2)])[0]
+    s += _cw_row(c2, y2, 'D', [(NB, W2), ('平方', W1)])[0]
+    # 原位图只有 286 宽，页面里会被撑到正文宽、字显得过大；这里给一个显示上限（矢量预览不受影响）
+    return s.replace('<svg ', "<svg style='max-width:480px' ", 1) + '</svg>'
 
 
 # ---- 第二题：SSB 解调框图 ----
