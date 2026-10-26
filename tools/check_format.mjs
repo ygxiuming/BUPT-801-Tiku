@@ -86,14 +86,26 @@ for (const y of YEARS) {
       if (/[（(]\s*1\s*[)）]/.test(stem)) warn(y, `大题 ${q.num} 没 subs，但 stem 里挤着编号小问`)
       continue
     }
+    // 小问行首编号：全角/半角都认（渲染时 normSubNo 统一成全角），
+    // 但编号必须连续（第 k 行是（k））；「1、」这类一级标题单独判。
+    let subSeq = 0
     subs.forEach((s, i) => {
-      const want = '（' + (i + 1) + '）'
       const t = String(s).trim()
-      if (!t.startsWith(want) && !t.startsWith('(' + (i + 1) + ')')) {
-        warn(y, `大题 ${q.num} 第 ${i + 1} 小问没有以「${want}」开头：${t.slice(0, 26)}`)
+      const m = /^[（(]\s*([0-9]+)\s*[)）]\s*/.exec(t)
+      if (!m) {
+        if (!/^[0-9]+\s*[、.．]/.test(t)) warn(y, `大题 ${q.num} 第 ${i + 1} 行没有编号：${t.slice(0, 26)}`)
+        subSeq = 0
+        return
       }
-      if (/[（(]\s*[1-9]\s*[)）]/.test(t) && !t.startsWith(want)) {
-        warn(y, `大题 ${q.num} 第 ${i + 1} 小问的行内含别的编号，可能是一行塞了两问`)
+      subSeq++
+      if (Number(m[1]) !== subSeq) {
+        warn(y, `大题 ${q.num} 第 ${i + 1} 行小问编号是（${m[1]}），按顺序应为（${subSeq}）`)
+        subSeq = Number(m[1])
+      }
+      // 去掉行首编号后还以（n）开头、或分号后另起一个编号 → 一行塞了两问
+      const body = t.slice(m[0].length)
+      if (/^[（(]\s*[0-9]+\s*[)）]/.test(body) || /[；;]\s*[（(]\s*[0-9]{1,2}\s*[)）]/.test(body)) {
+        warn(y, `大题 ${q.num} 第 ${i + 1} 行可能塞了两个小问：${body.slice(0, 30)}`)
       }
     })
     // stem 里如果有「（1）」这类编号且 subs 也有，说明重复
@@ -107,7 +119,7 @@ for (const y of YEARS) {
     if (!m) { warn(y, `图 ${k} 没有 viewBox`); continue }
     const w = +m[3], h = +m[4]
     if (w < 180) warn(y, `图 ${k} 只有 ${w}px 宽，正文里会被放大到失真（建议 ≥300）`)
-    if (w > 900) console.log(`  · ${y} 图 ${k} ${Math.round(w)}×${Math.round(h)}（正文按 660px 显示，点击可放大）`)
+    if (w > 900) console.log(`  · ${y} 图 ${k} ${Math.round(w)}×${Math.round(h)}（正文按 680px 显示，点击可放大）`)
   }
   console.log(`  ${y}: 选择题 ${ch.length} 空 / ${Object.keys(byGroup).length} 组，大题 ${big.length} 题，图 ${Object.keys(figs).length} 张`)
 }
