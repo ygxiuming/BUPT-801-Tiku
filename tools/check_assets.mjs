@@ -50,9 +50,6 @@ function localRefs(html) {
     .filter(u => !u.startsWith('/src/'))
 }
 
-/** 图库目录里 >*_*< 开头的文件是 Node 端索引（走 require），不进浏览器，直接跳过 */
-const isNodeOnly = (f) => path.basename(f).startsWith('_')
-
 /** 从任意嵌套结构里收集所有 fig 字段 */
 function collectFigKeys(obj, acc = new Set()) {
   if (!obj || typeof obj !== 'object') return acc
@@ -96,13 +93,8 @@ for (const t of TARGETS) {
       const ansF = path.join(qDir, y, 'answer.js')
       const figs = []
       const figDir = path.join(t.dir, 'data', 'figures', y)
-      if (fs.existsSync(figDir)) {
-        for (const f of fs.readdirSync(figDir)) {
-          if (f.endsWith('.js') && !isNodeOnly(f)) figs.push(path.join(figDir, f))
-        }
-        const sub = path.join(figDir, 'answer')
-        if (fs.existsSync(sub)) for (const f of fs.readdirSync(sub)) if (f.endsWith('.js') && !isNodeOnly(f)) figs.push(path.join(sub, f))
-      }
+      // 图库注册表 = emit 自动生成的 _index.js（浏览器/Node 两用，快照里必须真实下发）
+      if (fs.existsSync(path.join(figDir, '_index.js'))) figs.push(path.join(figDir, '_index.js'))
       const files = [paperF, ansF, ...figs].filter(f => fs.existsSync(f))
       let win
       try { win = loadInSandbox(files) } catch (e) { r.missing.push({ file: path.relative(ROOT, e.message.split(' ')[1] || paperF), why: e.message }); continue }

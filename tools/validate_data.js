@@ -53,8 +53,10 @@ require('../data/figures/2015/_index.js');
 require('../data/questions/2015/paper.js');
 require('../data/questions/2015/answer.js');
 
-// KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）
-const katex = require(path.join(ROOT, 'server/node_modules/katex/dist/katex.min.js'));
+// KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）。
+// module.paths.unshift(项目根) 后用裸说明符：require(变量)/路径字面量 .. 会被 Mimosa 拦。
+module.paths.unshift(path.dirname(__dirname));
+const katex = require('server/node_modules/katex/dist/katex.min.js');
 
 const B = global.window.BUPT801;
 const errors = [];

@@ -1,10 +1,11 @@
 // 把扫描原图（位图）嵌进图库 —— 用于"直接显示原卷图片"的题（2018 选择17 眼图）。
-// 产出与 gen_figures_<年>.py 同格式的 data/figures/<年>/<年>-<题号>-<key>.js，
-// 唯一区别是 SVG 里放一个 <image>（base64 内联，PDF 导出与离线访问都不依赖外部文件）。
+// 产出 data/figures/<年>/<年>-<题号>-<key>.svg（真身，首行带 figureMeta 注释），随后
+// 自动重建该年 _index.js 注册表（同 emit --from-svg）。
 // 用法：node tools/embed_figure_images.mjs [年份]
 import { readFileSync, writeFileSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { svgTextOf, rebuildIndex, readIndexHint } from './emit_figures.mjs'
 
 const root = join(dirname(dirname(fileURLToPath(import.meta.url))))
 const year = process.argv[2] || '2018'
@@ -33,17 +34,13 @@ for (const it of IMAGES) {
   const svg = "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 " +
     (w + 2 * PAD) + ' ' + (h + 2 * PAD) + "' font-size='14'><image x='" + PAD + "' y='" + PAD +
     "' width='" + w + "' height='" + h + "' xlink:href='" + uri + "'/></svg>"
-  const rel = `data/figures/${year}/${year}-${it.no}-${it.key}.js`
-  const body = [
-    `// ${year} · 题${it.no} 题目原图 · ${it.desc} —— 由 tools/embed_figure_images.mjs 生成，勿手改`,
-    'window.BUPT801 = window.BUPT801 || {};',
-    'window.BUPT801.figures = window.BUPT801.figures || {};',
-    `(window.BUPT801.figures["${year}"] = window.BUPT801.figures["${year}"] || {}).${it.key} = ${JSON.stringify(svg)};`,
-    'window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};',
-    `(window.BUPT801.figureMeta["${year}"] = window.BUPT801.figureMeta["${year}"] || {}).${it.key} = ` +
-      `{ q: "题${it.no}", kind: "paper", desc: ${JSON.stringify(it.desc)} };`,
-    ''
-  ].join('\n')
-  writeFileSync(join(root, rel), body)
-  console.log('embedded ' + rel + '  (' + w + 'x' + h + ', ' + Math.round(statSync(join(root, rel)).size / 1024) + ' kB)')
+  const rel = `data/figures/${year}/${year}-${it.no}-${it.key}.svg`
+  const dst = join(root, rel)
+  writeFileSync(dst, svgTextOf({ key: it.key, q: `题${it.no}`, kind: 'paper', desc: it.desc }, svg))
+  // 保序重建：现有 _index.js 的注册序（= 生成器 FIGS 声明序）不能被文件名排序打乱
+  let hint = null
+  const idxPath = join(root, 'data', 'figures', year, '_index.js')
+  try { hint = readIndexHint(readFileSync(idxPath, 'utf8')) } catch { /* 首次无旧表 */ }
+  const n = rebuildIndex(join(root, 'data', 'figures', year), year, hint)
+  console.log('embedded ' + rel + '  (' + w + 'x' + h + ', ' + Math.round(statSync(dst).size / 1024) + ' kB)；_index.js 重建（' + n + ' 项）')
 }

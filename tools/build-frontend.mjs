@@ -126,4 +126,9 @@ const html = base === '/'
   : rawHtml.replace(/(href|src)="\/(data|vendor|assets)\//g, (_m, attr, dir) => `${attr}="${base}${dir}/`)
 fs.writeFileSync(path.join(APP, 'dist', 'index.html'), html, 'utf8')
 
-console.log('前端产物已更新：app/dist/index.html + app/dist/assets/app.{js,css}')
+// dist/data 快照与 public/data 对齐（vite build 会拷 public/，本机跑不了 vite，这里补上）。
+// 先删再拷：图库换格式/删图后，残留旧文件会让 check_assets 误判。
+fs.rmSync(path.join(APP, 'dist', 'data'), { recursive: true, force: true })
+fs.cpSync(path.join(APP, 'public', 'data'), path.join(APP, 'dist', 'data'), { recursive: true })
+
+console.log('前端产物已更新：app/dist/index.html + app/dist/assets/app.{js,css} + dist/data')

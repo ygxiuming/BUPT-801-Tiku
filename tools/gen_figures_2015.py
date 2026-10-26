@@ -270,7 +270,7 @@ def fig_p9const():
     tri = [(cx, cy - U), (cx - 0.866 * U, cy + 0.5 * U), (cx + 0.866 * U, cy + 0.5 * U)]
     s += poly(tri, close=True, width=1.6)
     s += line(60, cy, 446, cy, marker='arR')
-    s += line(cx, 366, cx, 44, marker='arR')
+    s += line(cx, 282, cx, 44, marker='arR')
     s += text(452, cy + 5, 'f_1(t)', anchor='start', size=13, style='i')
     s += text(cx + 8, 40, 'f_2(t)', anchor='start', size=13, style='i')
     for x, y, nm, dx, dy, an in [(cx, cy, 's_1', 10, -8, 'start'),

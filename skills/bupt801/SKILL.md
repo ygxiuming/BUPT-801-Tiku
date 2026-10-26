@@ -17,9 +17,9 @@ agent_created: true
 | 解析 2027 年 801 真题 | 年份=2027，输入=`待解析/2027*.pdf` + `待解析/2027答案/`，全流程走完（含图、校验、实测） |
 | 只解析 2027 的试卷 | 只做转录 + groups + paper.js，不写答案 |
 | 2027 的答案到了，补解析 | 已有 paper.js，只补 answer.js |
-| 重画 2025 第九题的图 | 只改 `tools/gen_figures_2025.py` + emit + 预览核验 |
+| 重画 2025 第九题的图 | 只改 `tools/gen_figures_2025.py` + emit + **与原卷裁图对照**核验（第 ⑤⑥ 节闭环） |
 
-**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘并按第 5 节格式规范统一（四边留白 18px）；④框图/线段自查遮挡（0 交叠）；⑤`node tools/validate_data.js` 零错误零警告；⑥页面冒烟通过；⑦**追加 `解析日志.md`**；⑧**git 提交**。
+**默认必须做的事**（用户不说也要做）：①每道题独立解题、答案自己反复验证；②每道题都有解析；③图片全部 SVG 重绘并按第 5 节格式规范统一（四边留白 18px），**题图先裁原卷留档、画完逐张与原卷裁图对照，差异清零才算完（第 ⑤⑥ 节）**；④框图/线段自查遮挡（硬交叠 0）；⑤`node tools/validate_data.js` 零错误零警告；⑥页面冒烟通过；⑦**追加 `解析日志.md`**；⑧**git 提交**。
 
 ---
 
@@ -33,17 +33,22 @@ agent_created: true
 ```
 待解析/<年>*.pdf            输入：试卷
 待解析/<年>答案/*.jpg       输入：答案（可能是手写批注或详细解析图片）
+待解析/crops/<年>/          原卷裁图留档 <key>.png + 对照图 <key>.cmp.png（gitignore，不入库）
 data/chapters.js            两级章节→知识点（筛选维度，先读，复用已有知识点名）
-data/figures/<年>/          图库：单图一文件 + _index.js + answer/ 子目录
+data/figures/<年>/          图库：单图一 .svg 真身（首行 <!-- figureMeta {...} --> 注释）
+                            + answer/ 子目录 + _index.js（emit 自动生成的注册表，勿手改）
 data/questions/<年>/        paper.js（真题）+ answer.js（答案与解析）
 tools/gen_figures_<年>.py   SVG 生成器（stdout 输出 ###FILE: 分隔的多文件）
-tools/emit_figures.mjs      把生成器输出落盘
+tools/emit_figures.mjs      落盘：生成器输出 → .svg 真身 + 重建 _index.js；--from-svg 由现有 .svg 重建
+tools/crop_orig.py          原卷裁图助手（页 PNG + x,y,w,h → 待解析/crops/<年>/<key>.png）
+tools/compare_figures.py    **对照**：左原卷/右重绘 + 总表（需先有裁图）；--overlay 叠加、--grid 网格
+tools/dump_figures.js       图库 JSON 导出（compare_figures.py 的数据通道；新年份加一行 require）
 tools/validate_data.js      数据+KaTeX+数值 校验
 tools/smoke_pages.mjs       页面冒烟（jsdom + dist，无需浏览器/网络）
 tools/svgkit.py             **统一收边**：tighten(svg, PAD=18)，2025/2026 起每张图必用
 tools/preview_figures.py    **预览**：整年图件渲染并拼成带图名的网格（省上下文）
 tools/svg_fit.py            旧方案：viewBox 粗收（2023/2024 的生成器在用，新图不要再用）
-tools/fit_figures_render.py 旧方案：按渲染墨迹精收（emit 后调用，2023/2024 在用）
+tools/fit_figures_render.py 旧方案：按渲染墨迹精收（已随 .js 存储退役，别再用）
 解析日志.md                 每年入库/改题后追加，写完即提交
 app/                        Vue3 前端（index.html 登记数据 script）
 server/                     Express + Puppeteer（试卷 PDF 生成）
@@ -113,12 +118,16 @@ pdftoppm -r 300 -png "待解析/<年>xxx.pdf" /tmp/w801/<年>/p   # 300dpi 够�
 
 ### ⑤ 画图（一张都不能省）
 
+0. **先裁原卷留档，再动笔**：从第 ② 步转出的整页 PNG 里把本题图区域裁下来存
+   `待解析/crops/<年>/<key>.png`，并 Read 一遍；对照时用 `--grid` 读相对位置（框宽比、标注离线比例）。
+   **当前会话读不了图片就停手告诉用户，禁止凭文字描述盲画**——2015 年重绘因盲画出过拓扑错误，
+   解析日志里"未经肉眼核对"的教训就是这条红线的出处。
 1. 写 `tools/gen_figures_<年>.py`：从 `gen_figures_2026.py` 复制脚手架（`HEAD/marker/line/poly/text/dot/circle/rect/mul/adder` 画笔齐备）。**先 `grep` 去年的同类图函数，照抄它的框高/标签间距/字号**，不要从零拍坐标——两年的同类图必须长一个样。
 2. 在 `FIGS = [(key, 题号, 是否解析图, 描述)]` 登记；输出走 stdout，用 `###FILE:<路径>` 分隔。
 3. 落盘：
 
 ```bash
-node tools/emit_figures.mjs <年>     # 生成 data/figures/<年>/*.js + answer/*.js + _index.js
+node tools/emit_figures.mjs <年>     # 生成 data/figures/<年>/*.svg + answer/*.svg + 重建 _index.js
 ```
 
 4. 收边**只有一种写法**（2025/2026 已是这个范式，新图照抄）：
@@ -131,9 +140,18 @@ SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}   # 四边各留 18px
 ```
 
 - 画布尺寸随便给（`HEAD.format(w=..., h=...)`），只要内容装得下；**不要手调 viewBox，也不要用 `head_at()`**（已弃用：它要求所有坐标 ≥ x0，一不留神就左侧溢出）。
-- 文件名 `年份-题号-图名.js` 只给人看，数据里永远用 `fig:"key"` 引用。
+- 文件名 `年份-题号-图名.svg` 只给人看，数据里永远用 `fig:"key"` 引用。
 - 上下标用 `text()` 的迷你标记：`x_c`、`T_{b}`、`u^2` → tspan 真上下标。**绝不写 `T_b`、`G₁` 这种字面下划线/Unicode 下标。**
 - 颜色、线宽、虚线、字号、间距、框高**一律按下表第 5 节《图件格式规范》**，那张表是唯一口径，别在图里另发明写法。
+5. **对照闭环（差异清零才算画完）**：emit 后跑
+
+```bash
+/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python tools/compare_figures.py <年>
+```
+
+   Read 总表（`待解析/crops/<年>/_cmp-<年>.png`）和可疑单图的 `.cmp.png`（左原卷/右重绘），逐图列
+   **差异清单：拓扑、器件顺序、箭头方向、标注文字、相对位置/比例**——改生成器 → 重新 emit → 重比，
+   直到清单清零。有意改动（修正原卷笔误、参考解析画错）写进 `sol.pitfalls` 与解析日志，注明理由。
 
 ### ⑥ 自查遮挡（必做，不能只靠肉眼扫一眼）
 
@@ -155,8 +173,13 @@ $PY tools/preview_figures.py <年> --only q7quant,psk8new --cell 760x470 --out /
 再跑几何自查（文字包围盒 vs 线段 vs viewBox）：
 
 ```bash
-node tools/check_figure_overlap.js <年>     # 判过标准：0 线交叠 + 0 字交叠 + 四边留白 18±2（四边差 ≤4px）
+node tools/check_figure_overlap.js <年>     # 判过标准：硬交叠 0 + 四边留白 18±2（四边差 ≤4px）
 ```
+
+输出分两档，别混淆：
+- **硬交叠**（`<line>` 压字、字压字）——门槛，必须 0；
+- **复核 / 净距预警**（全量 path/折线/方框边/圆 vs 文字、净距 <6px）——逐条看：状态节点圆内标号、
+  Σ 加法器、星座点标签贴参考圆是设计意图，放过；明显脏的（标签穿框边、字贴 ⊗）回生成器改。
 
 **收边走 `svgkit.tighten()` 一步到位，别手调 viewBox**：
 
@@ -172,10 +195,11 @@ node tools/check_figure_overlap.js <年>     # 判过标准：0 线交叠 + 0 �
 ### ⑦ 登记 + 校验
 
 ```bash
-# a) app/index.html 加三行（图库 bundle 一行 + 题目两行）
-#    <script src="/data/figures/<年>.js"></script>
+# a) app/index.html 登记——**新年份**才需要：图库每年一行 + 题目两行
+#    <script src="/data/figures/<年>/_index.js"></script>
 #    <script src="/data/questions/<年>/paper.js"></script>
 #    <script src="/data/questions/<年>/answer.js"></script>
+#    已有年份加图/改图：只跑 emit 即可，index.html 不用动；改了 index.html 必须 node tools/build-frontend.mjs
 
 # b) tools/validate_data.js 两处登记
 #    require('../data/figures/<年>/_index.js');
@@ -199,15 +223,13 @@ cd ~/Desktop/北邮801-通信原理/app && npm run sync
 ```bash
 cd ~/Desktop/北邮801-通信原理
 for y in <年>; do
-  mkdir -p "app/public/data/questions/$y"
+  mkdir -p "app/public/data/questions/$y" "app/public/data/figures/$y"
   cp -f "data/questions/$y/paper.js" "data/questions/$y/answer.js" "app/public/data/questions/$y/"
-  { printf 'window.BUPT801 = window.BUPT801 || {};\nwindow.BUPT801.figures = window.BUPT801.figures || {};\n'
-    find "data/figures/$y" -name '*.js' ! -name '_*' | sort | while read -r f; do cat "$f"; echo; done
-  } > "app/public/data/figures/$y.js"
+  cp -f "data/figures/$y/_index.js" "app/public/data/figures/$y/"   # 图库注册表（浏览器/Node 两用）
 done
 cp -f data/chapters.js app/public/data/chapters.js
 ```
-注意：`find` 必须排除 `_*`（`_index.js` 是 Node 端静态索引，进浏览器会重复注册/污染）。
+注意：浏览器只需要 `_index.js`（.svg 真身不下发）；正常走 `npm run sync`，这段只是沙箱兜底。
 
 ### ⑨ 实测
 
@@ -274,7 +296,8 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 - [ ] 选择题 N 题 / 大题 M 题 / 总分 150（以原卷为准，同步 `sections` 分值）
 - [ ] 每道选择题有 `concl + A~D 逐项 + note`；每道大题有 `intro + 分步 + 每问 ans + summary + pitfalls`
 - [ ] 与参考答案不一致处，解析里写明差异和理由
-- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡，`check_figure_overlap.js <年>` 0 交叠、**四边留白 18/18/18/18（±2）**，版式符合第 5 节规范
+- [ ] **每张题图与原卷裁图并排比对过（`compare_figures.py <年>`），差异清单清零（有意改动已注明理由）**
+- [ ] 全部图片 SVG 重绘，逐张 PNG 目视核过遮挡，`check_figure_overlap.js <年>` **硬交叠 0**、**四边留白 18/18/18/18（±2）**，版式符合第 5 节规范
 - [ ] `node tools/validate_data.js` → 0 错误 0 警告
 - [ ] `app/index.html` / `validate_data.js` / `chapters.js` 三处登记齐全
 - [ ] `public/data/` 与 `data/` 内容一致（`diff` 过，或确认走 server 实时映射不需要快照）
@@ -307,6 +330,9 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 图件报"留白 L=-1xx"（左侧溢出） | 旧写法 `head_at(w,h,x0,y0)` 会把 viewBox 原点搬到 `x0`，元素坐标写到 `x0` 左侧就溢出。**已弃用**：改 `HEAD.format` + `tighten` |
 | 四边留白 8/30 不均、图看着偏左 | 这张图没走 `svgkit.tighten()`，或还在用 `svg_fit`/`fit_figures_render` 旧链路；新图统一 `tighten(v, PAD)` |
 | 收紧留白后标签与箭头贴住 | 文字盒是"上 0.8em / 下 0.2em"，箭头起点必须落在文字盒之外 ≥6px；垂直箭头别让文字居中压在箭线上，改成右对齐/左对齐到线侧 |
+| compare 提示"缺裁图" | `待解析/crops/<年>/<key>.png` 不存在；先 crop_orig.py 裁图留档，compare 只对照有裁图的题图 |
+| 手改了 .svg 但页面/校验没变 | 注册表是生成物：`node tools/emit_figures.mjs <年> --from-svg` 重建 `_index.js`；别手改 `_index.js` |
+| 图整块消失（新链路） | 该年 `_index.js` 没重建，或 `app/index.html` 缺该年一行；改过 index.html 必须 `node tools/build-frontend.mjs` |
 | 框里两行字贴框底 | 框高 30 只够单行。双行文字用框高 38、行基线间距 14~15、距上下边各 ≥4px |
 | 同类元素三种画法（`#666`/`#bbb`、`6,4`/`2,3`） | 按第 5 节色表/线型表统一，别在图里自创；改动时用 `grep -n "color='#"` 一次性扫平 |
 | 冒烟报"找不到 td[data-k]"、页面空白 | `openPage(route, tag)` 的 tag 命中 ESM 缓存、app 没重新挂载（见第 ⑨ 步，已自动加序号） |
@@ -377,17 +403,19 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 量化特性 / PDF | `fig_q7quant`、`fig_ookpdf`（2025） | 电平标签统一"电平线上方 4px"、门限红色一处 |
 | 编码器 / 延迟线 | `fig_encoder`（2025） | ⊕ 悬在 D₁/D₂ 之间正上方、三路抽头从左/下/右入（⊕ 十字 0.77r）；输出从 ⊕ 顶部上折再右出；`G`/`G₂` 两个虚线框左上角标名、穿框实线留缺口 |
 
-### 5.7 每年入库后的巡检（3 步）
+### 5.7 每年入库后的巡检（4 步）
 
 ```bash
 node tools/emit_figures.mjs <年>
-node tools/check_figure_overlap.js <年>      # 0 交叠 + 18/18/18/18
+node tools/check_figure_overlap.js <年>      # 硬交叠 0 + 18/18/18/18
 /home/xiuming/.workbuddy/binaries/python/envs/default/bin/python \
   tools/preview_figures.py <年> <往年> --cols 3 --cell 520x400
 # 网格图里并排比"同类图是否一个模子"，可疑的用 --only 单张放大
+/home/xiuming/.workbuddy/binaries/python/envs/default/bin/python tools/compare_figures.py <年>
+# 有裁图的年份跑：总表里逐图核对与原卷的拓扑/标注/布局（没裁图的先补裁）
 ```
 
-发现"同类图长得不一样"→ 改图，不改规范。
+发现"同类图长得不一样"→ 改图，不改规范。发现"与原卷不符"→ 改图并补一条解析日志。
 
 **只动了工具、没打算改图时**，多跑一步回归：`node tools/emit_figures.mjs <年>` 之后
 `git status --short data/figures` 必须是**空**——非空说明你的改动改变了既有图件的收边，

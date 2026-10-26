@@ -1,5 +1,6 @@
-// 图库自检：扫描 data/figures/ 全部 .js，检查注册语句是否有效、占位符是否残留、
-// 题目引用的 key 是否都能解析。手改图后跑一次：node tools/check_figs.mjs
+// 图库自检：扫描 data/figures/ 全部 .svg，检查 figureMeta 注释是否有效、占位符是否残留、
+// 题目引用的 key 是否都能解析，并真实加载各年 _index.js（emit 自动生成的注册表）。
+// 手改图后跑一次：node tools/check_figs.mjs
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,22 +15,25 @@ function walk(dir) {
   for (const name of readdirSync(dir).sort()) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) { walk(p); continue }
-    if (!name.endsWith('.js') || name.startsWith('_')) continue
+    if (!name.endsWith('.svg')) continue
     const src = readFileSync(p, 'utf8')
     const rel = p.replace(root + '/', '')
     // 占位符残留（AI 模板常见坑）
-    for (const bad of ['"YEAR"', '.FIGURE_NAME', '题号', '`${']) {
+    for (const bad of ['"YEAR"', '.FIGURE_NAME', '`${']) {
       if (src.includes(bad)) problems.push(`${rel}: 残留占位符 ${bad}（年份/key 没替换成真实值）`)
     }
-    // 反引号必须成对
-    if ((src.match(/`/g) || []).length % 2 !== 0) problems.push(`${rel}: 反引号不成对，JS 语法错误`)
-    // 收集注册的 key
-    for (const m of src.matchAll(/\.figures\["(\d{4)"\][^=]*\.([A-Za-z0-9_]+)\s*=/g)) {
-      // 上面正则不捕获（引号写法），换一种宽松匹配：
-    }
-    for (const m of src.matchAll(/figures\[.(\d{4}).\][^=]*?\.([A-Za-z0-9_]+)\s*=/g)) {
-      registry[m[2]] = registry[m[2]] || []
-      registry[m[2]].push(rel)
+    // 每张 .svg 首行必须带 figureMeta 注释（emit 靠它重建 _index.js 注册表）
+    const m = src.match(/^<!--\s*figureMeta\s+([\s\S]*?)\s*-->/)
+    if (!m) { problems.push(`${rel}: 缺首行 <!-- figureMeta {...} --> 注释，emit 无法注册`); continue }
+    try {
+      const meta = JSON.parse(m[1])
+      if (!meta.key) throw new Error('缺 key')
+      if (!/^[A-Za-z0-9_]+$/.test(meta.key)) throw new Error('key 含非法字符：' + meta.key)
+      if (!/^\s*<svg\b/i.test(src.slice(m[0].length))) throw new Error('注释后不是 <svg 开头')
+      registry[meta.key] = registry[meta.key] || []
+      registry[meta.key].push(rel)
+    } catch (e) {
+      problems.push(`${rel}: figureMeta 注释有问题：${e.message}`)
     }
   }
 }

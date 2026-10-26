@@ -719,7 +719,8 @@ _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from svg_fit import fit_svg, report as _pad_report
 from svgkit import PAD, tighten
 
-# 2023 其余图仍是旧两步链路（svg_fit 粗收 pad=16，必要时再跑 fit_figures_render 精收）；
+# 2023 其余图仍是旧链路（svg_fit 粗收 pad=16；fit_figures_render 已随 .js 存储删除，
+# 如需精收把该图改走下面的 svgkit.tighten 统一口径）；
 # 这次重画的 q2sys / q2psd 直接走统一口径 svgkit.tighten()（四边各 18px），
 # 不再被 fit_svg 二次收紧，避免四边留白被拉成 16/16/16/16 以外的值。
 REDRAWN = ('q2sys', 'q2psd')

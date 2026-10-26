@@ -12,14 +12,15 @@ mkdirSync(join(pub, 'data'), { recursive: true })
 mkdirSync(join(pub, 'vendor'), { recursive: true })
 
 // data/ → public/data 逐文件拷贝（页面按单文件 <script> 引用）。
-// _ 前缀文件（如 figures/<年>/_index.js 是 Node 端索引）不进浏览器，跳过。
+// 图库的 _index.js 是 emit 自动生成的注册表（浏览器/Node 两用），必须下发；
+// 其余 _ 前缀文件不进浏览器，跳过。
 function copyAll(srcDir, dstDir) {
   mkdirSync(dstDir, { recursive: true })
   for (const name of readdirSync(srcDir)) {
     const src = join(srcDir, name)
     const dst = join(dstDir, name)
     if (statSync(src).isDirectory()) copyAll(src, dst)
-    else if (name.endsWith('.js') && !name.startsWith('_')) copyFileSync(src, dst)
+    else if (name.endsWith('.js') && (!name.startsWith('_') || name === '_index.js')) copyFileSync(src, dst)
   }
 }
 copyFileSync(join(proj, 'data', 'chapters.js'), join(pub, 'data', 'chapters.js'))
