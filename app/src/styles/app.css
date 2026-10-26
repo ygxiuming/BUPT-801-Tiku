@@ -947,6 +947,35 @@ html[data-theme="dark"] .paper-sheet { box-shadow: var(--shadow-2); }
 .step-ans { background: var(--ok-soft); border-radius: 8px; padding: 7px 13px; margin-top: 8px; font-size: 14px; }
 .sol-summary { background: var(--ok-soft); border-radius: 9px; padding: 10px 14px; margin-top: 14px; font-size: 14px; }
 
+/* 解析正文里的 Markdown 表格（如 2017 六(3) 的状态转移表）。
+   body 是「一段一个数组元素」，表格若无条件合并会被拆成一列竖线，
+   合并逻辑在 lib/data.js 的 mdBlocks()，这里只管版式。 */
+.md-table-wrap { margin: 10px 0 12px; overflow-x: auto; }
+.md-table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  font-size: 14.5px;
+  line-height: 1.75;
+  background: var(--surface);
+}
+.md-table th,
+.md-table td {
+  border: 1px solid var(--line-2);
+  padding: 5px 14px;
+  text-align: center;
+  white-space: nowrap;
+}
+.md-table th {
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-weight: 600;
+  font-size: 14px;
+}
+.md-table tbody tr:nth-child(even) td { background: var(--surface-2); }
+.md-table .katex { font-size: 1em; }
+.md-table td:first-child { font-weight: 600; }
+.step-table { overflow-x: visible; }
+
 /* 顶部工具条（刷题） */
 .toolrow {
   position: sticky; top: 76px; z-index: 30;

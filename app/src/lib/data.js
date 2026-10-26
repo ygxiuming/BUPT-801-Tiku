@@ -120,3 +120,94 @@ export function escHtml(s) {
 export function boldBlanks(s) {
   return escHtml(s).replace(/（(\d+)）/g, '（<strong class="blank">$1</strong>）')
 }
+
+/* ---------- 解析正文的轻量 Markdown ----------
+   数据里只用到两种语法，没必要引第三方解析器：
+     1. 行内 **粗体**（跳过 $...$ / $$...$$ 内部，避免吃掉公式里的星号）
+     2. 块级表格：连续 `| a | b |` 行，第二行是 `|---|` 分隔行
+   表格必须整块拼好再输出：body 是「一段一个数组元素」，表格每行是一个元素，
+   若按元素各自 v-html，表格会被切成 N 个 <div>，页面上只剩一列竖线。 */
+
+const MD_ROW = /^\s*\|(.+)\|\s*$/
+const MD_SEP = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/
+
+const isRow = (s) => typeof s === 'string' && MD_ROW.test(s)
+const isSep = (s) => typeof s === 'string' && MD_ROW.test(s) && MD_SEP.test(s)
+
+function inlineMd(s) {
+  // 按公式段切开，只对非公式段替换 **：公式里可能出现 *（如 H^{*}）
+  return String(s)
+    .split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*\$)/g)
+    .map((seg, i) => (i % 2 ? seg : seg.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')))
+    .join('')
+}
+
+function mdCells(line) {
+  let s = line.trim()
+  if (s.startsWith('|')) s = s.slice(1)
+  if (s.endsWith('|')) s = s.slice(0, -1)
+  return s.split('|').map((c) => c.trim())
+}
+
+function mdTable(head, rows) {
+  const th = head.map((c) => '<th>' + inlineMd(escHtml(c)) + '</th>').join('')
+  const tb = rows
+    .map((r) => '<tr>' + head.map((_, k) => '<td>' + inlineMd(escHtml(r[k] || '')) + '</td>').join('') + '</tr>')
+    .join('')
+  return (
+    '<div class="md-table-wrap"><table class="md-table"><thead><tr>' + th + '</tr></thead><tbody>' + tb + '</tbody></table></div>'
+  )
+}
+
+/** 单段文本 → HTML（段内 \n 变 <br>，支持 **粗体** 与表格） */
+export function mdBlock(src) {
+  const text = String(src == null ? '' : src)
+  if (!text) return ''
+  const lines = text.split('\n')
+  const out = []
+  let buf = []
+  const flush = () => {
+    if (!buf.length) return
+    out.push(buf.map((l) => inlineMd(escHtml(l))).join('<br>'))
+    buf = []
+  }
+  for (let i = 0; i < lines.length; i++) {
+    if (isRow(lines[i]) && isRow(lines[i + 1]) && isSep(lines[i + 1])) {
+      flush()
+      const head = mdCells(lines[i])
+      const rows = []
+      i += 1
+      while (i + 1 < lines.length && isRow(lines[i + 1])) {
+        i += 1
+        rows.push(mdCells(lines[i]))
+      }
+      out.push(mdTable(head, rows))
+      continue
+    }
+    buf.push(lines[i])
+  }
+  flush()
+  return out.join('')
+}
+
+/** body 数组 → 块数组 [{ t:'p'|'table', html }]，把连续表格行合成为一个 table 块 */
+export function mdBlocks(arr) {
+  const src = Array.isArray(arr) ? arr : [arr]
+  const out = []
+  for (let i = 0; i < src.length; i++) {
+    if (isRow(src[i]) && isRow(src[i + 1]) && isSep(src[i + 1])) {
+      const head = mdCells(src[i])
+      const rows = []
+      i += 2
+      while (i < src.length && isRow(src[i])) {
+        rows.push(mdCells(src[i]))
+        i += 1
+      }
+      i -= 1
+      out.push({ t: 'table', html: mdTable(head, rows) })
+      continue
+    }
+    out.push({ t: 'p', html: mdBlock(src[i]) })
+  }
+  return out
+}

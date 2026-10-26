@@ -59,6 +59,9 @@ const ROUTES = [
   ['/paper/2019', '试卷页2019'],
   ['/practice?y=2019', '练习页2019'],
   ['/exam?y=2019', '考试页2019'],
+  ['/paper/2018', '试卷页2018'],
+  ['/practice?y=2018', '练习页2018'],
+  ['/exam?y=2018', '考试页2018'],
   ['/paper/2020', '试卷页2020'],
   ['/practice?y=2020', '练习页2020'],
   ['/exam?y=2020', '考试页2020'],
@@ -185,6 +188,38 @@ function paperFigKeys(w, year) {
   return acc
 }
 
+// 解析正文里有没有 Markdown 表格（`| a | b |` + `|---|`）。
+// 有的话页面上必须出现 table.md-table —— 表格行被拆进不同 <div> 时只会渲染成一列
+// 竖线，肉眼是「表格没渲染」，脚本只数 .katex 是看不出来的。
+//
+// 注意两处竞态（都吃过亏）：
+//   ① 数据侧 —— 解析原文在 answers[年] 里，要等 hydration 把它并回 papers[年] 才看得见；
+//      只看 papers[年] 时，hydration 慢一拍就「没找到表格」，判定被静默跳过（假绿）。
+//      故两处都扫。
+//   ② 渲染侧 —— 页面是 v-html 注入 + KaTeX 后处理，注入完成时刻不固定；查太早会假红。
+//      故给最多 1s 轮询。
+function paperHasMdTable(w, year) {
+  const B = w.BUPT801 || {}
+  const srcs = [B.papers && B.papers[year], B.answers && B.answers[year]].filter(Boolean)
+  if (!srcs.length) return false
+  let hit = false
+  const walk = (o) => {
+    if (hit || !o || typeof o !== 'object') return
+    if (Array.isArray(o)) {
+      for (let i = 0; i + 1 < o.length; i++) {
+        if (typeof o[i] === 'string' && /^\s*\|.*\|\s*$/.test(o[i]) && /^\s*\|[\s:|-]+\|\s*$/.test(o[i + 1])) {
+          hit = true
+          return
+        }
+      }
+      return o.forEach(walk)
+    }
+    for (const v of Object.values(o)) walk(v)
+  }
+  srcs.forEach(walk)
+  return hit
+}
+
 for (let i = 0; i < ROUTES.length; i++) {
   const [route, label] = ROUTES[i]
   const errs = []
@@ -243,6 +278,15 @@ for (let i = 0; i < ROUTES.length; i++) {
       errs.push(`图件未渲染：题干引用 ${need.size} 张，页面上只有 ${figCnt} 个图块`)
     }
     stats.figNeed = need ? need.size : 0
+    if (paperHasMdTable(w, pm[1])) {
+      let tbl = 0
+      for (let t = 0; t < 20 && !tbl; t++) {
+        tbl = doc.querySelectorAll('table.md-table').length
+        if (!tbl) await sleep(50)
+      }
+      if (!tbl) errs.push('解析表格未渲染（表格行被拆成多个 <div>，页面上只剩竖线）')
+      stats.mdTable = tbl
+    }
   }
 
   report.push({ ...stats, detail: errs })
@@ -362,6 +406,24 @@ await step('练习页2017：选选项 → 查看解析', async () => {
   w.close()
 })
 
+await step('练习页2017：综合题解析里的 Markdown 表格', async () => {
+  // 2017 四(2) 量化电平表、六(3) 状态转移表都是纯文本表格，必须渲染成 <table>
+  const w = await openPage('/practice?y=2017&type=big&id=2017-六', 'prac17big')
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(260)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const tb = w.document.querySelectorAll('.ans table.md-table').length
+  if (!tb) throw new Error('综合题解析里的表格没渲染成 table.md-table（仍是竖线文本）')
+  const rows = w.document.querySelectorAll('.ans table.md-table tbody tr').length
+  if (rows < 8) throw new Error('状态表只有 ' + rows + ' 行，应为 8 行')
+  const cellKx = w.document.querySelectorAll('.ans table.md-table .katex').length
+  if (cellKx < 2) throw new Error('表头/单元格里的公式没被 KaTeX 渲染（katex=' + cellKx + '）')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
 await step('练习页2026：选选项 → 查看解析', async () => {
   const w = await openPage('/practice?y=2026', 'prac26')
   const opt = w.document.querySelector('td[data-k]')
@@ -396,6 +458,37 @@ await step('练习页2019：选选项 → 查看解析', async () => {
   w.close()
 })
 
+await step('练习页2018：选选项 → 查看解析', async () => {
+  const w = await openPage('/practice?y=2018', 'prac18')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if (w.document.querySelectorAll('.katex-error').length) throw new Error('有 KaTeX 渲染错误')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('试卷页2018：题图与解析图全部渲染（17 张 SVG）', async () => {
+  const w = await openPage('/paper/2018', 'paper18fig')
+  const n = w.document.querySelectorAll('.figblock svg').length
+  if (n !== 17) throw new Error('.figblock svg ' + n + ' 张（应 17）')
+  const empty = w.document.querySelectorAll('.figblock').length - n
+  if (empty) throw new Error(empty + ' 个图块没解析出 SVG（fig key 悬空）')
+  const bigs = [...w.document.querySelectorAll('.bigq > .subs')]
+  if (bigs.length !== 7) throw new Error('.subs 容器 ' + bigs.length + ' 个（应 7）')
+  if (w.document.querySelectorAll('.katex-error').length) throw new Error('有 KaTeX 渲染错误')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
 await step('练习页2020：选选项 → 查看解析', async () => {
   const w = await openPage('/practice?y=2020', 'prac20')
   const opt = w.document.querySelector('td[data-k]')
@@ -426,6 +519,25 @@ await step('练习页2016：选选项 → 查看解析', async () => {
   if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
   const kx = w.document.querySelectorAll('.katex').length
   if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('试卷页2016：大题小问逐行渲染（subs 与题干分离）', async () => {
+  const w = await openPage('/paper/2016', 'paper16')
+  const data = (w.BUPT801 && w.BUPT801.papers && w.BUPT801.papers['2016'].questions) || []
+  const bigs = data.filter((q) => q.type === 'big')
+  if (bigs.length !== 11) throw new Error('数据里大题数 ' + bigs.length + '（应 11）')
+  const noSubs = bigs.filter((q) => !q.subs || !q.subs.length)
+  if (noSubs.length) throw new Error('缺 subs：' + noSubs.map((q) => q.num).join('、'))
+  // 题干里不该再残留「(1)」这类编号小问（历史 bug：小问全挤进 stem 排成一段）
+  const dirty = bigs.filter((q) => /[(（]\s*1\s*[)）]/.test(q.stem))
+  if (dirty.length) throw new Error('stem 里仍有编号小问：' + dirty.map((q) => q.num).join('、'))
+  const boxes = [...w.document.querySelectorAll('.bigq > .subs')]
+  if (boxes.length !== 11) throw new Error('.subs 容器 ' + boxes.length + ' 个（应 11）')
+  const want = bigs.map((q) => q.subs.length)
+  const got = boxes.map((el) => el.children.length)
+  if (got.join(',') !== want.join(',')) throw new Error('小问行数不符：DOM ' + got.join(',') + ' vs 数据 ' + want.join(','))
   if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
   w.close()
 })

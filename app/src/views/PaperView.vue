@@ -61,7 +61,7 @@
 
 <script>
 import Icon from '../components/Icon.vue'
-import { papers, escHtml } from '../lib/data.js'
+import { papers, escHtml, mdBlock, mdBlocks } from '../lib/data.js'
 import { renderMath, figureSvg } from '../lib/render.js'
 import { APP_BASE } from '../router.js'
 
@@ -118,20 +118,20 @@ export default {
       const exp = (q) => {
         const keys = ['A', 'B', 'C', 'D'].filter((k) => q.exp.opts && q.exp.opts[k])
         return `<div class="ans" id="ans-${q.id}"><div class="ans-title">答案：<span class="ans-letter">${q.answer}</span><span class="ans-meta">${B.chapters.find((c) => c.id === q.chapter)?.name || ''}</span></div>` +
-          `<div class="ans-concl">${escHtml(q.exp.concl)}</div><div class="ans-opts">` +
-          keys.map((k) => `<div class="opt-exp${k === q.answer ? ' right' : ''}"><b>(${k})</b>${escHtml(q.exp.opts[k])}</div>`).join('') +
-          `</div>${q.exp.note ? `<div class="ans-note"><b>💡 提示：</b>${escHtml(q.exp.note)}</div>` : ''}</div>`
+          `<div class="ans-concl">${mdBlock(q.exp.concl)}</div><div class="ans-opts">` +
+          keys.map((k) => `<div class="opt-exp${k === q.answer ? ' right' : ''}"><b>(${k})</b>${mdBlock(q.exp.opts[k])}</div>`).join('') +
+          `</div>${q.exp.note ? `<div class="ans-note"><b>💡 提示：</b>${mdBlock(q.exp.note)}</div>` : ''}</div>`
       }
       const bigSol = (q) => {
         const steps = (q.sol.steps || []).map((st) =>
-          `<details class="sol-step" open><summary>${escHtml(st.q)}</summary><div class="step-body">` +
-          (st.body || []).map((x) => `<div class="step-line">${escHtml(x)}</div>`).join('') +
+          `<details class="sol-step" open><summary>${mdBlock(st.q)}</summary><div class="step-body">` +
+          mdBlocks(st.body).map((b) => `<div class="step-line${b.t === 'table' ? ' step-table' : ''}">${b.html}</div>`).join('') +
           (st.fig ? `<figure class="figblock">${figureSvg(this.year, st.fig)}</figure>` : '') +
-          (st.ans ? `<div class="step-ans">${escHtml(st.ans)}</div>` : '') +
+          (st.ans ? `<div class="step-ans">${mdBlock(st.ans)}</div>` : '') +
           `</div></details>`).join('')
-        return `<div class="ans"><div class="ans-title">参考解析</div><div class="ans-concl">${escHtml(q.sol.intro)}</div>${steps}` +
-          `<div class="sol-summary"><b>答案汇总：</b>${escHtml(q.sol.summary)}</div>` +
-          (q.sol.pitfalls ? `<div class="ans-note"><b>💡 易错点：</b>${escHtml(q.sol.pitfalls)}</div>` : '') + `</div>`
+        return `<div class="ans"><div class="ans-title">参考解析</div><div class="ans-concl">${mdBlock(q.sol.intro)}</div>${steps}` +
+          `<div class="sol-summary"><b>答案汇总：</b>${mdBlock(q.sol.summary)}</div>` +
+          (q.sol.pitfalls ? `<div class="ans-note"><b>💡 易错点：</b>${mdBlock(Array.isArray(q.sol.pitfalls) ? q.sol.pitfalls.join('\n') : q.sol.pitfalls)}</div>` : '') + `</div>`
       }
       const fig = (key) => `<figure class="figblock">${figureSvg(this.year, key)}</figure>`
 
