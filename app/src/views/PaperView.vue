@@ -146,6 +146,7 @@ export default {
       html += `<div class="sec-intro">${escHtml(c0.intro)}</div>`
       const choice = p.questions.filter((q) => q.type === 'choice')
       let i = 0
+      let gIdx = 0   // 卷面题号＝选择题组的序号
       while (i < choice.length) {
         const q = choice[i]
         const g = p.groups[q.group]
@@ -161,10 +162,14 @@ export default {
         // 存在「一题多空」（num 重复、blank 递增），只写一个会把别处对不上。
         const nums = cluster.map((cq) => cq.num)
         const bs = cluster.map((cq) => cq.blank)
-        const numLab = numRange(nums)
+        // 卷面题号＝本组在选择题里的序号，不是 blank、也不是「1–4」这种范围：
+        // 原卷是一题一段（2026 第 1 题带（1）~（4）四个空），题号只写一次。
+        // 为什么不用 q.num：2018/2020/2023/2025/2026 的 num 记的是空号（题=空），
+        // 而 2017/2019/2021/2022/2024 的 num 是真题号 —— 两种口径下「组序号」都等于原卷题号。
+        const numLab = String(++gIdx)
         const blankLab = numRange(bs)
-        // 题号 ≠ 空号时才补「空 n」，否则纯属噪音
-        const extra = numLab === blankLab ? '' : `<span class="qblk">空 ${blankLab}</span>`
+        // 覆盖多个空、或题号与空号不一致时，补一个「空 a–b」小标，读者才知道这段题干管几个空
+        const extra = (bs.length > 1 || numLab !== blankLab) ? `<span class="qblk">空 ${blankLab}</span>` : ''
         // 行首写题号（悬挂缩进，折行后与正文左缘对齐），选项表前标空号——
         // 这样任取一段卷面都能读出「第几题、第几空」，不再靠范围徽标去猜
         html += `<div class="qgroup"><div class="qline qn"><span class="qnr">${numLab}．</span>${extra}${blank(g.stem || '')}</div>`
