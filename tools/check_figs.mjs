@@ -15,21 +15,26 @@ function walk(dir) {
   for (const name of readdirSync(dir).sort()) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) { walk(p); continue }
-    if (!name.endsWith('.svg')) continue
+    if (!name.endsWith('.svg') || name.startsWith('_')) continue // _ 前缀 = 备份/草稿，不注册
     const src = readFileSync(p, 'utf8')
     const rel = p.replace(root + '/', '')
     // 占位符残留（AI 模板常见坑）
     for (const bad of ['"YEAR"', '.FIGURE_NAME', '`${']) {
       if (src.includes(bad)) problems.push(`${rel}: 残留占位符 ${bad}（年份/key 没替换成真实值）`)
     }
-    // 每张 .svg 首行必须带 figureMeta 注释（emit 靠它重建 _index.js 注册表）
-    const m = src.match(/^<!--\s*figureMeta\s+([\s\S]*?)\s*-->/)
-    if (!m) { problems.push(`${rel}: 缺首行 <!-- figureMeta {...} --> 注释，emit 无法注册`); continue }
+    // figureMeta 注释必须出现在 <svg 之前（Inkscape 存盘会在最前插 xml 声明，不锁首行）
+    const ci = src.indexOf('<!-- figureMeta')
+    const si = src.indexOf('<svg')
+    if (ci === -1 || si === -1 || ci > si) {
+      problems.push(`${rel}: <svg 之前缺 <!-- figureMeta {...} --> 注释，emit 无法注册`)
+      continue
+    }
+    const m = src.slice(ci).match(/^<!--\s*figureMeta\s+([\s\S]*?)\s*-->/)
     try {
       const meta = JSON.parse(m[1])
       if (!meta.key) throw new Error('缺 key')
       if (!/^[A-Za-z0-9_]+$/.test(meta.key)) throw new Error('key 含非法字符：' + meta.key)
-      if (!/^\s*<svg\b/i.test(src.slice(m[0].length))) throw new Error('注释后不是 <svg 开头')
+      if (!/^\s*<svg\b/i.test(src.slice(si))) throw new Error('注释后不是 <svg 开头')
       registry[meta.key] = registry[meta.key] || []
       registry[meta.key].push(rel)
     } catch (e) {

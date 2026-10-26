@@ -7,7 +7,6 @@ const path = require('path');
 // —— 生成器输出的 .js 块解析（格式由生成器保证，全仓统一；embed 工具产物是双引号，兼容两种）——
 const FIG_RE = /\(window\.BUPT801\.figures\["(\d{4})"\][^)]*\)\.([A-Za-z0-9_]+) = ('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*");/s;
 const META_RE = /\(window\.BUPT801\.figureMeta\["(\d{4})"\][^)]*\)\.([A-Za-z0-9_]+) = (\{[^}]*\});/s;
-const META_COMMENT_RE = /^<!--\s*figureMeta\s+([\s\S]*?)\s*-->\s*([\s\S]*)$/;
 
 function unescape1(s) {
   // 单/双引号 JS 字符串字面量 → 原文。要认全转义：\' \\ \" \uXXXX \u{...} \xXX \n \t 等，
@@ -24,7 +23,9 @@ function unescape1(s) {
 }
 
 function escape1(s) {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  // \n \r \t 也要转义：Inkscape 存盘的 svg 是多行文本，直接嵌单引号 JS 字符串会语法错误
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t');
 }
 
 // fig[3] 带首尾引号（单/双两种包裹都在组里），剥壳后再反转义
@@ -43,11 +44,18 @@ function parseMetaObj(literal) {
 }
 
 function parseSvgFile(text, rel) {
-  const m = text.match(META_COMMENT_RE);
-  if (!m) throw new Error(rel + ' 缺 figureMeta 注释（首行应为 <!-- figureMeta {...} -->）');
-  const meta = JSON.parse(m[1]);
-  if (!meta.key) throw new Error(rel + ' figureMeta 注释缺 key');
-  return { meta, svg: m[2].trim() };
+  // Inkscape 存盘会在最前面插 <?xml ...?> 声明，把 figureMeta 注释挤到第二行——
+  // 所以只要求"注释出现在 <svg 之前"，不锁第一行。
+  const ci = text.indexOf('<!-- figureMeta')
+  const si = text.indexOf('<svg')
+  if (ci === -1 || si === -1 || ci > si) {
+    throw new Error(rel + ' 缺 figureMeta 注释（<svg 之前应有 <!-- figureMeta {...} -->，' +
+      'Inkscape 编辑时别删它；误删可从其他图复制一行并改 key）')
+  }
+  const m = text.slice(ci).match(/^<!--\s*figureMeta\s+([\s\S]*?)\s*-->/)
+  const meta = JSON.parse(m[1])
+  if (!meta.key) throw new Error(rel + ' figureMeta 注释缺 key')
+  return { meta, svg: text.slice(si).trim() }
 }
 
 function svgTextOf(meta, svg) {
@@ -68,7 +76,7 @@ function rebuildIndex(figDir, year, orderHint) {
   const items = [];
   const addDir = (dir, sub) => {
     for (const name of fs.readdirSync(dir).sort()) {
-      if (!name.endsWith('.svg')) continue;
+      if (!name.endsWith('.svg') || name.startsWith('_')) continue // _ 前缀 = 备份/草稿，不注册
       const rel = sub ? sub + '/' + name : name;
       const parsed = parseSvgFile(fs.readFileSync(path.join(dir, name), 'utf8'), 'figures/' + year + '/' + rel);
       parsed.file = rel;
@@ -80,6 +88,16 @@ function rebuildIndex(figDir, year, orderHint) {
   let hasAns = false;
   try { fs.readdirSync(ansDir); hasAns = true; } catch { /* 无 answer/ 目录 */ }
   if (hasAns) addDir(ansDir, 'answer');
+
+  // 同名 key 防护：备份/副本文件（如 "xxx (副本).svg"）混进图库会让注册表二义
+  const seen = new Set();
+  for (const it of items) {
+    if (seen.has(it.meta.key)) {
+      throw new Error(`figures/${year}: key "${it.meta.key}" 重复（文件 ${it.file}）。` +
+        '请把备份/副本文件挪出 data/figures/ 再重建注册表');
+    }
+    seen.add(it.meta.key);
+  }
 
   let hint = orderHint && orderHint.length ? orderHint : null;
   if (!hint) {
