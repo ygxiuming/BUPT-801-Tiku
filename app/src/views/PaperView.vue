@@ -137,7 +137,10 @@ export default {
 
       let html = ''
       const c0 = p.sections[0]
-      html += `<div class="sec-title" id="sec-choice">一、${c0.name}（每题1分，共${c0.score}分）</div>`
+      // 每空分值不能写死：2017 是 36 空 × 1.5 分 = 54 分，写死「每题1分」会与总分自相矛盾。
+      // 口径统一用「空」而不是「题」——2019/2021/2022/2024 存在「26 题 40/50 空」的情况，题≠空。
+      const perBlank = c0.perBlank || 1
+      html += `<div class="sec-title" id="sec-choice">一、${c0.name}（每空${perBlank}分，共${c0.score}分）</div>`
       html += `<div class="sec-intro">${escHtml(c0.intro)}</div>`
       const choice = p.questions.filter((q) => q.type === 'choice')
       let i = 0

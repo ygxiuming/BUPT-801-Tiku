@@ -542,10 +542,28 @@ await step('试卷页2016：大题小问逐行渲染（subs 与题干分离）',
   w.close()
 })
 
+// 选择题节标题的「每空 X 分」必须读 sections[0].perBlank，不能写死 1 分。
+// 2017 是 36 空 × 1.5 分 = 54 分，写死会显示成「每题1分，共54分」，自相矛盾。
+await step('试卷页2017：选择题节标题按 perBlank 报分值', async () => {
+  const w = await openPage('/paper/2017', 'paper17')
+  const c0 = w.BUPT801.papers['2017'].sections[0]
+  const per = c0.perBlank || 1
+  if (per !== 1.5) throw new Error('2017 的 perBlank 应为 1.5，实际 ' + per)
+  const el = w.document.querySelector('.sec-title#sec-choice')
+  if (!el) throw new Error('没渲染出 .sec-title#sec-choice')
+  const title = (el.textContent || '').replace(/\s+/g, '')
+  if (!title.includes('每空' + per + '分')) throw new Error('节标题「' + title + '」没按「每空' + per + '分」报')
+  if (title.includes('每题')) throw new Error('节标题仍以「题」为单位（2019/2021/2022/2024 存在题≠空）：' + title)
+  if (!title.includes('共' + c0.score + '分')) throw new Error('节标题总分与 sections[0].score 不符：' + title)
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
 const setInput = (w, el, v) => {
   el.value = v
   el.dispatchEvent(new w.Event('input', { bubbles: true }))
 }
+
 
 // 键盘事件必须发到真正监听它的对象上：
 //   ⌘K / Ctrl+K  → App 绑在 window 上
