@@ -21,6 +21,7 @@ require('../data/figures/2023/_index.js');
 require('../data/figures/2024/_index.js');
 require('../data/figures/2025/_index.js');
 require('../data/figures/2026/_index.js');
+require('../data/figures/2017/_index.js');
 require('../data/figures/2019/_index.js');
 require('../data/figures/2022/_index.js');
 require('../data/figures/2020/_index.js');
@@ -38,6 +39,8 @@ require('../data/questions/2025/paper.js');
 require('../data/questions/2025/answer.js');
 require('../data/questions/2026/paper.js');
 require('../data/questions/2026/answer.js');
+require('../data/questions/2017/paper.js');
+require('../data/questions/2017/answer.js');
 require('../data/questions/2019/paper.js');
 require('../data/questions/2019/answer.js');
 
@@ -74,6 +77,8 @@ const EXPECT = {
   2024: { choice: 40, big: 9, score: 150 },
   2025: { choice: 30, big: 8, score: 150 },
   2026: { choice: 40, big: 7, score: 150 },
+  // 2017 原卷：一（36 空 × 1.5 = 54 分）+ 二～六（16×5 = 80）+ 七、八（8×2 = 16）= 150 分
+  2017: { choice: 36, big: 7, score: 150 },
   2020: { choice: 40, big: 8, score: 150 },
   // 2019 原卷：一（50 空 × 1 分 = 50 分）+ 二～六（14×5 = 70）+ 七、八（15×2 = 30）= 150 分
   2019: { choice: 50, big: 7, score: 150 }
@@ -135,15 +140,18 @@ for (const year of Object.keys(B.papers).sort()) {
   const bigScore = big.reduce((s, q) => s + (q.score || 0), 0);
   console.log(`\n== ${year} == 选择题 ${choice.length} 空，大题 ${big.length} 题（${bigScore} 分），图 ${Object.keys(figs).length} 张`);
 
+  const secBig = (paper.sections || []).find((s) => s.id === 'big');
+  const secChoice = (paper.sections || []).find((s) => s.id === 'choice');
+  // 每空分值：2017 起原卷有“每空 1.5 分”的卷子，故允许 sections.choice.perBlank 覆盖默认的 1 分
+  const perBlank = (secChoice && secChoice.perBlank) || 1;
+  const choiceScore = choice.length * perBlank;
   if (exp.choice && choice.length !== exp.choice) errors.push(`${year}: 选择题应为 ${exp.choice} 空，实际 ${choice.length}`);
   if (exp.big && big.length !== exp.big) errors.push(`${year}: 大题应为 ${exp.big} 题，实际 ${big.length}`);
-  if (exp.score && choice.length + bigScore !== exp.score) errors.push(`${year}: 总分应为 ${exp.score}，实际 ${choice.length + bigScore}`);
+  if (exp.score && choiceScore + bigScore !== exp.score) errors.push(`${year}: 总分应为 ${exp.score}，实际 ${choiceScore + bigScore}`);
 
   // sections 声明与实际一致
-  const secBig = (paper.sections || []).find((s) => s.id === 'big');
   if (secBig && secBig.score !== bigScore) errors.push(`${year}: sections.big.score=${secBig.score} 与大题合计 ${bigScore} 不一致`);
-  const secChoice = (paper.sections || []).find((s) => s.id === 'choice');
-  if (secChoice && secChoice.score !== choice.length) errors.push(`${year}: sections.choice.score=${secChoice.score} 与空数 ${choice.length} 不一致`);
+  if (secChoice && secChoice.score !== choiceScore) errors.push(`${year}: sections.choice.score=${secChoice.score} 与 ${choice.length} 空 × ${perBlank} 分 = ${choiceScore} 不一致`);
 
   // 题号连续（同一道题可含多个空、共享题号：2024 为 20 题 × 2 空，故先去重）
   const nums = [...new Set(choice.map((q) => q.num))].sort((a, b) => a - b);
@@ -470,6 +478,99 @@ t.push(['2026三(3) 门限 -3Tb、Pe=Q(√(E_b/N0))', approx((2 - 8) / 2, -3) &&
   const pats = leaders.map((e) => c0.map((x, i) => x ^ e[i]));
   pats.forEach((p) => { w[p.reduce((s2, x) => s2 + x, 0)]++; });
   t.push(['2026八(3) 8 图样重量分布 3重1个/2重3个/4重4个', pats.length === 8 && w[3] === 1 && w[2] === 3 && w[4] === 4]);
+})();
+
+// ---------- 2017 ----------
+(function () {
+  const N = 200000;
+  // 二(4)：P_nc(f) 分段积分应等于窄带噪声总功率 3 mW（两种口径互相印证）
+  const pnc = (f) => {
+    const x = Math.abs(f) / 1000;
+    // 谱密度单位是 W/kHz，这里换成 W/Hz 后再对 Hz 积分
+    if (x <= 1) return (4 - 3 * x) / 2000 * 1e-3;
+    if (x <= 2) return (2 - x) / 2000 * 1e-3;
+    return 0;
+  };
+  let Ip = 0;
+  for (let i = 0; i < N; i++) Ip += pnc(-2000 + 4000 * (i + 0.5) / N) * (4000 / N);
+  t.push(['2017二(4) \u222bP_nc=3mW\uff08=\u566a\u58f0\u603b\u529f\u7387\uff09', approx(Ip, 3e-3, 1e-6)]);
+  t.push(['2017二(3) \u8f93\u51fa SNR=3/3e-3=1000', approx(3 / 3e-3, 1000, 1e-6)]);
+
+  // 三：s(t)=+1(0,2)/-1(2,4)；能量 4、\u222bs(t)s(t-1)dt=1
+  const sg = (x) => (x > 0 && x < 2 ? 1 : x > 2 && x < 4 ? -1 : 0);
+  let Eb = 0, Cx = 0;
+  for (let i = 0; i < N; i++) {
+    const x = -1 + 8 * (i + 0.5) / N, d = 8 / N;
+    Eb += sg(x) * sg(x) * d;
+    Cx += sg(x) * sg(x - 1) * d;
+  }
+  t.push(['2017三(1) E_b=4\u3001\u222bs(t)s(t-1)dt=1', approx(Eb, 4, 1e-6) && approx(Cx, 1, 1e-6)]);
+
+  // 四：非均匀量化，数值积分核 E[X\u00b2]=64/3、N_q=37/48、P(b2=1)=3/4、P(b3=1)=5/8
+  const qm = (x) => {
+    const a = Math.abs(x);
+    let v = 0;
+    if (a < 1) v = 0.5; else if (a < 2) v = 1.5; else if (a < 4) v = 3; else if (a < 8) v = 6;
+    return x < 0 ? -v : v;
+  };
+  let sx2 = 0, sq = 0, pb2 = 0, pb3 = 0;
+  for (let i = 0; i < N; i++) {
+    const x = -8 + 16 * (i + 0.5) / N, d = 16 / N / 16;
+    sx2 += x * x * d;
+    sq += (qm(x) - x) * (qm(x) - x) * d;
+    const a = Math.abs(x);
+    if (a >= 2) pb2 += d;
+    if ((a >= 1 && a < 2) || a >= 4) pb3 += d;
+  }
+  t.push(['2017四(1) E[X\u00b2]=64/3', approx(sx2, 64 / 3, 1e-6)]);
+  t.push(['2017四(3) N_q=37/48', approx(sq, 37 / 48, 2e-3)]);
+  t.push(['2017四(4) P(b2=1)=3/4\u3001P(b3=1)=5/8', approx(pb2, 0.75, 1e-9) && approx(pb3, 0.625, 1e-9)]);
+
+  // 五：(7,4) 循环码 g=x\u00b3+x+1 \u2014\u2014 直接做 GF(2) 多项式取模（低位在前存储）
+  const gp = [1, 1, 0, 1]; // g(x)=x³+x+1，低位在前：c0=1,c1=1,c2=0,c3=1
+  const pdeg = (a) => { let d = a.length - 1; while (d > 0 && !a[d]) d--; return d; };
+  const pmod = (str) => {
+    const a = str.split('').reverse().map(Number);
+    while (pdeg(a) >= 3) {
+      const d = pdeg(a);
+      for (let i = 0; i < 4; i++) a[d - 3 + i] ^= gp[i];
+    }
+    return a.slice(0, 3).reverse().join('');
+  };
+  t.push(['2017五(1) g=x\u00b3+x+1 \u6574\u9664 0010110', pmod('0010110') === '000']);
+  t.push(['2017五(2) c=0011101 \u662f\u7801\u5b57', pmod('0011101') === '000']);
+  t.push(['2017五(3) \u4f34\u968f\u5f0f s=x\u00b2\u2192(100)', pmod('1101101') === '100']);
+  t.push(['2017五(4) c=0110001 \u662f\u7801\u5b57', pmod('0110001') === '000']);
+
+  // 六(3)：由 b1=u\u3001b2=u\u2295s2\u2295s3\u3001b3=u\u2295s1\u2295s3 独立重算 16 条边，与题给状态表逐条比对
+  const tbl = {
+    '000': ['000/000', '100/111'], '001': ['000/011', '100/100'],
+    '010': ['001/010', '101/101'], '011': ['001/001', '101/110'],
+    '100': ['010/001', '110/110'], '101': ['010/010', '110/101'],
+    '110': ['011/011', '111/100'], '111': ['011/000', '111/111'],
+  };
+  let okS = true;
+  for (const st of Object.keys(tbl)) {
+    const s1 = +st[0], s2 = +st[1], s3 = +st[2];
+    [0, 1].forEach((u) => {
+      const b1 = u, b2 = u ^ s2 ^ s3, b3 = u ^ s1 ^ s3;
+      if ('' + u + s1 + s2 + '/' + b1 + b2 + b3 !== tbl[st][u]) okS = false;
+    });
+  }
+  t.push(['2017\u516d(3) \u72b6\u6001\u8868 16 \u6761\u8fb9\u4e0e\u751f\u6210\u591a\u9879\u5f0f\u4e00\u81f4', okS]);
+
+  // 七：H(1/2)=1\u3001H(1/4)=0.8113
+  const Hb = (p) => -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
+  t.push(['2017\u4e03(2) H(1/2)=1\u3001H(1/4)=0.8113', approx(Hb(0.5), 1, 1e-12) && approx(Hb(0.25), 0.81128, 1e-4)]);
+
+  // 八：二维数值积分核 ML 判决域 r1+r2=0 的错误概率 = Q(\u221a2)
+  const M = 1500;
+  let pe = 0;
+  for (let i = 0; i < M; i++) for (let j = 0; j < M; j++) {
+    const r1 = -4 + 8 * (i + 0.5) / M, r2 = -4 + 8 * (j + 0.5) / M;
+    if (r1 + r2 < 0) pe += Math.exp(-((r1 - 1) ** 2 + (r2 - 1) ** 2) / 2) / (2 * Math.PI) * (8 / M) * (8 / M);
+  }
+  t.push(['2017\u516b(3) \u5224\u51b3\u57df P_e=Q(\u221a2)\u22480.0786', approx(pe, 0.07865, 3e-3)]);
 })();
 
 // ---------- 2023 ----------
