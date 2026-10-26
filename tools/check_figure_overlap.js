@@ -17,10 +17,12 @@ function textBoxes(svg) {
   const out = [];
   for (const m of svg.matchAll(/<text x='([-\d.]+)' y='([-\d.]+)' text-anchor='(\w+)'([^>]*)>([\s\S]*?)<\/text>/g)) {
     const x = +m[1], y = +m[2], anchor = m[3], attrs = m[4], inner = m[5];
-    const base = (attrs.match(/font-size='(\d+)'/) || [0, 14])[1] | 0;
+    const base = (attrs.match(/font-size='([\d.]+)'/) || [0, 14])[1] | 0;
     const parts = [];
     if (inner.includes('<tspan')) {
-      for (const t of inner.matchAll(/<tspan[^>]*font-size='(\d+)'[^>]*>([^<]*)<\/tspan>/g)) parts.push([t[2], +t[1]]);
+      // font-size 可能是 '13.0'（text() 里 {sz:.1f} 输出），正则必须收小数：
+      // 只认 \d+ 会把带上下标的文字整块算成宽度 0，交叠漏检、留白虚高。
+      for (const t of inner.matchAll(/<tspan[^>]*font-size='([\d.]+)'[^>]*>([^<]*)<\/tspan>/g)) parts.push([t[2], +t[1]]);
     } else parts.push([inner, base]);
     let w = 0;
     for (const p of parts) for (const c of p[0]) w += charW(c, p[1]);

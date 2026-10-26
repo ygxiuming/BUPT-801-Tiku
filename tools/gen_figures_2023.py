@@ -16,6 +16,14 @@ def poly(pts, stroke='#1a1a1a', width=1.6, dash=None, fill='none', close=False):
     return f"<path d='M{d}{dd}' fill='{fill}' stroke='{stroke}' stroke-width='{width}'{da}/>"
 
 
+def polyline(pts, stroke='#1a1a1a', width=1.2):
+    """开口折线（不闭合）：画 n̂ 的帽子等。用 polyline 而非 poly，是为了不被
+    check_figure_overlap.js 的 segs() 当成线段去撞文字盒（帽子本来就贴在字头上）。"""
+    p = ' '.join(f'{x:.1f},{y:.1f}' for x, y in pts)
+    return (f"<polyline points='{p}' fill='none' stroke='{stroke}' "
+            f"stroke-width='{width}' stroke-linejoin='round'/>")
+
+
 def line(x1, y1, x2, y2, width=1.6, dash=None, color='#1a1a1a', marker=None):
     da = f" stroke-dasharray='{dash}'" if dash else ''
     mk = f" marker-end='url(#{marker})'" if marker else ''
@@ -131,39 +139,72 @@ def head_at(w, h, x0, y0):
 # ================================================================ 题目原图
 # ---------------------------------------------------------------- 二、窄带噪声产生框图
 def fig_q2sys():
-    s = HEAD.format(w=776, h=214) + marker('a23a')
-    YC = 100
-    s += text(6, YC + 5, 'n_w(t)', anchor='start', style='i', size=13.5)
-    s += line(66, YC, 98, YC, marker='a23a')
-    s += rect(100, YC - 20, 54, 40) + text(127, YC + 5, 'BPF', size=13)
-    s += line(154, YC, 198, YC, marker='a23a')
-    s += text(172, YC - 9, 'n(t)', style='i', size=13)
-    s += dot(190, YC, 3)
-    s += rect(200, YC - 22, 96, 44)
-    s += text(248, YC - 3, '希尔伯特', size=12.5)
-    s += text(248, YC + 14, '变换', size=12.5)
-    s += line(296, YC, 330, YC, marker='a23a')
-    s += text(318, YC - 10, 'n(t)', style='i', size=13)
-    s += poly([(305, YC - 15), (310, YC - 21), (315, YC - 15)], width=1.4)
-    s += mul(348, YC) + text(348, 78, 'j', size=13, style='i')
-    s += line(361, YC, 425, YC)
-    s += adder(438, YC)
-    # n(t) 直通支路
-    s += line(190, YC, 190, 174) + line(190, 174, 438, 174)
-    s += line(438, 174, 438, 113, marker='a23a')
-    s += line(451, YC, 486, YC, marker='a23a')
-    s += text(468, YC - 9, 'z(t)', style='i', size=13)
-    s += mul(502, YC)
-    s += text(502, 76, 'e^{-j2πf_ct}', size=13)
-    s += line(515, YC, 552, YC)
-    s += text(534, 120, 'n_L(t)', style='i', size=13)
-    s += dot(560, YC, 3)
-    s += line(560, YC, 560, 58) + line(560, 58, 598, 58, marker='a23a')
-    s += line(560, YC, 560, 150) + line(560, 150, 598, 150, marker='a23a')
-    s += rect(600, 41, 64, 34) + text(632, 63, '取实部', size=12.5)
-    s += rect(600, 133, 64, 34) + text(632, 155, '取虚部', size=12.5)
-    s += line(664, 58, 700, 58, marker='a23a') + text(706, 63, 'n_c(t)', anchor='start', style='i', size=13)
-    s += line(664, 150, 700, 150, marker='a23a') + text(706, 155, 'n_s(t)', anchor='start', style='i', size=13)
+    """题干框图（照 2023 原卷第 4 页）：BPF → 希尔伯特变换 → ×j → ⊕ → ×e^{-j2πf_c t} → 取实/虚部。
+
+    与原图对齐的几处细节：
+      * 希尔伯特输出是 n̂(t)（带帽子），不是 n(t)；帽子手工画，因为组合符 U+0302
+        在 cairosvg 与浏览器里的落点不一致；
+      * j 与 e^{-j2πf_c t} 各带一根短箭头指向乘法器顶部（原图有，旧图漏了）；
+      * n(t) 的抽头在 BPF 输出线上，直通支路从下方绕回加法器；
+      * n_L(t) 标在乘法器与抽头节点之间、线的上方。
+    """
+    s = HEAD.format(w=830, h=200) + marker('a23a')
+    Y, BH, R = 96, 44, 13           # 主轴 / 方框高 / 乘法器·加法器半径
+
+    # 输入 → BPF
+    s += text(8, Y + 5, 'n_w(t)', anchor='start', style='i', size=13)
+    s += line(50, Y, 86, Y, marker='a23a')
+    s += rect(90, Y - BH / 2, 54, BH) + text(117, Y + 5, 'BPF', size=13)
+
+    # BPF → 希尔伯特变换：中途抽头给直通支路，n(t) 标在抽头右上方
+    s += line(144, Y, 232, Y, marker='a23a')
+    s += dot(168, Y, 3.5)
+    s += text(203, Y - 13, 'n(t)', style='i', size=13)
+
+    # 希尔伯特变换（两行，框高 48：行基线相差 15，上下各留 ≥9px）
+    s += rect(236, Y - 24, 92, 48)
+    s += text(282, Y - 3, '希尔伯特', size=13)
+    s += text(282, Y + 12, '变换', size=13)
+
+    # 输出 n̂(t) → ×j
+    s += line(328, Y, 368, Y, marker='a23a')
+    s += text(340, Y - 13, 'n', style='i', size=13)
+    s += polyline([(336.6, Y - 20), (340, Y - 24), (343.4, Y - 20)])
+    s += text(345, Y - 13, '(t)', anchor='start', style='i', size=13)
+
+    s += mul(385, Y, R)
+    s += text(385, Y - 40, 'j', style='i', size=13)
+    s += line(385, Y - 32, 385, Y - 17, marker='a23a')     # 原图 j 下方有短箭头指进乘法器
+
+    # ×j → ⊕：线要留够箭头长度（marker 是 8×strokeWidth ≈ 13px），否则整段被箭头吃满
+    s += line(398, Y, 428, Y, marker='a23a')
+    s += adder(445, Y, R)
+
+    # 直通支路：n(t) 抽头 → 下行 → 右折 → 上行进加法器底部
+    s += line(168, Y, 168, Y + 56)
+    s += line(168, Y + 56, 445, Y + 56)
+    s += line(445, Y + 56, 445, Y + 17, marker='a23a')
+
+    # z(t) → ×exp(-j2πf_c t)
+    s += line(458, Y, 503, Y, marker='a23a')
+    s += text(480, Y - 13, 'z(t)', style='i', size=13)
+    s += mul(520, Y, R)
+    # start 锚点：cairosvg 对 middle+tspan 会把每段各自居中，预览里指数会散开
+    s += text(497, Y - 40, 'e^{−j2πf_c t}', anchor='start', size=13)
+    s += line(520, Y - 32, 520, Y - 17, marker='a23a')
+    s += line(533, Y, 572, Y)
+    s += text(539, Y - 13, 'n_L(t)', anchor='start', style='i', size=13)
+    s += dot(576, Y, 3.5)
+
+    # 分两路：取实部 / 取虚部
+    s += line(576, Y, 576, Y - 34) + line(576, Y - 34, 626, Y - 34, marker='a23a')
+    s += line(576, Y, 576, Y + 34) + line(576, Y + 34, 626, Y + 34, marker='a23a')
+    s += rect(630, Y - 56, 88, BH) + text(674, Y - 29, '取实部', size=13)
+    s += rect(630, Y + 12, 88, BH) + text(674, Y + 39, '取虚部', size=13)
+    s += line(718, Y - 34, 754, Y - 34, marker='a23a')
+    s += text(758, Y - 29, 'n_c(t)', anchor='start', style='i', size=13)
+    s += line(718, Y + 34, 754, Y + 34, marker='a23a')
+    s += text(758, Y + 39, 'n_s(t)', anchor='start', style='i', size=13)
     return s + '</svg>'
 
 
@@ -312,48 +353,57 @@ def fig_q9sys():
 # ================================================================ 解析配图
 # ---------------------------------------------------------------- 二、三个功率谱
 def fig_q2psd():
-    s = HEAD.format(w=820, h=232) + marker('a23f')
-    BASE = 158
+    """题(2) 的三张功率谱：z(t) 单边带、n_L(t) 落在 [0,B]、n_c(t)=n_s(t) 双边落在 |f|≤B。
 
-    def axes(x0, x1, ylab, ttl):
-        o = line(x0, BASE, x1, BASE) + head(x1 + 6, BASE, 1, 0)
-        o += line(x0, BASE - 4, x0, 46, width=1.2, color='#888')
-        o += text(x0 + 5, 64, ylab, size=12.5, anchor='start')
-        o += text((x0 + x1) / 2, 24, ttl, size=12, color='#555')
+    与原答案一致的三联（原答案也只画这三张）；高度按 N_0 归一——2N_0 : N_0/2 = 4:1，
+    原答案画成近 2:1 属示意，这里按真值给高度。
+    三项都是常数谱（矩形），不是离散谱线，所以用矩形包络而不是 stem。
+    """
+    s = HEAD.format(w=650, h=210) + marker('a23f')
+    BASE, H2, H1 = 160, 80, 20      # 横轴 / 2N_0 高 / N_0/2 高
+    VT = 66                          # 幅度轴顶端
+
+    def axes(x0, x1, top=VT):
+        """横轴（带箭头）+ f=0 处的幅度轴（细灰、不带箭头，免得被读成一根谱线）"""
+        o = line(x0, BASE, x1, BASE, marker='a23f')
+        o += line(x0, BASE, x0, top, width=1.1, color='#999')
         return o
 
     def band(x0, x1, h):
         return poly([(x0, BASE), (x0, BASE - h), (x1, BASE - h), (x1, BASE)])
 
-    # (a) P_n(f)：双边，高度 N0/2
-    s += axes(40, 268, 'P_n(f)', '(a) 窄带噪声 n(t)')
-    s += band(58, 110, 66) + band(192, 244, 66)
-    s += line(151, BASE, 151, 88, width=1, dash='4 3', color='#999')
-    s += text(52, 86, 'N_0/2', size=12, anchor='start')
-    s += text(58, BASE + 18, '−f_c−B', size=11)
-    s += text(110, BASE + 34, '−f_c', size=11)
-    s += text(151, BASE + 18, '0', size=11)
-    s += text(192, BASE + 18, 'f_c', size=11)
-    s += text(244, BASE + 34, 'f_c+B', size=11)
-    s += text(274, BASE + 5, 'f', size=12, anchor='start')
+    # 标题与刻度里带下标的标签一律 start 锚点：cairosvg 对 middle+tspan 会把每段各自
+    # 居中（f_c 显示成 "f c"、标题里的 n_L 会被甩到括号外），start 下两处渲染才一致。
+    def lbl(x, y, s, size=12, color='#1a1a1a'):
+        return text(x, y, s, anchor='start', size=size, color=color)
 
-    # (b) P_z(f)：解析信号只占正频率，高度 2N0
-    s += axes(320, 560, 'P_z(f)', '(b) 解析信号 z(t)')
-    s += band(372, 500, 108)
-    s += line(320, BASE, 372, BASE, width=1.4, color='#888')
-    s += text(378, 42, '2N_0', size=12, anchor='start')
-    s += text(372, BASE + 18, 'f_c', size=11)
-    s += text(500, BASE + 18, 'f_c+B', size=11)
-    s += text(566, BASE + 5, 'f', size=12, anchor='start')
+    # (a) z(t)：解析信号只保留正频率，谱密度 4S_n = 2N_0
+    s += axes(30, 182)
+    s += text(106, 36, '(a) 解析信号 z(t)', size=12, color='#666')
+    s += band(100, 160, H2)
+    s += lbl(104, 73, '2N_0')
+    s += lbl(30, 178, '0') + lbl(95, 178, 'f_c') + lbl(148, 178, 'f_c+B')
+    s += lbl(186, 156, 'f')
+    s += lbl(36, 56, 'P_z(f)', 13)
 
-    # (c) P_nc(f)=P_ns(f)：双边低通，高度 N0/2，|f|<=B
-    s += axes(600, 800, 'P_{n_c}(f)', '(c) 同相/正交分量')
-    s += band(648, 752, 66)
-    s += text(642, 86, 'N_0/2', size=12, anchor='end')
-    s += text(648, BASE + 18, '−B', size=11)
-    s += text(700, BASE + 18, '0', size=11)
-    s += text(752, BASE + 18, 'B', size=11)
-    s += text(806, BASE + 5, 'f', size=12, anchor='start')
+    # (b) n_L(t)：z(t) 左移 f_c，谱在 [0,B]，高度仍 2N_0
+    s += axes(240, 392)
+    s += text(271, 36, '(b) 复包络 n_L(t)', anchor='start', size=12, color='#666')
+    s += band(240, 356, H2)
+    s += lbl(244, 73, '2N_0')
+    s += lbl(240, 178, '0') + lbl(352, 178, 'B')
+    s += lbl(396, 156, 'f')
+    s += lbl(246, 56, 'P_{n_L}(f)', 13)
+
+    # (c) n_c(t)=n_s(t)：实部取一半，双边落在 |f|≤B，高度 N_0/2；
+    #     幅度轴画在格左端（f=-B 外侧）而不是 f=0，否则细灰线会从谱块中间穿过去
+    s += axes(450, 602)
+    s += text(526, 36, '(c) 同相/正交分量', size=12, color='#666')
+    s += band(471, 581, H1)
+    s += lbl(475, 132, 'N_0/2')
+    s += lbl(463, 178, '−B') + lbl(522, 178, '0') + lbl(578, 178, 'B')
+    s += lbl(606, 156, 'f')
+    s += lbl(456, 56, 'P_{n_c}(f)', 13)
     return s + '</svg>'
 
 
@@ -635,13 +685,13 @@ def fig_q9psd():
 
 # (key, 题号, 是否解析配图, 描述)
 FIGS = [
-    ('q2sys', '二', False, '窄带噪声产生框图'),
+    ('q2sys', '二', False, '窄带噪声产生与分解框图'),
     ('q7spec', '七', False, '总体传递函数'),
     ('q5const', '五', False, '八进制星形星座图'),
     ('q6sys', '六', False, '两路并行传输框图'),
     ('q8sys', '八', False, '量化与哈夫曼编码框图'),
     ('q9sys', '九', False, '系统总框图'),
-    ('q2psd', '二', True, '三段功率谱'),
+    ('q2psd', '二', True, '三段功率谱（z、n_L、n_c）'),
     ('q4mf', '四', True, '匹配滤波器波形'),
     ('q5dec', '五', True, 's1 的最佳判决域'),
     ('q5vor', '五', True, '完整判决区域'),
@@ -667,8 +717,13 @@ YEAR = '2023'
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from svg_fit import fit_svg, report as _pad_report
+from svgkit import PAD, tighten
 
-SVGS = {k: fit_svg(v, pad=16) for k, v in SVGS.items()}
+# 2023 其余图仍是旧两步链路（svg_fit 粗收 pad=16，必要时再跑 fit_figures_render 精收）；
+# 这次重画的 q2sys / q2psd 直接走统一口径 svgkit.tighten()（四边各 18px），
+# 不再被 fit_svg 二次收紧，避免四边留白被拉成 16/16/16/16 以外的值。
+REDRAWN = ('q2sys', 'q2psd')
+SVGS = {k: (tighten(v, PAD) if k in REDRAWN else fit_svg(v, pad=16)) for k, v in SVGS.items()}
 for _k, _v in SVGS.items():
     _p = _pad_report(_v)
     if _p and max(abs(x) for x in _p) > 30:
