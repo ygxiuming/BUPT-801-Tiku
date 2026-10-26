@@ -160,6 +160,28 @@ function bundleEntry() {
 const report = []
 let failed = 0
 
+// 页面「图有没有画出来」不能只看 data/ 里图库注册是否齐全：
+// 图库 JS 若在浏览器侧没加载成功（快照漏文件 / 路径 404），FigBlock 的 v-if="svg"
+// 为假，整块 figure 直接不渲染，页面其它部分照旧 —— 只数 .katex 是抓不到的。
+// 这里按 paper.js 里实际引用的 fig key 算出该年应有几张题图，再和 DOM 里的
+// figure.figblock 数量对账。注：本脚本的 /data/ 映射到项目 data/（不走快照），
+// 快照（app/public、app/dist）一致性由 tools/check_assets.mjs 单独负责。
+function paperFigKeys(w, year) {
+  const p = (w.BUPT801 && w.BUPT801.papers && w.BUPT801.papers[year]) || null
+  if (!p) return null
+  const acc = new Set()
+  const walk = (o) => {
+    if (!o || typeof o !== 'object') return
+    if (Array.isArray(o)) return o.forEach(walk)
+    for (const [k, v] of Object.entries(o)) {
+      if ((k === 'fig' || k === 'figKey') && typeof v === 'string' && v) acc.add(v)
+      else walk(v)
+    }
+  }
+  walk(p)
+  return acc
+}
+
 for (let i = 0; i < ROUTES.length; i++) {
   const [route, label] = ROUTES[i]
   const errs = []
@@ -201,13 +223,24 @@ for (let i = 0; i < ROUTES.length; i++) {
   const katexErr = doc.querySelectorAll('.katex-error').length
   const katexCnt = doc.querySelectorAll('.katex').length
   const svgCnt = doc.querySelectorAll('svg').length
+  const figCnt = doc.querySelectorAll('figure.figblock').length
   const textLen = (app.textContent || '').replace(/\s+/g, '').length
 
-  const stats = { route, label, textLen, katexCnt, katexErr, svgCnt, vueErr: vueErrs.length, errs: errs.length }
+  const stats = { route, label, textLen, katexCnt, katexErr, svgCnt, figCnt, vueErr: vueErrs.length, errs: errs.length }
 
   if (!app || textLen < 200) errs.push('页面几乎空白（textLen=' + textLen + '）')
   if (katexErr) errs.push('KaTeX 渲染失败 ' + katexErr + ' 处')
   if (vueErrs.length) errs.push('Vue 错误: ' + vueErrs.slice(0, 2).join(' | '))
+
+  // 试卷页：题干引用的题图必须逐张渲染成 figure.figblock
+  const pm = route.match(/^\/paper\/(\d{4})$/)
+  if (pm) {
+    const need = paperFigKeys(w, pm[1])
+    if (need && need.size && figCnt < need.size) {
+      errs.push(`图件未渲染：题干引用 ${need.size} 张，页面上只有 ${figCnt} 个图块`)
+    }
+    stats.figNeed = need ? need.size : 0
+  }
 
   report.push({ ...stats, detail: errs })
   if (errs.length) failed++
@@ -545,11 +578,12 @@ await step('统计页：粘贴备份文本 → 导入 → 记录数回来', asyn
 
 const pad = (s, n) => String(s).padEnd(n, ' ')
 console.log('\n页面冒烟（jsdom + dist）')
-console.log(pad('路由', 18) + pad('文字量', 8) + pad('katex', 7) + pad('svg', 5) + '结论')
+console.log(pad('路由', 18) + pad('文字量', 8) + pad('katex', 7) + pad('svg', 5) + pad('图块', 6) + '结论')
 for (const r of report) {
   const ok = r.detail.length === 0
+  const figCell = r.figNeed ? `${r.figCnt}/${r.figNeed}` : String(r.figCnt ?? '-')
   console.log(
-    pad(r.route, 18) + pad(r.textLen ?? '-', 8) + pad(r.katexCnt ?? '-', 7) + pad(r.svgCnt ?? '-', 5) + (ok ? '✓' : '✗ ' + r.detail.join('; '))
+    pad(r.route, 18) + pad(r.textLen ?? '-', 8) + pad(r.katexCnt ?? '-', 7) + pad(r.svgCnt ?? '-', 5) + pad(figCell, 6) + (ok ? '✓' : '✗ ' + r.detail.join('; '))
   )
 }
 console.log('\n交互：')
