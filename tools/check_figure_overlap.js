@@ -82,6 +82,8 @@ for (const k of Object.keys(figs)) {
   for (const b of boxes) { mm(b.x0, b.y0); mm(b.x1, b.y1); }
   for (const m of svg.matchAll(/<circle cx='([-\d.]+)' cy='([-\d.]+)' r='([-\d.]+)'/g)) { mm(+m[1] - +m[3], +m[2] - +m[3]); mm(+m[1] + +m[3], +m[2] + +m[3]); }
   for (const m of svg.matchAll(/<rect x='([-\d.]+)' y='([-\d.]+)' width='([-\d.]+)' height='([-\d.]+)'/g)) { mm(+m[1], +m[2]); mm(+m[1] + +m[3], +m[2] + +m[4]); }
+  // 位图题（原卷扫描图直接嵌入）：<image> 的矩形就是墨迹
+  for (const m of svg.matchAll(/<image[^>]*x='([-\d.]+)'[^>]*y='([-\d.]+)'[^>]*width='([-\d.]+)'[^>]*height='([-\d.]+)'/g)) { mm(+m[1], +m[2]); mm(+m[1] + +m[3], +m[2] + +m[4]); }
   // 注意 viewBox 可能是 'vx vy vw vh'（收边后原点不是 0,0），留白必须按绝对边界算
   const pad = [x0 - vb[0], y0 - vb[1], vb[0] + vb[2] - x1, vb[1] + vb[3] - y1].map(Math.round);
   const warn = pad.some((v) => v < 0 || v > 30) ? '  ⚠ 留白/溢出' : '';

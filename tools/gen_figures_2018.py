@@ -144,78 +144,6 @@ def fig_q14xf():
     return s + '</svg>'
 
 
-# ---- 选择题（17）：四幅眼图 ----
-def _eye_panel(px, py, pw, ph, traces, label, wline=1.0):
-    s = rect(px, py, pw, ph, width=1.2)
-    for tr in traces:
-        pts = [(px + 6 + t / 2 * (pw - 12), py + ph / 2 - v * (ph / 2 - 10)) for t, v in tr]
-        s += poly(pts, width=wline)
-    s += text(px - 12, py + ph / 2 + 5, label, anchor='end', style='bi')
-    return s
-
-
-def _step(v0, v1, u):
-    return v0 + (v1 - v0) * (0.5 - 0.5 * math.cos(math.pi * max(0.0, min(1.0, u))))
-
-
-def _eye_clean(bits, w, n=13):
-    """无 ISI 的眼图轨迹：bits[k] 为第 k 个符号的电平，跳变宽度 w（以 Tb 为单位），中心在符号边界"""
-    ts = [2.0 * i / (n - 1) for i in range(n)]
-    out = []
-    for t in ts:
-        i = int(math.floor(t))
-        u = t - i
-        if u < w / 2:
-            v = _step(bits.get(i - 1, bits.get(i, 0)), bits.get(i, 0), (u + w / 2) / w)
-        elif u > 1 - w / 2:
-            v = _step(bits.get(i, 0), bits.get(i + 1, bits.get(i, 0)), (u - (1 - w / 2)) / w)
-        else:
-            v = bits.get(i, 0)
-        out.append((t, v))
-    return out
-
-
-def _eye_isi(bits, W, n=17):
-    """成形脉冲为宽度 W·Tb 的三角波：W>2 时在抽样时刻各轨迹相交（眼闭合）"""
-    out = []
-    for i in range(n):
-        t = 2.0 * i / (n - 1)
-        v = 0.0
-        for k, b in bits.items():
-            u = t - (k + 0.5)
-            if abs(u) < W / 2:
-                v += b * (1 - 2 * abs(u) / W)
-        out.append((t, v))
-    return out
-
-
-def fig_q17eye():
-    s = HEAD.format(w=560, h=340)
-    PW, PH = 200, 120
-    # A：抽样时刻眼闭合（严重码间干扰）；三角脉冲宽度 4Tb，轨迹最大值 2 → 乘 0.45 保证不出框
-    trA = [[(t, v * 0.45) for t, v in _eye_isi({-1: a, 0: b, 1: c, 2: d}, 4.0)]
-           for a in (1, -1) for b in (1, -1) for c in (1, -1) for d in (1, -1)]
-    # B：理想眼图（完全张开）
-    trB = [_eye_clean({-1: a, 0: b, 1: c, 2: c}, 0.26)
-           for a in (1, -1) for b in (1, -1) for c in (1, -1)]
-    # C：四电平眼图（电平多、线迹密，抽样时刻仍张开）
-    L4 = [1, 1 / 3, -1 / 3, -1]
-    trC = [_eye_clean({-1: a, 0: b, 1: c, 2: c}, 0.30, 9)
-           for a in L4 for b in L4 for c in L4]
-    # D：定时抖动（交叉点左右模糊，抽样时刻仍张开）
-    trD = []
-    for jit in (-0.14, -0.07, 0.0, 0.07, 0.14):
-        for b in ((1, 1, -1), (1, -1, 1), (-1, 1, -1), (-1, -1, 1)):
-            trD.append([(min(2.0, max(0.0, t + jit)), v) for t, v in
-                        _eye_clean({-1: b[0], 0: b[1], 1: b[2], 2: b[2]}, 0.22)])
-    s += _eye_panel(120, 20, PW, PH, trA, 'A', 0.9)
-    s += _eye_panel(380, 20, PW, PH, trB, 'B')
-    s += _eye_panel(120, 190, PW, PH, trC, 'C', 0.7)
-    s += _eye_panel(380, 190, PW, PH, trD, 'D', 0.9)
-    s += text(120, 336, '横轴：0~2T_b（最佳抽样时刻在两个“眼睛”中央）', size=12, anchor='start', color='#666')
-    return s + '</svg>'
-
-
 # ---- 选择题（28）：四种载波提取方案 ----
 def _cw_panel(x, y, label, seq):
     """seq: [('in',), ('box',txt), ('nbox',t1,t2), ('out',)]；yc 为信号线高度"""
@@ -418,8 +346,11 @@ def fig_q4const():
     s = HEAD.format(w=320, h=300) + marker('a18c')
     ox, oy, U = 150, 150, 62
     s += _const(ox, oy, U, 'a18c')
-    s += line(ox, oy, ox + U, oy, width=1.4, color='#c00')
-    s += text(ox + U / 2, oy - 8, 'd_{min}=1', size=12, anchor='middle', color='#c00')
+    # d_min 用轴上的尺寸标注（画在轴上侧，避免压住 f1 的刻度与文字）
+    s += line(ox, oy - 4, ox, oy - 12, width=1.2, color='#c00')
+    s += line(ox, oy - 12, ox + U, oy - 12, width=1.2, color='#c00')
+    s += line(ox + U, oy - 4, ox + U, oy - 12, width=1.2, color='#c00')
+    s += text(ox + U / 2, oy - 23, 'd_{min}=1', size=12, anchor='middle', color='#c00')
     return s + '</svg>'
 
 
@@ -489,63 +420,69 @@ def fig_q5psd():
 
 # ---- 五(3)：16QAM 调制 / 解调框图 ----
 def fig_q5moddem():
-    s = HEAD.format(w=620, h=470) + marker('a18m')
-    # ---------------- 调制 ----------------
-    s += text(14, 24, '调制', size=13, anchor='start', color='#666')
-    s += text(14, 92, 'R_C=192kbit/s', size=12, anchor='start', style='i')
-    s += line(14, 100, 108, 100, marker='a18m')
-    s += box2(108, 81, 84, '串/并变换', '4bit/符号', size=13)
-    s += line(192, 100, 214, 100)
-    s += line(214, 60, 214, 140)
-    s += dot(214, 100, 3.5)
-    s += line(214, 60, 236, 60, marker='a18m')
-    s += line(214, 140, 236, 140, marker='a18m')
-    s += text(222, 52, 'I', size=12, anchor='start', style='i')
-    s += text(222, 160, 'Q', size=12, anchor='start', style='i')
-    for y, carr, cy in ((60, 'cos 2πf_ct', 26), (140, 'sin 2πf_ct', 178)):
-        s += box1(236, y - 15, 52, 'D/A')
-        s += line(288, y, 306, y)
-        s += box2(306, y - 19, 78, '成形滤波', 'α=1', size=13)
-        s += line(384, y, 402, y)
-        s += mul(415, y)
-        s += line(415, cy, 415, y - (13 if y == 60 else -13), marker='a18m')
-        s += text(423, cy + (4 if y == 60 else -4), carr, size=13, anchor='start', style='i')
-        s += line(428, y, 452, y)
-    s += line(452, 60, 452, 93)
-    s += line(452, 140, 452, 107)
-    s += adder(470, 100)
-    s += line(452, 93, 457, 93)
-    s += line(452, 107, 457, 107)
-    s += line(483, 100, 540, 100, marker='a18m')
-    s += text(546, 105, '16QAM 已调信号', size=13, anchor='start')
-    s += text(306, 200, '两路载波正交（90°）', size=12, anchor='start', color='#666')
+    s = HEAD.format(w=780, h=540) + marker('a18m')
+    yI, yQ = 92, 196                       # 调制：I / Q 两路基带中心线
+    ym = (yI + yQ) / 2
+    s += text(16, 32, '调制', size=13, anchor='start', color='#666')
+    s += text(16, yI - 16, 'R_C=192kbit/s', size=12, anchor='start', style='i')
+    s += line(16, yI, 104, yI, marker='a18m')
+    s += box2(104, yI - 19, 96, '串/并变换', '4bit/符号', size=13)
+    s += line(200, yI, 228, yI)
+    s += dot(228, yI, 3.5)
+    s += line(228, yI, 228, yQ)
+    for y, lab in ((yI, 'I'), (yQ, 'Q')):
+        s += line(228, y, 252, y, marker='a18m')
+        s += text(240, y - 10, lab, size=12, style='i')
+        s += box1(252, y - 15, 54, 'D/A')
+        s += line(306, y, 324, y)
+        s += box2(324, y - 19, 92, '成形滤波', 'α=1', size=13)
+        s += line(416, y, 436, y)
+        s += mul(450, y, r=14)
+        s += line(464, y, 498, y)
+    # 两路载波（I 路由上、Q 路由下）
+    s += line(450, 38, 450, yI - 14, marker='a18m')
+    s += text(460, 34, 'cos 2πf_ct', size=13, anchor='start', style='i')
+    s += line(450, 256, 450, yQ + 14, marker='a18m')
+    s += text(460, 260, 'sin 2πf_ct', size=13, anchor='start', style='i')
+    # 合路加法器
+    s += line(498, yI, 498, ym - 8)
+    s += line(498, yQ, 498, ym + 8)
+    s += line(498, ym - 8, 517, ym - 8)
+    s += line(498, ym + 8, 517, ym + 8)
+    s += adder(530, ym, r=14)
+    s += line(544, ym, 614, ym, marker='a18m')
+    s += text(620, ym + 5, '16QAM 已调信号', size=13, anchor='start')
+    s += text(16, 528, 'I、Q 两路载波正交（90°），解调端需载波同步与定时同步', size=12, anchor='start', color='#666')
+
     # ---------------- 解调 ----------------
-    dy = 260
-    s += text(14, dy - 12, '解调', size=13, anchor='start', color='#666')
-    s += text(12, dy + 44, 'r(t)', size=13, anchor='start', style='i')
-    s += line(44, dy + 40, 70, dy + 40)
-    s += line(70, dy, 70, dy + 80)
-    s += dot(70, dy + 40, 3.5)
-    s += line(70, dy, 92, dy, marker='a18m')
-    s += line(70, dy + 80, 92, dy + 80, marker='a18m')
-    s += text(78, dy - 8, 'I', size=12, anchor='start', style='i')
-    s += text(78, dy + 100, 'Q', size=12, anchor='start', style='i')
-    for y, carr in ((dy, '2cos 2πf_ct'), (dy + 80, '-2sin 2πf_ct')):
-        s += mul(105, y)
-        s += line(105, y - 40 if y == dy else y + 40, 105, y - 13 if y == dy else y + 13, marker='a18m')
-        s += text(113, y - 36 if y == dy else y + 32, carr, size=13, anchor='start', style='i')
-        s += line(118, y, 140, y)
-        s += box2(140, y - 19, 78, '低通滤波', 'α=1', size=13)
-        s += line(218, y, 236, y)
-        s += box2(236, y - 19, 82, '抽样判决', '2bit', size=13)
-        s += line(318, y, 344, y)
-    s += line(344, dy, 344, dy + 33)
-    s += line(344, dy + 80, 344, dy + 47)
-    s += line(344, dy + 33, 352, dy + 33)
-    s += line(344, dy + 47, 352, dy + 47)
-    s += box2(352, dy + 21, 84, '并/串变换', '4bit/符号', size=13)
-    s += line(436, dy + 40, 492, dy + 40, marker='a18m')
-    s += text(498, dy + 45, '192kbit/s', size=13, anchor='start')
+    dI, dQ = 336, 440
+    dm = (dI + dQ) / 2
+    s += text(16, 312, '解调', size=13, anchor='start', color='#666')
+    s += text(16, dI - 10, 'r(t)', size=13, anchor='start', style='i')
+    s += line(16, dI, 76, dI)
+    s += dot(76, dI, 3.5)
+    s += line(76, dI, 76, dQ)
+    for y, carr, above in ((dI, '2cos 2πf_ct', True), (dQ, '-2sin 2πf_ct', False)):
+        s += line(76, y, 92, y)
+        s += mul(106, y, r=14)
+        if above:
+            s += line(106, 292, 106, y - 14, marker='a18m')
+            s += text(116, 288, carr, size=13, anchor='start', style='i')
+        else:
+            s += line(106, 508, 106, y + 14, marker='a18m')
+            s += text(116, 512, carr, size=13, anchor='start', style='i')
+        s += line(120, y, 148, y)
+        s += box2(148, y - 19, 92, '低通滤波', 'α=1', size=13)
+        s += line(240, y, 258, y)
+        s += box2(258, y - 19, 92, '抽样判决', '2bit', size=13)
+        s += line(350, y, 386, y)
+    s += line(386, dI, 386, dm - 8)
+    s += line(386, dQ, 386, dm + 8)
+    s += line(386, dm - 8, 406, dm - 8)
+    s += line(386, dm + 8, 406, dm + 8)
+    s += box2(406, dm - 19, 92, '并/串变换', '4bit/符号', size=13)
+    s += line(498, dm, 558, dm, marker='a18m')
+    s += text(564, dm + 5, '192kbit/s', size=13, anchor='start')
     return s + '</svg>'
 
 
@@ -628,7 +565,6 @@ def fig_q8enc():
 # ---------------------------------------------------------------- 输出
 FIGS = [
     ('q14xf', '三四五', False, 'X(f) 四图（选择14-16）'),
-    ('q17eye', '十七', False, '眼图四幅（选择17）'),
     ('q28cw', '廿八', False, '载波提取四方案（选择28）'),
     ('q2demod', '二', False, '解调框图'),
     ('q3g', '三', False, 'g(t) 波形'),
@@ -646,7 +582,7 @@ FIGS = [
     ('q8enc', '八', True, '卷积码编码器'),
 ]
 SVGS = {
-    'q14xf': fig_q14xf(), 'q17eye': fig_q17eye(), 'q28cw': fig_q28cw(),
+    'q14xf': fig_q14xf(), 'q28cw': fig_q28cw(),
     'q2demod': fig_q2demod(), 'q3g': fig_q3g(), 'q5sys': fig_q5sys(), 'q7pdf': fig_q7pdf(),
     'q2psd': fig_q2psd(), 'q3h': fig_q3h(), 'q4const': fig_q4const(), 'q4s5': fig_q4s5(),
     'q4reg1': fig_q4reg1(), 'q4reg2': fig_q4reg2(), 'q5psd': fig_q5psd(),
@@ -673,5 +609,6 @@ for key, qnum, is_ans, desc in FIGS:
 
 print('###FILE:data/figures/' + YEAR + '/_index.js')
 print('// ' + YEAR + ' 图库索引 —— 由 tools/gen_figures_' + YEAR + '.py 生成；Node 端 require 用，不进浏览器 bundle')
+requires.append('./' + YEAR + '-十七-q17eye.js')  # 选择17：原卷扫描图直接嵌入（tools/embed_figure_images.mjs 生成）
 for r in requires:
     print('require("' + r + '");')
