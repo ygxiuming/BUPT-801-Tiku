@@ -1,12 +1,22 @@
 // 同步题库数据与 KaTeX 到 vite public 目录（开发快照；vite dev 用）
 // 生产（server）通过 /data 实时映射项目 data/ 目录：改数据/图文件后刷新即生效，无需重新构建。
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, copyFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url))) // app/
 const proj = join(root, '..')                                // 项目根
 const pub = join(root, 'public')
+
+// 图库注册表全盘重建：.svg 是唯一维护对象，_index.js 是自动生成的缓存。
+// npm run dev 每次启动都走这里（用户要求：启动服务就全盘重建一次），生产 3000 的
+// 对称修复在 server/index.js 启动同步 + svg 监听。手改 svg 后重启 dev 或跑
+// node tools/emit_figures.mjs <年> --from-svg 都能生效。失败只告警，不阻塞快照。
+const emitAll = spawnSync('node', [join(proj, 'tools', 'emit_figures.mjs'), '--sync-all'],
+  { cwd: proj, encoding: 'utf8' })
+if (emitAll.status !== 0) console.error('图库注册表重建失败（沿用上次的 _index.js）：' + (emitAll.stderr || '').trim())
+else if (emitAll.stdout.trim()) console.log(emitAll.stdout.trim())
 
 mkdirSync(join(pub, 'data'), { recursive: true })
 mkdirSync(join(pub, 'vendor'), { recursive: true })

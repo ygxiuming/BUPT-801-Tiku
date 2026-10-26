@@ -10,6 +10,7 @@
 // 用法：
 //   node tools/emit_figures.mjs <年>             跑生成器 → 写 .svg → 重建 _index.js
 //   node tools/emit_figures.mjs <年> --from-svg  不跑生成器，直接由现有 .svg 重建 _index.js（保序）
+//   node tools/emit_figures.mjs --sync-all       全部年份由现有 .svg 重建 _index.js（sync/dev 启动用）
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -24,10 +25,21 @@ const root = join(dirname(dirname(fileURLToPath(import.meta.url)))) // 项目根
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (isMain) {
-  const year = process.argv[2] || '2025'
-  const fromSvg = process.argv.includes('--from-svg')
-  const figDir = join(root, 'data', 'figures', year)
-  let hint = null
+  const figRootAll = join(root, 'data', 'figures')
+
+  // --sync-all：全部年份由现有 .svg 重建 _index.js（sync-data.mjs / npm run dev 启动时调用）
+  if (process.argv.includes('--sync-all')) {
+    const { readdirSync } = await import('node:fs')
+    for (const y of readdirSync(figRootAll).filter((y) => /^\d{4}$/.test(y)).sort()) {
+      const r = rebuildIndex(join(figRootAll, y), y, null)
+      if (r.changed) console.log('rebuilt data/figures/' + y + '/_index.js: ' + r.count + ' figures')
+    }
+    console.log('figure registries synced from .svg')
+  } else {
+    const year = process.argv[2] || '2025'
+    const fromSvg = process.argv.includes('--from-svg')
+    const figDir = join(root, 'data', 'figures', year)
+    let hint = null
 
   if (!fromSvg) {
     const out = execFileSync('python3', [join(root, 'tools', 'gen_figures_' + year + '.py')], { encoding: 'utf8' })
@@ -76,6 +88,7 @@ if (isMain) {
 
   const r = rebuildIndex(figDir, year, hint)
   console.log('rebuilt data/figures/' + year + '/_index.js: ' + r.count + ' figures' + (r.changed ? '' : '（内容未变，未写盘）'))
+  }
 }
 
 export { FIG_RE, META_RE, payloadOf, unescape1, escape1, parseMetaObj, parseSvgFile, svgTextOf, rebuildIndex, readIndexHint }
