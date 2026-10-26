@@ -1,6 +1,6 @@
 // 同步题库数据与 KaTeX 到 vite public 目录（开发快照；vite dev 用）
 // 生产（server）通过 /data 实时映射项目 data/ 目录：改数据/图文件后刷新即生效，无需重新构建。
-import { cpSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, copyFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,16 +11,23 @@ const pub = join(root, 'public')
 mkdirSync(join(pub, 'data'), { recursive: true })
 mkdirSync(join(pub, 'vendor'), { recursive: true })
 
-// data/ → public/data 逐文件拷贝（页面按单文件 <script> 引用）。
-// 图库的 _index.js 是 emit 自动生成的注册表（浏览器/Node 两用），必须下发；
-// 其余 _ 前缀文件不进浏览器，跳过。
+// data/ → public/data 逐文件镜像（页面按单文件 <script> 引用）。
+// 图库只拷 _index.js（自动生成的注册表，浏览器渲染用）——**.svg 真身不下发**，
+// 它是唯一维护对象、只存在于项目 data/figures/ 下（防止改错副本后被 sync 覆盖）。
+// 镜像式清理：源里已删除的文件（旧格式 .js、删掉的图）同步从 public 移除，防老版本残留。
 function copyAll(srcDir, dstDir) {
   mkdirSync(dstDir, { recursive: true })
-  for (const name of readdirSync(srcDir)) {
+  const srcNames = readdirSync(srcDir)
+  const kept = new Set()
+  for (const name of srcNames) {
     const src = join(srcDir, name)
     const dst = join(dstDir, name)
-    if (statSync(src).isDirectory()) copyAll(src, dst)
-    else if (name.endsWith('.js') && (!name.startsWith('_') || name === '_index.js')) copyFileSync(src, dst)
+    if (statSync(src).isDirectory()) { kept.add(name); copyAll(src, dst) }
+    else if (name.endsWith('.js') && (!name.startsWith('_') || name === '_index.js')) { kept.add(name); copyFileSync(src, dst) }
+  }
+  // dst 里不在保留集合的一律清掉（旧格式残留、被过滤的文件类型、已删除的数据）
+  for (const name of readdirSync(dstDir)) {
+    if (!kept.has(name)) rmSync(join(dstDir, name), { recursive: true, force: true })
   }
 }
 copyFileSync(join(proj, 'data', 'chapters.js'), join(pub, 'data', 'chapters.js'))

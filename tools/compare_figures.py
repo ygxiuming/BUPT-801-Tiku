@@ -9,9 +9,8 @@
     待解析/crops/<年>/_cmp-<年>.png   整年对照总表，一整张大图：每个卡片左原卷 / 右重绘（共高缩放）
 
 用法（在项目根目录执行）：
-    python tools/compare_figures.py 2015                      # 全部题图（kind=paper）
+    python tools/compare_figures.py 2015                      # 整年一张大图（凡有裁图的题图/解析图都进）
     python tools/compare_figures.py 2015 --only p3ssb,p9const # 只看这几张
-    python tools/compare_figures.py 2015 --all                # 连解析配图一起（有裁图的才出）
     python tools/compare_figures.py 2015 --overlay            # 原卷50%+重绘50%叠加（快速看拓扑差）
     python tools/compare_figures.py 2015 --grid               # 原卷面板叠加 10% 坐标网格（读相对位置用）
     --out 覆盖总表路径（只认 /tmp 或项目根内）。
@@ -168,7 +167,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('year')
     ap.add_argument('--only', help='只要这几张，逗号分隔')
-    ap.add_argument('--all', action='store_true', help='含解析配图（kind=answer）')
     ap.add_argument('--overlay', action='store_true', help='原卷+重绘半透明叠加（代替左右并排）')
     ap.add_argument('--grid', action='store_true', help='原卷面板叠加 10% 坐标网格')
     ap.add_argument('--maxh', type=int, default=460, help='左右面板统一最大高')
@@ -194,9 +192,6 @@ def main():
     crops_root_rt = os.path.realpath(CROPS)
     picked, missing = [], []
     for k in keys:
-        meta = data[k].get('meta', {})
-        if meta.get('kind', 'paper') != 'paper' and not a.all:
-            continue
         crop = check_under(os.path.join(crops_root_rt, year, '%s.png' % k), [crops_root_rt])
         if os.path.exists(crop):
             picked.append((k, crop))

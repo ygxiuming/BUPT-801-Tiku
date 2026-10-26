@@ -61,6 +61,8 @@ if (isMain) {
       n++
     }
     console.log('wrote ' + n + ' .svg for ' + year)
+    console.log('⚠ 本次按生成器输出覆盖了 data/figures/' + year + '/*.svg ——'
+      + '如果你手改过这些图，改前记得 git add/commit；只想让手改生效请用 --from-svg')
     // 生成器自己的 _index 块带 require 顺序（= FIGS 声明序 = 题号序），拿它当重建顺序
     const idxBlock = Object.entries(files).find(([rel]) => rel.endsWith('_index.js'))
     if (idxBlock) {

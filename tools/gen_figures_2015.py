@@ -332,7 +332,7 @@ def fig_p12chan():
 # 原卷：P_s(f) 轴立在中央 O，±f_c 处两个 sin² 驼峰，轴上 1/100 刻度（分式），刻度 f_c−1000…f_c+1000
 def fig_a3ps():
     AX, CX = 210, 360
-    D, W, H = 215, 190, 105   # 载波间距、驼峰全宽、峰高
+    D, W, H = 215, 190, 140   # 载波间距、驼峰全宽、峰高（原卷瘦高，高宽比 ~0.7）
     s = HEAD.format(w=790, h=280) + MK
     s += line(50, AX, 730, AX, marker='arR')
     s += line(CX, AX, CX, 48, marker='arR')
@@ -364,8 +364,10 @@ def fig_a4tx():
     s += rect(46, YI - 12, 46, YQ - YI + 24)
     for k, ch in enumerate('串并转换'):
         s += text(69, YI + 10 + 25 * k, ch, size=13)
-    for yy, carr, clbl in ((YI, 'top', 'cos(2πf_c t)'), (YQ, 'bot', '-sin(2πf_c t)')):
-        s += line(92, yy, 124, yy, marker='arR')
+    for yy, carr, clbl, nline in ((YI, 'top', 'cos(2πf_c t)', 3), (YQ, 'bot', '-sin(2πf_c t)', 2)):
+        # 原卷串并转换到 2/4 是多根平行线：上 3 下 2
+        for o in ([0] if nline == 1 else ([-8, 0, 8] if nline == 3 else [-7, 7])):
+            s += line(92, yy + o, 124, yy + o, marker='arR')
         s += rect(124, yy - 19, 84, 38) + text(166, yy - 4, '2/4', size=13) + text(166, yy + 11, '电平变换', size=13)
         s += line(208, yy, 238, yy, marker='arR')
         s += rect(238, yy - 19, 76, 38) + text(276, yy - 4, '根升余', size=13) + text(276, yy + 11, '弦成型', size=13)
@@ -415,9 +417,9 @@ def fig_a4rx():
         s += switch_sample(260, 290, yy)
         s += line(294, yy, 322, yy, marker='arR')
         s += rect(322, yy - 19, 76, 38) + text(360, yy - 4, '四进制', size=13) + text(360, yy + 11, '判决', size=13)
-        # 四进制判决每路出 2 bit：双线并入并串转换
-        s += line(398, yy - 7, 434, yy - 7, marker='arR')
-        s += line(398, yy + 7, 434, yy + 7, marker='arR')
+        # 四进制判决每路出 2 bit：原卷画 3 根平行线并入并串转换
+        for o in (-8, 0, 8):
+            s += line(398, yy + o, 434, yy + o, marker='arR')
     s += rect(438, YI - 16, 46, YQ - YI + 32)
     for k, ch in enumerate('并串转换'):
         s += text(461, YI + 10 + 25 * k, ch, size=13)
@@ -426,39 +428,45 @@ def fig_a4rx():
 
 
 # ================================================================ 五(3) FM 功率谱（解析图）
-# 原卷：P_s(f) 轴立在中央 O，±f_c 两个驼峰包络，峰内两根超出包络的离散谱线（箭头）
-#       与自线根内弯落轴的虚线；右驼峰下标 f_c-10k、f_c、f_c+10k
+# 原卷：P_s(f) 轴立在中央 O；±f_c 两个窄肩钟形包络（半宽略大于 10k）；
+#       离散谱线立在 ±10k 处，从轴升到穿出包络（顶端箭头），包络内一段为虚线弧内弯向轴
 def fig_a5ps():
     AX, CX = 210, 360
-    W, H = 110, 100   # 半宽(=10k)、峰高
+    WE, H = 150, 110      # 包络半宽、峰高；离散线在 ±105（= f_c ± 10k）
+    XL = 105
     s = HEAD.format(w=770, h=285) + MK
     s += line(26, AX, 724, AX, marker='arR')
     s += line(CX, AX, CX, 48, marker='arR')
     s += text(CX + 10, 44, 'P_s(f)', anchor='start', size=13, style='i')
     s += text(732, AX + 5, 'f', anchor='start', style='i')
     s += text(CX - 8, AX + 18, 'O', anchor='end', size=12)
+
+    def env(x):           # 窄肩钟形：肩部陡、顶部圆
+        t = min(1.0, abs(x) / WE)
+        return H * (1 - t * t) ** 1.3
+
     for c in (CX - 215, CX + 215):
-        pts = [(c + W * t, AX - H * (1 - t * t)) for t in [i * 0.05 for i in range(-20, 21)]]
+        pts = [(c + WE * i / 20, AX - env(WE * i / 20)) for i in range(-20, 21)]
         s += poly(pts, width=1.8)
-        # 两根最高的离散谱线（±0.6W 处）穿出包络
-        for dx in (-0.6 * W, 0.6 * W):
-            s += line(c + dx, AX - 0.64 * H, c + dx, AX - 1.2 * H, width=1.6, marker='arR')
-            # 自线根内弯落至轴的虚线
-            sx = c + dx + (14 if dx < 0 else -14)
-            ex = c + dx * 0.42
-            s += (f"<path d='M{c + dx:.1f},{AX - 0.64 * H:.1f} Q{sx:.1f},{AX - 0.15 * H:.1f} {ex:.1f},{AX:.1f}' "
-                  f"fill='none' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/>")
-    s += line(CX + 215, AX - 5, CX + 215, AX + 5, width=1.2)
-    s += text(CX + 215 - W, AX + 22, 'f_c-10k', size=12, style='i')
-    s += text(CX + 215, AX + 22, 'f_c', size=12, style='i')
-    s += text(CX + 215 + W, AX + 22, 'f_c+10k', size=12, style='i')
+        for dx in (-XL, XL):
+            ytop = AX - env(dx)          # 谱线与包络交点
+            # 包络内的虚线段：自线根沿包络内侧内弯落向轴（终点取谱线与中心之间）
+            ex = c + dx * 0.18
+            s += (f"<path d='M{c + dx:.1f},{ytop:.1f} Q{c + dx * 0.72:.1f},{AX - 0.10 * H:.1f} "
+                  f"{ex:.1f},{AX:.1f}' fill='none' stroke='#888' stroke-width='1.2' "
+                  f"stroke-dasharray='5,4'/>")
+            # 穿出包络的实线段 + 箭头
+            s += line(c + dx, ytop, c + dx, ytop - 30, width=1.6, marker='arR')
+    for x, lab in ((CX + 215 - XL, 'f_c-10k'), (CX + 215, 'f_c'), (CX + 215 + XL, 'f_c+10k')):
+        s += line(x, AX - 5, x, AX + 5, width=1.2)
+        s += text(x, AX + 22, lab, size=12, style='i')
     s += text(CX - 215, AX + 22, '-f_c', size=12, style='i')
     return s
 
 
 # ================================================================ 七(3) 卷积码编码器（解析图）
 # 原卷：u→D₀→D₁，上下两只 ⊕；上路抽头 u、D₀ 后、D₁ 后（g₁=1+x+x²），
-#       下路抽头 D₀ 后、D₁ 后（g₂=x+x²）；c₁/c₂ 经换接开关（X 形双闸柄）合并输出
+#       下路抽头 D₀ 后、D₁ 后（g₂=x+x²）；c¹/c² 经换接开关（X 形双闸柄）合并输出
 def fig_a7enc():
     Y, AY, BY, A = 130, 56, 204, 280
     s = HEAD.format(w=600, h=265) + MK
@@ -481,11 +489,11 @@ def fig_a7enc():
     s += line(320, BY, A + 13, BY, marker='arR')
     s += adder(A, AY, 13)
     s += adder(A, BY, 13)
-    # 上路输出 c₁、下路输出 c₂，引至右侧换接端子
+    # 上路输出 c¹、下路输出 c²（原卷为上标写法），引至右侧换接端子
     s += line(A, AY - 13, A, 24) + line(A, 24, 452, 24) + line(452, 24, 452, 86)
     s += line(A, BY + 13, A, 236) + line(A, 236, 452, 236) + line(452, 236, 452, 174)
-    s += term(452, 92) + text(438, 97, 'c_1', anchor='end', size=13, style='i')
-    s += term(452, 168) + text(438, 173, 'c_2', anchor='end', size=13, style='i')
+    s += term(452, 92) + text(438, 97, 'c^1', anchor='end', size=13, style='i')
+    s += term(452, 168) + text(438, 173, 'c^2', anchor='end', size=13, style='i')
     # 换接开关：枢轴空圆 + 交叉双闸柄分别指向 c₁/c₂
     s += term(508, Y)
     s += line(522, 148, 466, 98, marker='arR')

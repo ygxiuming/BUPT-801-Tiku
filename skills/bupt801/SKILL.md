@@ -332,7 +332,7 @@ git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 | 四边留白 8/30 不均、图看着偏左 | 这张图没走 `svgkit.tighten()`，或还在用 `svg_fit`/`fit_figures_render` 旧链路；新图统一 `tighten(v, PAD)` |
 | 收紧留白后标签与箭头贴住 | 文字盒是"上 0.8em / 下 0.2em"，箭头起点必须落在文字盒之外 ≥6px；垂直箭头别让文字居中压在箭线上，改成右对齐/左对齐到线侧 |
 | compare 提示"缺裁图" | `待解析/crops/<年>/<key>.png` 不存在；先 crop_orig.py 裁图留档，compare 只对照有裁图的题图 |
-| 手改了 .svg 但页面/校验没变 | 注册表是自动缓存：**server 在跑时存盘即自动重建**（监听 svg 变化），没起 server 就 `node tools/emit_figures.mjs <年> --from-svg`；别手改 `_index.js` |
+| 改了 svg 页面没变 / svg 被还原 | 页面加载的是 `_index.js` 缓存，svg 本身不进浏览器：**只改 `data/figures/` 下的 svg**（`app/public/data` 是快照、`sync` 会覆盖它），改完 server 在跑就存盘即重建（监听自动），没起 server 就 `node tools/emit_figures.mjs <年> --from-svg`；**`emit` 全量跑会按生成器输出覆盖手改**，只想让手改生效用 `--from-svg` |
 | Inkscape 手调后图不显示/校验报错 | 首行 `<!-- figureMeta {...} -->` 注释被改坏或删了（emit 靠它注册）；从 git 恢复注释再存，或照 `_TEMPLATE.md` 补回 |
 | 图整块消失（新链路） | 该年 `_index.js` 没重建，或 `app/index.html` 缺该年一行；改过 index.html 必须 `node tools/build-frontend.mjs` |
 | 框里两行字贴框底 | 框高 30 只够单行。双行文字用框高 38、行基线间距 14~15、距上下边各 ≥4px |
