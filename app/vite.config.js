@@ -18,9 +18,24 @@ function publicBaseRewrite() {
   }
 }
 
+// dev 模式下 public/ 的静态文件（尤其 data/figures/<年>/_index.js，server 监听 svg 变化
+// 自动重建的那个）会被浏览器启发式缓存卡住，出现"改了 svg 刷新还是旧的"——强制每次校验。
+// 生产（server:3000）的对称修复在 server/index.js 的 /data 静态配置里。
+function dataNoCache() {
+  return {
+    name: 'data-no-cache',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url && req.url.startsWith('/data/')) res.setHeader('Cache-Control', 'no-cache')
+        next()
+      })
+    }
+  }
+}
+
 export default defineConfig({
   base,
-  plugins: [vue(), publicBaseRewrite()],
+  plugins: [vue(), publicBaseRewrite(), dataNoCache()],
   server: {
     port: 5173,
     proxy: {
