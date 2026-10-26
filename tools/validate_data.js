@@ -43,6 +43,9 @@ require('../data/questions/2017/paper.js');
 require('../data/questions/2017/answer.js');
 require('../data/questions/2019/paper.js');
 require('../data/questions/2019/answer.js');
+require('../data/figures/2016/_index.js');
+require('../data/questions/2016/paper.js');
+require('../data/questions/2016/answer.js');
 
 // KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）
 const katex = require(path.join(ROOT, 'server/node_modules/katex/dist/katex.min.js'));
@@ -81,7 +84,9 @@ const EXPECT = {
   2017: { choice: 36, big: 7, score: 150 },
   2020: { choice: 40, big: 8, score: 150 },
   // 2019 原卷：一（50 空 × 1 分 = 50 分）+ 二～六（14×5 = 70）+ 七、八（15×2 = 30）= 150 分
-  2019: { choice: 50, big: 7, score: 150 }
+  2019: { choice: 50, big: 7, score: 150 },
+  // 2016 原卷：一（30 空，原卷印“共 20 分”但实有 30 空，按 1 分/空 = 30 分）+ 二～六（12×5 = 60）+ 七～十二（10×6 = 60）= 150 分
+  2016: { choice: 30, big: 11, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -1137,6 +1142,179 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   const T = 1e-3, N = 200000, h = T / N;
   const r = (df) => { let s = 0; for (let i = 0; i < N; i++) s += Math.cos(2 * Math.PI * df * (i + 0.5) * h) * h; return s; };
   t.push(['2019(37) Δf=500 Hz 时相关≈0', Math.abs(r(1 / (2 * T))) < 1e-6 && approx(1 / (2 * T), 500)]);
+})();
+
+// 2016
+(function () {
+  // 四：梯形 E_g(f) —— 顶点 T_b、平顶 |f|≤1/(4T_b)、零点 ±3/(4T_b)，数值积分复核面积=1 与 η=4/3
+  const Tb = 1e-6, TOP = 1 / (4 * Tb), ZERO = 3 / (4 * Tb);
+  const Eg = (f) => {
+    const a = Math.abs(f);
+    if (a <= TOP) return Tb;
+    if (a >= ZERO) return 0;
+    return Tb * (ZERO - a) / (ZERO - TOP);
+  };
+  const N = 200000, hi = ZERO, h = hi / N;
+  let area = Eg(0) / 2 * h;
+  for (let i = 1; i < N; i++) area += Eg(i * h) * h;
+  area += Eg(hi) / 2 * h;
+  area *= 2;                                    // 偶函数，只积了 [0, hi]
+  t.push(['2016四 ∫E_g(f)df=1（数值积分）', approx(area, 1, 2e-6)]);
+  t.push(['2016四 η=(1/Tb)/(3/4Tb)=4/3', approx((1 / Tb) / ZERO, 4 / 3, 1e-12)]);
+  t.push(['2016四 平顶+两斜坡=1', approx(Tb * 2 * TOP + 2 * 0.5 * Tb * (ZERO - TOP), 1, 1e-12)]);
+})();
+(function () {
+  // 三：P_n 为两块不等宽矩形（-f_c 处宽 B、+f_c 处宽 B/3，高 N0/2）。
+  //     P_nc(f)=P_n(f-f_c)+P_n(f+f_c) 逐段求和后数值积分 → E[n_c²]=2N0B/3、E[y]=4N0B/3
+  const B = 1, N0 = 1, fc = 1000;
+  const Pn = (f) => {
+    let v = 0;
+    if (Math.abs(f + fc) <= B / 2) v += N0 / 2;               // -f_c 那块，总宽 B
+    if (Math.abs(f - fc) <= B / 6) v += N0 / 2;               // +f_c 那块，总宽 B/3
+    return v;
+  };
+  const integ = (fn, lo, hi, N) => { const h = (hi - lo) / N; let s = 0; for (let i = 0; i < N; i++) s += fn(lo + (i + 0.5) * h) * h; return s; };
+  const I = integ(Pn, -fc - B / 2, -fc + B / 2, 200000) + integ(Pn, fc - B / 6, fc + B / 6, 200000);
+  t.push(['2016三 ∫P_n(f)df=2N0B/3', approx(I, 2 * N0 * B / 3, 1e-9)]);
+  // P_nc：把 P_n 的两块分别平移到 0 再相加
+  const Pnc = (f) => (Math.abs(f) <= B / 6 ? N0 / 2 : 0) + (Math.abs(f) <= B / 2 ? N0 / 2 : 0);
+  // 在跳变点 B/6、B/2 处分段积分（否则中点法跨断点会有 O(h) 误差）
+  const I2 = integ(Pnc, -B / 6, B / 6, 100) + 2 * integ(Pnc, B / 6, B / 2, 100);
+  t.push(['2016三 ∫P_nc(f)df=E[n²]=2N0B/3', approx(I2, 2 * N0 * B / 3, 1e-9)]);
+  t.push(['2016三 E[y]=2∫P_nc=4N0B/3', approx(2 * I2, 4 * N0 * B / 3, 1e-9)]);
+  t.push(['2016三 内平台半宽 B/6、外沿 B/2', Pnc(B * 0.2) === N0 / 2 && Pnc(B * 0.05) === N0 && Pnc(B * 0.4) === N0 / 2]);
+  t.push(['2016三 P_nL 高 4·N0/2=2N0、宽 B/3', approx(4 * N0 / 2 * (B / 3), 2 * N0 * B / 3)]);
+})();
+(function () {
+  // 五：由 E1=5Tb/2、ρ=4/5、∫(s1-s2)²=Tb 反解 E2 与 E12，再验两个噪声方差
+  const E1 = 5 / 2;                             // 以 Tb 为单位
+  const X = 1;                                  // E1+E2-2E12 = Tb
+  // ρ²E1E2 = E12² 且 E12 = (E1+E2-X)/2 → 二次方程
+  const rho2 = 16 / 25;
+  let best = null;
+  for (let y = 0.01; y < 5; y += 1e-5) {
+    const e12 = (E1 + y - X) / 2;
+    if (e12 <= 0) continue;
+    if (Math.abs(e12 * e12 - rho2 * E1 * y) < 1e-9) { best = { E2: y, E12: e12 }; break; }
+  }
+  t.push(['2016五 反解 E2=9Tb/10、E12=6Tb/5', best && approx(best.E2, 0.9, 1e-3) && approx(best.E12, 1.2, 1e-3)]);
+  t.push(['2016五 ρ=E12/√(E1E2)=4/5', best && approx(best.E12 / Math.sqrt(E1 * best.E2), 4 / 5, 1e-6)]);
+  t.push(['2016五 E[Z1²]=(N0/2)E1=5N0Tb/4', approx(0.5 * E1, 5 / 4)]);
+  t.push(['2016五 E[(Z1-Z2)²]=(N0/2)(E1+E2-2E12)=N0Tb/2', best && approx(0.5 * X, 0.5)]);
+})();
+(function () {
+  // 六：QPSK 删除区 —— a=½erfc(1)、b=½erfc(3)，P(e|s1)=1-[(1-a)+b]²≈0.151
+  const erfc = (x) => {                            // 数值积分 2/√π ∫_x^∞ e^{-t²}dt
+    const h = 1e-4; let s = 0;
+    for (let t = x; t < x + 12; t += h) s += Math.exp(-t * t) * h;
+    return 2 / Math.sqrt(Math.PI) * s;
+  };
+  const a = 0.5 * erfc(1), b = 0.5 * erfc(3);
+  t.push(['2016六 a=½erfc(1)≈0.0786', approx(a, 0.0786496, 1e-4)]);
+  t.push(['2016六 四项转移概率和=P(不删除)=[(1-a)+b]²', approx(Math.pow(1 - a, 2) + 2 * b * (1 - a) + b * b, Math.pow(1 - a + b, 2), 1e-12)]);
+  t.push(['2016六 删除概率 1-[(1-a)+b]²≈0.151', approx(1 - Math.pow(1 - a + b, 2), 0.1511, 3e-3)]);
+})();
+(function () {
+  // 八：Y 的分布 1/9,1/3,5/9 —— 概率归一 + E[Y²]=17/4
+  const P = [1 / 9, 1 / 3, 5 / 9], y = [0.5, 1.5, 2.5];
+  t.push(['2016八 P(Y) 归一', approx(P.reduce((s, v) => s + v, 0), 1, 1e-12)]);
+  t.push(['2016八 E[Y²]=17/4', approx(P.reduce((s, v, i) => s + v * y[i] * y[i], 0), 17 / 4, 1e-12)]);
+  t.push(['2016八 E[Y]=35/18', approx(P.reduce((s, v, i) => s + v * y[i], 0), 35 / 18, 1e-12)]);
+  t.push(['2016八 噪声 1/12 的必要条件 E[XY]=13/3', approx((17 / 4 + 9 / 2 - 1 / 12) / 2, 13 / 3, 1e-12)]);
+})();
+(function () {
+  // 九：H(Z)=1.5、H(X,Y,Z)=2=H(X,Y) ⇒ Z 是 (X,Y) 的函数；I(X,Y;Z)=H(Z)
+  const HX = 1, HY = 1, HZ = 1.5, HXYZ = 2, HXY = 2;
+  t.push(['2016九 H(X,Y)=H(X)+H(Y)=2（X⊥Y）', approx(HX + HY, HXY)]);
+  t.push(['2016九 H(X,Y,Z)=H(X,Y) ⇒ Z=f(X,Y)', approx(HXYZ, HXY)]);
+  t.push(['2016九 I(X,Y;Z)=H(Z)-H(Z|XY)=1.5', approx(HZ - (HXYZ - HXY), 1.5)]);
+  t.push(['2016九 I(X;Z)=0.5 ≤ min(H(X),H(Z))', 0.5 <= Math.min(HX, HZ)]);
+  t.push(['2016九 H(X,Z)=H(X)+H(Z)-I=2', approx(HX + HZ - 0.5, 2)]);
+  t.push(['2016九 I(Y;Z)=H(Z)-I(X;Z)=1', approx(HZ - 0.5, 1)]);
+})();
+(function () {
+  // 十：(7,4) 循环码 —— 用校验矩阵 H 枚举全部 16 个码字，独立求 d_min、伴随式与译码
+  const H = [[1, 1, 0, 1, 1, 0, 0], [1, 0, 1, 1, 0, 1, 0], [1, 1, 1, 0, 0, 0, 1]];
+  const syn = (w) => H.map((r) => r.reduce((s, v, k) => s ^ (v & w[k]), 0)).join('');
+  const cw = [];
+  for (let m = 0; m < 16; m++) {
+    const info = [(m >> 3) & 1, (m >> 2) & 1, (m >> 1) & 1, m & 1];
+    // 系统码：c = (p0..p3 | 后 3 位为校验)，用 H 的后 3 列 = I₃ 解出校验位
+    const p = [0, 0, 0, 0];
+    const c = p.concat([0, 0, 0]);
+    for (let t = 0; t < 4; t++) c[t] = info[t];
+    // Hc^T=0，逐行解后 3 位（对应 I₃ 列 4,5,6）
+    const s0 = H[0].slice(0, 4).reduce((s, v, k) => s ^ (v & c[k]), 0);
+    const s1 = H[1].slice(0, 4).reduce((s, v, k) => s ^ (v & c[k]), 0);
+    const s2 = H[2].slice(0, 4).reduce((s, v, k) => s ^ (v & c[k]), 0);
+    c[4] = s0; c[5] = s1; c[6] = s2;
+    cw.push(c);
+  }
+  t.push(['2016十 16 个码字全部满足 Hcᵀ=0', cw.every((c) => syn(c) === '000')]);
+  const wt = (c) => c.reduce((s, v) => s + v, 0);
+  const dmin = Math.min(...cw.filter((c) => wt(c) > 0).map(wt));
+  t.push(['2016十 d_min=3', dmin === 3]);
+  t.push(['2016十 1101100 是码字', cw.some((c) => c.join('') === '1101100')]);
+  const r = [1, 1, 0, 1, 1, 0, 1];
+  t.push(['2016十 s(1101101)=001', syn(r) === '001']);
+  t.push(['2016十 0000001 与 1101101 同伴随式', syn([0, 0, 0, 0, 0, 0, 1]) === syn(r)]);
+})();
+(function () {
+  // 十一：g1=1+D+D²、g2=1+D²，状态取 (u_{n-1},u_{n-2})，4 状态；
+  //      接收序列 00 01 10 00 00 00 10 11 —— 全搜索 Viterbi 复核度量与路径
+  const rx = '0001100000001011';
+  const outBits = (D, ub) => [ub ^ D[0] ^ D[1], ub ^ D[1]];
+  const dec = (s) => [(s >> 1) & 1, s & 1];
+  const s2of = (D, ub) => (ub << 1) | D[0];
+  // 直接逐拍编码，验证 01010100 → 0011 1000 1000 1011
+  let D = [0, 0], cw = '';
+  for (const ub of [0, 1, 0, 1, 0, 1, 0, 0]) {
+    const o = outBits(D, ub);
+    cw += o.join('');
+    D = [ub, D[0]];
+  }
+  t.push(['2016十一 编码 01010100 → 0011100010001011', cw === '0011100010001011']);
+  t.push(['2016十一 尾比特后回到全零状态', D[0] === 0 && D[1] === 0]);
+  let paths = [{ s: 0, m: 0, bits: '' }];
+  for (let k = 0; k < 8; k++) {
+    const nx = [];
+    for (const p of paths) {
+      const Dp = dec(p.s);
+      for (const ub of [0, 1]) {
+        const o = outBits(Dp, ub);
+        const m = p.m + (o[0] ^ +rx[2 * k]) + (o[1] ^ +rx[2 * k + 1]);
+        nx.push({ s: s2of(Dp, ub), m, bits: p.bits + ub });
+      }
+    }
+    const best = new Map();
+    for (const q of nx) { const b = best.get(q.s); if (!b || q.m < b.m) best.set(q.s, q); }
+    paths = [...best.values()];
+  }
+  const fin = paths.filter((p) => p.s === 0).sort((a, b) => a.m - b.m)[0];
+  t.push(['2016十一 最优路径度量=2', fin && fin.m === 2]);
+  t.push(['2016十一 信息比特 010101（含尾 00）', fin && fin.bits === '01010100']);
+  // 反证：只看前 6 位信息、编码器无尾比特时，直接比对码字与接收序列也能得 2
+  t.push(['2016十一 逐段汉明距离和=2', cw.split('').reduce((s, v, i) => s + (+v ^ +rx[i]), 0) === 2]);
+})();
+(function () {
+  // 十二：先验“给出的序列确实由该本原多项式产生”，再由定义算周期相关
+  const pm = (s) => s.split('').map(Number);
+  const a = pm('1011100'), b = pm('0011101');
+  // f_a=1+x²+x³ → a_n=a_{n-2}⊕a_{n-3}；f_b=1+x+x³ → b_n=b_{n-1}⊕b_{n-3}（按周期取下标）
+  const at = (x, i) => x[((i % x.length) + x.length) % x.length];
+  t.push(['2016十二 a 满足 a_n=a_{n-2}⊕a_{n-3}', a.every((v, n) => v === (at(a, n - 2) ^ at(a, n - 3)))]);
+  t.push(['2016十二 b 满足 b_n=b_{n-1}⊕b_{n-3}', b.every((v, n) => v === (at(b, n - 1) ^ at(b, n - 3)))]);
+  t.push(['2016十二 a、b 均为 m 序列（+1 有 4 个）', a.filter((v) => v === 1).length === 4 && b.filter((v) => v === 1).length === 4]);
+  const A = a.map((v) => 2 * v - 1), Bb = b.map((v) => 2 * v - 1);
+  const R = (x, k) => x.reduce((s, v, n) => s + v * x[(n + k) % x.length], 0) / x.length;
+  t.push(['2016十二 R_a(0)=1、R_a(k)=-1/7 (k=1..6)', approx(R(A, 0), 1) && [1, 2, 3, 4, 5, 6].every((k) => approx(R(A, k), -1 / 7))]);
+  const C = A.map((v, i) => v * Bb[i]);
+  t.push(['2016十二 c=a·b=-1,1,1,1,1,1,-1', C.join(',') === '-1,1,1,1,1,1,-1']);
+  const Rc = [0, 1, 2, 3, 4, 5, 6].map((k) => R(C, k));
+  const exp = [1, 3 / 7, -1 / 7, -1 / 7, -1 / 7, -1 / 7, 3 / 7];
+  t.push(['2016十二 R_c=[1,3/7,-1/7×4,3/7]', Rc.every((v, i) => approx(v, exp[i]))]);
+  t.push(['2016十二 ΣR_c=9/7=(Σc)²/7', approx(Rc.reduce((s, v) => s + v, 0), 9 / 7) && approx(Math.pow(C.reduce((s, v) => s + v, 0), 2) / 7, 9 / 7)]);
+  t.push(['2016十二 R_c(±1)=3/7 ≠ -1/7（与纯 m 序列不同）', approx(Rc[1], 3 / 7) && !approx(Rc[1], -1 / 7)]);
 })();
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });
