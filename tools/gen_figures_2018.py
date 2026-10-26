@@ -220,6 +220,27 @@ def fig_q2demod():
 
 
 # ---- 第三题：g(t) 波形 ----
+def _sqrt_label(right_x, y, num, rad, size=12):
+    """把 "num/√rad" 右端对齐到 (right_x, y) 排出来。
+    不用 '√' 字符：字体里 U+221A 的横线只覆盖一小段（有的字体干脆很短），
+    缩到 12px 后常被看成“根号没有横线”。这里用折线把根号和横线画成图形，
+    横线长度跟着被开方数字走，任何渲染器都不会丢。"""
+    h = size * 0.86
+    nw = size * 0.64 * len(str(num))        # 数字按 0.62em 估宽，再留 0.02em 余量
+    sw = size * 0.55
+    gap = 0.3                               # 斜杠与根号只留 0.3px（斜杠字形本身有空边，视觉上已分开）
+    dw = size * 0.62 * len(str(rad))
+    x = right_x - (nw + sw + gap + 0.54 * h + dw + 2)
+    out = text(x, y, str(num), size=size, anchor='start')
+    out += text(x + nw, y, '/', size=size, anchor='start')
+    bx = x + nw + sw + gap
+    out += poly([(bx, y - 0.30 * h), (bx + 0.16 * h, y - 0.38 * h),
+                 (bx + 0.30 * h, y), (bx + 0.54 * h, y - h)], width=1.1)
+    out += line(bx + 0.54 * h, y - h, bx + 0.56 * h + dw, y - h, width=1.1)
+    out += text(bx + 0.58 * h, y - 1, str(rad), size=size * 0.92, anchor='start')
+    return out
+
+
 def _pulse_wave(ox, oy, sx, sy, segs, lab, ticks, ylabs, mk, title):
     """segs: [(t0,t1,value)...] 阶梯波"""
     s = line(ox - 16, oy, ox + sx * 2.9, oy, marker=mk)
@@ -238,7 +259,11 @@ def _pulse_wave(ox, oy, sx, sy, segs, lab, ticks, ylabs, mk, title):
     for t, lab2 in ticks:
         s += text(ox + sx * t, oy + 18, lab2, size=12)
     for v, lab2 in ylabs:
-        s += text(ox - 8, oy - sy * v + 4, lab2, size=12, anchor='end')
+        if '√' in str(lab2):                       # 含根号：走矢量根号，横线一定画得出来
+            num, rad = str(lab2).split('/√')
+            s += _sqrt_label(ox - 8, oy - sy * v + 4, num, rad, size=12)
+        else:
+            s += text(ox - 8, oy - sy * v + 4, lab2, size=12, anchor='end')
         s += line(ox - 4, oy - sy * v, ox, oy - sy * v, width=1.2)
     s += text(ox + sx * 3.0, oy + 5, title[1], size=13, anchor='start', style='i')
     s += text(ox + 6, oy - sy * 1.32, lab, size=13, anchor='start', style='i')
@@ -250,8 +275,9 @@ def fig_q3g():
     r2, r1 = 2 / math.sqrt(5), 1 / math.sqrt(5)
     s += _pulse_wave(70, 130, 90, 72, [(0, 1, r2), (1, 2, r1)], 'g(t)',
                      [(1, '1'), (2, '2'), (-0.13, 'O')], [(r2, '2/√5'), (r1, '1/√5')], 'a18g', ('', 't'))
-    # 原卷在 1/√5 高度还画了一条参考虚线，从纵轴拉到 t=1（再往右就是 [1,2] 段的波形实线）
+    # 原卷的辅助虚线：1/√5 高度的横线（纵轴→t=1），以及 t=1 处从横轴向上的竖线
     s += line(70, 130 - 72 * r1, 70 + 90, 130 - 72 * r1, width=1.0, dash='5,4', color='#666')
+    s += line(70 + 90, 130, 70 + 90, 130 - 72 * r1, width=1.0, dash='5,4', color='#666')
     return s + '</svg>'
 
 
@@ -326,6 +352,8 @@ def fig_q3h():
     r2, r1 = 2 / math.sqrt(5), 1 / math.sqrt(5)
     s += _pulse_wave(70, 130, 90, 72, [(0, 1, r1), (1, 2, r2)], 'h(t)',
                      [(1, '1'), (2, '2'), (-0.13, 'O')], [(r2, '2/√5'), (r1, '1/√5')], 'a18h', ('', 't'))
+    # 原卷在 2/√5 高度也有一条参考虚线（该段波形还在 1/√5，靠虚线标出上限）
+    s += line(70, 130 - 72 * r2, 70 + 90, 130 - 72 * r2, width=1.0, dash='5,4', color='#666')
     s += text(70, 168, 'h(t)=g(T_b-t),  T_b=2s', size=12, anchor='start', color='#666', style='i')
     return s + '</svg>'
 
@@ -503,81 +531,100 @@ def fig_q5moddem():
 
 # ---- 六(2)：哈夫曼编码树 ----
 def fig_q6huf():
-    """哈夫曼树（竖向，正交折线）。概率 1/4×1、1/8×5、1/16×2 ⇒ 最优码长 2 / 3×5 / 4×2。
-    分支约定与解析文字一致（0 走上、1 走下）：Ac→00，Aa/Bb/Bd/Cc/Dd→010/011/100/101/110，
-    Ca/Db→1110/1111，平均 (1/4×2 + 5×1/8×3 + 2×1/16×4) = 23/8。"""
-    s = HEAD.format(w=740, h=470) + marker('a18h')
-    YL = 380
-    D = {'root': (310, 110, '1'), 'L': (140, 180, '1/2'), 'R': (480, 180, '1/2'),
-         'M': (200, 250, '1/4'), 'R1': (400, 250, '1/4'), 'R2': (560, 250, '1/4'),
-         'R3': (640, 320, '1/8')}
-    leaves = [('Ac', 80, '(A,c)', '1/4', '00'), ('Aa', 160, '(A,a)', '1/8', '010'),
-              ('Bb', 240, '(B,b)', '1/8', '011'), ('Bd', 360, '(B,d)', '1/8', '100'),
-              ('Cc', 440, '(C,c)', '1/8', '101'), ('Dd', 500, '(D,d)', '1/8', '110'),
+    """哈夫曼树（竖向、正交折线）。8 个联合符号：1/4×1、1/8×5、1/16×2，
+    码长 2 / 3×5 / 4×2，平均 (1/4×2 + 5×1/8×3 + 2×1/16×4) = 23/8。
+    码字与参考答案、解析正文一致（左支 0、右支 1）：
+    (B,d)=000、(C,c)=001、(A,a)=010、(B,b)=011、(A,c)=10、(D,d)=110、
+    (C,a)=1110、(D,b)=1111。"""
+    s = HEAD.format(w=780, h=470) + marker('a18h')
+    YL = 350
+    N = {'root': (346, 95, '1'), 'n1': (195, 165, '1/2'), 'n2': (110, 235, '1/4'),
+         'n3': (280, 235, '1/4'), 'n4': (497, 165, '1/2'), 'n5': (575, 235, '1/4'),
+         'n6': (640, 305, '1/8')}
+    leaves = [('Bd', 70, '(B,d)', '1/8', '000'), ('Cc', 150, '(C,c)', '1/8', '001'),
+              ('Aa', 240, '(A,a)', '1/8', '010'), ('Bb', 320, '(B,b)', '1/8', '011'),
+              ('Ac', 420, '(A,c)', '1/4', '10'), ('Dd', 510, '(D,d)', '1/8', '110'),
               ('Ca', 600, '(C,a)', '1/16', '1110'), ('Db', 680, '(D,b)', '1/16', '1111')]
-    pos = {k: (v[0], v[1]) for k, v in D.items()}
+    pos = {k: (v[0], v[1]) for k, v in N.items()}
     pos.update({k: (x, YL) for k, x, *_ in leaves})
-    edges = [('root', 'L', '0'), ('root', 'R', '1'), ('L', 'Ac', '0'), ('L', 'M', '1'),
-             ('M', 'Aa', '0'), ('M', 'Bb', '1'), ('R', 'R1', '0'), ('R', 'R2', '1'),
-             ('R1', 'Bd', '0'), ('R1', 'Cc', '1'), ('R2', 'Dd', '0'), ('R2', 'R3', '1'),
-             ('R3', 'Ca', '0'), ('R3', 'Db', '1')]
-    # 连线走“竖—横”折线：斜线画法下 0/1 标签总被斜线穿过，折线可把标签放在竖直段一侧
+    edges = [('root', 'n1', '0'), ('root', 'n4', '1'), ('n1', 'n2', '0'), ('n1', 'n3', '1'),
+             ('n2', 'Bd', '0'), ('n2', 'Cc', '1'), ('n3', 'Aa', '0'), ('n3', 'Bb', '1'),
+             ('n4', 'Ac', '0'), ('n4', 'n5', '1'), ('n5', 'Dd', '0'), ('n5', 'n6', '1'),
+             ('n6', 'Ca', '0'), ('n6', 'Db', '1')]
+    # 连线走“竖—横”折线（斜线会让 0/1 标签被线穿过），标签放竖直段一侧 9px
     R = 5.0
     for f, t, bit in edges:
         (xp, yp), (xc, yc) = pos[f], pos[t]
         s += line(xc, yc - R, xc, yp, width=1.2)
         s += line(xc, yp, xp + (R if xp > xc else -R), yp, width=1.2)
         s += text(xc + (9 if bit == '1' else -9), (yp + yc) / 2 + 4, bit, size=12, color='#555')
-    for k, (x, y) in pos.items():
-        if k in D:
-            s += circle(x, y, 4, width=1.4)
+    for k, (x, y, pr) in N.items():                     # 节点：圆 + 合并后的概率
+        s += circle(x, y, 4, width=1.4)
+        s += text(x + 8, y - 7, pr, size=11, anchor='start', color='#888')
     for k, x, name, pr, code in leaves:
         s += dot(x, YL, 4)
         s += text(x, YL + 22, f'{name} {pr}', size=12, style='i')
         s += text(x, YL + 40, code, size=12, color='#1d43c4')
-    s += text(12, 30, '联合符号概率（叶按概率降序，0 走上支、1 走下支）', size=12, anchor='start', color='#666')
-    s += text(12, 452, '平均码长 = 1/4×2 + 5×1/8×3 + 2×1/16×4 = 23/8 比特/符号对'
-              '（哈夫曼树不唯一，码长分布一致即可）', size=12, anchor='start', color='#666')
+    s += text(12, 30, '联合符号概率（叶按码字升序；左支 0、右支 1）', size=12, anchor='start', color='#666')
+    s += text(12, 434, '平均码长 = 1/4×2 + 5×1/8×3 + 2×1/16×4 = 23/8 比特/符号对'
+              '（哈夫曼树不唯一，码字不唯一，码长分布一致即可）', size=12, anchor='start', color='#666')
     return s + '</svg>'
 
 
 # ---- 八(5)：(2,1,4) 卷积码编码器 ----
 def fig_q8enc():
-    """g1(D)=1+D^3+D^4、g2(D)=1+D+D^4 的 1/2 卷积码编码器。
-    抽头分上/下两条母线汇到两个模 2 加法器，生成多项式写在加法器外侧，不与连线打架。"""
-    s = HEAD.format(w=560, h=350) + marker('a18e')
-    y0, yu, yd = 176, 64, 276
-    S = [100, 160, 220, 280, 340]           # S0..S4
-    s += text(12, y0 + 5, 'u', size=13, anchor='start', style='i')
-    s += line(26, y0, 100, y0, marker='a18e')
-    for x in (110, 170, 230, 290):
-        s += box1(x, y0 - 15, 40, 'D')
-    for a_, b_ in ((100, 110), (150, 170), (210, 230), (270, 290), (330, 340)):
+    """(2,1,4) 卷积码编码器，按参考答案的布局：
+    g1(D)=1+D³+D⁴（x⁴+x³+1）取 {u, D³, D⁴}，g2(D)=1+D+D⁴（x⁴+x+1）取 {u, D, D⁴}；
+    4 级移位寄存器共用，u 与 D⁴ 各有一条贯通上下的汇流线，两个模 2 加法器分列上下，
+    输出经并/串变换交替送出 c1、c2。"""
+    s = HEAD.format(w=660, h=380) + marker('a18e')
+    y0 = 200                                     # 移位寄存器主路
+    S0, S1, S3, S4 = 96, 177, 317, 390           # u / D¹ / D³ / D⁴ 抽头位置
+    yt, yb = 90, 300                             # 上、下两个加法器的中心
+    s += text(14, y0 + 5, 'u', size=13, anchor='start', style='i')
+    s += line(32, y0, 120, y0, marker='a18e')
+    for x in (120, 190, 260, 330):
+        s += box1(x, y0 - 15, 44, 'D')
+    for a_, b_ in ((164, 190), (234, 260), (304, 330), (374, 390)):
         s += line(a_, y0, b_, y0)
-    for x in (S[0], S[1], S[3], S[4]):      # S2 不参与生成
+    for x in (S0, S1, S3, S4):
         s += dot(x, y0, 3.5)
-    A = 420
-    s += line(S[0], y0, S[0], yu)
-    s += line(S[3], y0, S[3], yu)
-    s += line(S[4], y0, S[4], yu)
-    for x in (S[0], S[3], S[4]):
-        s += dot(x, yu, 3)
-    s += line(S[0], yu, A - 16, yu)
-    s += adder(A, yu, r=16)
-    s += line(A + 16, yu, A + 96, yu, marker='a18e')
-    s += text(A + 102, yu + 5, 'c1(t)', size=13, anchor='start', style='i')
-    s += text(A, yu - 30, 'g1(D) = 1 + D³ + D⁴', size=12, color='#555', style='i')
-    s += line(S[0], y0, S[0], yd)
-    s += line(S[1], y0, S[1], yd)
-    s += line(S[4], y0, S[4], yd)
-    for x in (S[0], S[1], S[4]):
-        s += dot(x, yd, 3)
-    s += line(S[0], yd, A - 16, yd)
-    s += adder(A, yd, r=16)
-    s += line(A + 16, yd, A + 96, yd, marker='a18e')
-    s += text(A + 102, yd + 5, 'c2(t)', size=13, anchor='start', style='i')
-    s += text(A, yd + 36, 'g2(D) = 1 + D + D⁴', size=12, color='#555', style='i')
-    s += text(12, 30, '码率 1/2、约束长度 K=5、状态数 2^4=16', size=12, anchor='start', color='#666')
+    # 左汇流线：u 同时进两个加法器
+    s += line(S0, yt, S0, yb)
+    # 右汇流线：D⁴ 同时进两个加法器
+    s += line(S4, y0, 480, y0)
+    s += line(480, yt, 480, yb)
+    # 上加法器 g1 = 1 + D³ + D⁴
+    s += line(S0, yt, 215, yt, marker='a18e')
+    s += line(S3, y0, S3, 125)
+    s += line(S3, 125, 230, 125)
+    s += line(230, 125, 230, 105, marker='a18e')
+    s += adder(230, yt, r=15)
+    s += line(480, yt, 245, yt, marker='a18e')
+    s += line(230, yt - 15, 230, 45)
+    s += line(230, 45, 555, 45)
+    s += line(555, 45, 555, 172)
+    s += text(300, 32, 'g1(D) = 1 + D³ + D⁴', size=12, anchor='start', color='#555', style='i')
+    s += text(468, 38, 'c1(t)', size=13, anchor='start', style='i')
+    # 下加法器 g2 = 1 + D + D⁴
+    s += line(S0, yb, 215, yb, marker='a18e')
+    s += line(S1, y0, S1, 265)
+    s += line(S1, 265, 230, 265)
+    s += line(230, 265, 230, 285, marker='a18e')
+    s += adder(230, yb, r=15)
+    s += line(480, yb, 245, yb, marker='a18e')
+    s += line(230, yb + 15, 230, 345)
+    s += line(230, 345, 555, 345)
+    s += line(555, 345, 555, 228)
+    s += text(300, 362, 'g2(D) = 1 + D + D⁴', size=12, anchor='start', color='#555', style='i')
+    s += text(468, 362, 'c2(t)', size=13, anchor='start', style='i')
+    # 并/串变换
+    s += rect(515, 172, 80, 56)
+    s += text(555, 205, '并/串', size=13)
+    s += line(595, y0, 628, y0, marker='a18e')
+    s += text(632, y0 + 5, 'c(t)', size=13, anchor='start', style='i')
+    s += text(14, 30, '码率 1/2、约束长度 K=5、状态数 2⁴=16', size=12, anchor='start', color='#666')
+    s += text(14, 384, '两路校验位共用同一 4 级寄存器', size=12, anchor='start', color='#666')
     return s + '</svg>'
 
 
