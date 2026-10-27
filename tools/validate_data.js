@@ -49,7 +49,10 @@ require('../data/questions/2018/answer.js');
 require('../data/figures/2016/_index.js');
 require('../data/questions/2016/paper.js');
 require('../data/questions/2016/answer.js');
+require('../data/figures/2014/_index.js');
 require('../data/figures/2015/_index.js');
+require('../data/questions/2014/paper.js');
+require('../data/questions/2014/answer.js');
 require('../data/questions/2015/paper.js');
 require('../data/questions/2015/answer.js');
 
@@ -98,7 +101,9 @@ const EXPECT = {
   // 2016 原卷：一（30 空，原卷印“共 20 分”但实有 30 空，按 1 分/空 = 30 分）+ 二～六（12×5 = 60）+ 七～十二（10×6 = 60）= 150 分
   2016: { choice: 30, big: 11, score: 150 },
   // 2015 原卷：一（40 空 × 1 分 = 40 分）+ 二～十二（10×11 = 110）= 150 分
-  2015: { choice: 40, big: 11, score: 150 }
+  2015: { choice: 40, big: 11, score: 150 },
+  // 2014 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（13/10/15/12/16/13/11/10 = 100 分）= 150 分
+  2014: { choice: 30, big: 18, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -1475,6 +1480,79 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   const Tb = 2e-3, N0 = 3e-4;
   t.push(['2015八 D[Z]=N0/Tb 恒等式', approx((4 / (Tb * Tb)) * (N0 / 2) * (Tb / 2), N0 / Tb, 1e-15)]);
   t.push(['2015八 A=2√Tb → A/σ=2Tb/√N0', approx((2 * Math.sqrt(Tb)) / Math.sqrt(N0 / Tb), 2 * Tb / Math.sqrt(N0), 1e-12)]);
+})();
+
+// ---------------- 2014 数值抽查（独立方法复核） ----------------
+(function () {
+  // 三：PAM 功率谱功率 = σ²/(4W²T)·2W，T=1/(2W) 时 = σ²；(3) σ²=N0W 时功率 = N0W
+  t.push(['2014三(2) P=∫σ²/(4W²T)df=σ²', approx((2 * 300) * (7 / (4 * 300 * 300 * (1 / 600))), 7, 1e-12)]);
+  t.push(['2014三(3) X(t) 功率=N0W（与 X₁ 相同）', approx((2 * 300) / (2 * 300 * (1 / 600)), 2 * 300, 1e-12)]);
+  // 四：(c) 杆图枚举 2^5 个邻居组合，峰值 ISI=±1.6；每极性概率 (1/2)^5
+  (function () {
+    const xv = { '-2': 0.2, '-1': -0.4, 1: 0.6, 2: -0.3, 3: 0.1 };
+    const ks = Object.keys(xv).map(Number);
+    let best = -Infinity, worst = Infinity;
+    for (let m = 0; m < 32; m++) {
+      let s = 0;
+      ks.forEach((k, i) => { s += ((m >> i & 1) ? 1 : -1) * xv[k]; });
+      best = Math.max(best, s); worst = Math.min(worst, s);
+    }
+    t.push(['2014四(2) 枚举峰值 ISI=±1.6', approx(best, 1.6, 1e-12) && approx(worst, -1.6, 1e-12)]);
+    t.push(['2014四(3) 单极性概率 1/32', approx(Math.pow(0.5, 5), 1 / 32, 1e-15)]);
+  })();
+  // 五：分段常数密度上数值积分 S=1、Nq=Δ²/12=1/192（M=16、Δ=1/4）
+  (function () {
+    const p5 = (x) => { const a = Math.abs(x); return a <= 1 ? 1 / 3 : (a <= 2 ? 1 / 6 : 0); };
+    let S = 0, Nq = 0;
+    const N = 2e6, M = 16, delta = 4 / M;
+    for (let i = 0; i < N; i++) {
+      const x = -2 + 4 * (i + 0.5) / N;
+      S += x * x * p5(x);
+      let k = Math.floor((x + 2) / delta); if (k >= M) k = M - 1;
+      const y = -2 + delta * (k + 0.5);
+      Nq += (x - y) * (x - y) * p5(x);
+    }
+    t.push(['2014五(1) S=E[x²]=1', approx(S * 4 / N, 1, 1e-6)]);
+    t.push(['2014五(2) Nq=1/192', approx(Nq * 4 / N, 1 / 192, 1e-6)]);
+  })();
+  // 六：(7,3) 对偶汉明码：枚举 8 码字重量全 4 → dmin=4；u=101 → c=1010011；cHᵀ=0
+  (function () {
+    const G = [[1, 0, 0, 1, 1, 1, 0], [0, 1, 0, 0, 1, 1, 1], [0, 0, 1, 1, 1, 0, 1]];
+    const H = [[1, 0, 1, 1, 0, 0, 0], [1, 1, 1, 0, 1, 0, 0], [1, 1, 0, 0, 0, 1, 0], [0, 1, 1, 0, 0, 0, 1]];
+    const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0) % 2;
+    let dmin = 8, ghOK = true;
+    for (let m = 1; m < 8; m++) {
+      const u = [m >> 2 & 1, m >> 1 & 1, m & 1];
+      const c = Array(7).fill(0);
+      for (let i = 0; i < 3; i++) if (u[i]) for (let j = 0; j < 7; j++) c[j] ^= G[i][j];
+      dmin = Math.min(dmin, c.filter(Boolean).length);
+    }
+    for (const g of G) for (const h of H) if (dot(g, h) !== 0) ghOK = false;
+    const c101 = [1, 0, 1].reduce((c, b, i) => (b ? c.map((v, j) => v ^ G[i][j]) : c), Array(7).fill(0));
+    t.push(['2014六 dmin=4、GHᵀ=0', dmin === 4 && ghOK]);
+    t.push(['2014六(5) c=1010011、cHᵀ=0', Number(c101.join('')) === 1010011 && H.every(h => dot(c101, h) === 0)]);
+  })();
+  // 七：数值积分四信号 Gram → Es=7A²T/16、d²min=3A²T/8
+  (function () {
+    const A = 3, T = 2, N = 2e5, dt = T / N;
+    const sig = [() => 0, () => A, (t) => (A / 2) * (1 + Math.sin(2 * Math.PI * t / T)), (t) => (A / 2) * (1 - Math.sin(2 * Math.PI * t / T))];
+    const Gm = Array.from({ length: 4 }, () => Array(4).fill(0)).map((row, i) => row.map((_, j) => {
+      let s = 0;
+      for (let k = 0; k < N; k++) { const tt = (k + 0.5) * dt; s += sig[i](tt) * sig[j](tt) * dt; }
+      return s;
+    }));
+    const Es = (Gm[0][0] + Gm[1][1] + Gm[2][2] + Gm[3][3]) / 4;
+    const d2min = Math.min(Gm[0][0] + Gm[2][2] - 2 * Gm[0][2], Gm[0][0] + Gm[3][3] - 2 * Gm[0][3], Gm[1][1] + Gm[2][2] - 2 * Gm[1][2], Gm[1][1] + Gm[3][3] - 2 * Gm[1][3]);
+    t.push(['2014七(2) Es=7A²T/16', approx(Es, 7 * A * A * T / 16, 1e-9)]);
+    t.push(['2014七(4) d²min=3A²T/8', approx(d2min, 3 * A * A * T / 8, 1e-9)]);
+  })();
+  // 八：LPF 输出噪声方差 N0/(2Tb)（nc 功率 2N0/Tb、y=nc/2；Tb=1、N0=1 时 0.5）；功率比 1/0.9=10/9
+  t.push(['2014八(2) D[y]=N0/(2Tb)', approx((2 * 1 / 1) / 4, 1 / (2 * 1), 1e-12)]);
+  t.push(['2014八(3) 功率比 10/9', approx(1 / 0.9, 10 / 9, 1e-12)]);
+  // 九：η=4 → Eb/N0=(2⁴−1)/4=15/4
+  t.push(['2014九(1) Eb/N0=15/4', approx((Math.pow(2, 4) - 1) / 4, 15 / 4, 1e-12)]);
+  // 十：β'=Δf/fm'=25000/5000=5、B=2(1+β)fm'=60kHz
+  t.push(['2014十(3) β=5、B=60kHz', approx(25000 / 5000, 5, 1e-12) && approx(2 * 6 * 5000, 60000, 1e-12)]);
 })();
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });

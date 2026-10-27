@@ -10,6 +10,7 @@ module.paths.unshift(path.dirname(__dirname));
 const year = String(process.argv[2] || '2025');
 let loaded = false;
 switch (year) {
+  case '2014': require('data/figures/2014/_index.js'); loaded = true; break;
   case '2015': require('data/figures/2015/_index.js'); loaded = true; break;
   case '2016': require('data/figures/2016/_index.js'); loaded = true; break;
   case '2017': require('data/figures/2017/_index.js'); loaded = true; break;
