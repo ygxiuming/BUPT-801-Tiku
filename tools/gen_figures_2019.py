@@ -137,7 +137,8 @@ def fig_q2block():
     s += rect(160, Y - 24, 116, 48)
     s += text(218, Y - 4, '理想带通') + text(218, Y + 14, '滤波器')
     s += line(276, Y, 316, Y, marker='a19b')
-    s += text(296, 91, 'n(t)', style='i')
+    s += text(296, 77, 's(t)', style='i')
+    s += text(296, 93, 'n(t)', style='i')
     s += mul(330, Y, 13)
     s += text(330, 170, '2cos(2πf_c t)', size=13)
     s += line(330, 152, 330, Y + 14, marker='a19b')
@@ -145,7 +146,8 @@ def fig_q2block():
     s += rect(386, Y - 24, 106, 48)
     s += text(439, Y - 4, '理想低通') + text(439, Y + 14, '滤波器')
     s += line(492, Y, 532, Y, marker='a19b')
-    s += text(538, Y + 5, 's_o(t)+n_o(t)', anchor='start', style='i')
+    s += text(538, 91, 's_o(t)', anchor='start', style='i')
+    s += text(538, 111, 'n_o(t)', anchor='start', style='i')
     return s + '</svg>'
 
 
@@ -174,11 +176,12 @@ def fig_q6table():
 
 
 # ---------------------------------------------------------------- 四、幅度谱 / 功率谱双子图
-def _spec_panel(ax, yb, xc, u, y_hi, y_lo, title, lab_hi, lab_lo, mk, kind='step'):
-    """一个谱子图：右向 f 轴 + f=0 短刻度 + 左侧电平标注
+def _spec_panel(ax, yb, xc, u, y_hi, y_lo, title, lab_hi, lab_lo, mk, kind='step', mid_above=False):
+    """一个谱子图：右向 f 轴 + f=0 短刻度 + 电平标注（原卷：标注都在轴右侧）
 
     kind='step'：两段电平的折线（|f|<1/2T 为 y_hi，其余到 1/T 为 y_lo）
     kind='rect'：±1/T 上的矩形（功率谱只有一个电平 y_hi，y_lo 传 yb）
+    mid_above：−1/2T、1/2T 刻度标在轴上方（G_3 的轴下方被负电平占用时）
     """
     o = ''
     xr = xc + u + 60
@@ -189,14 +192,19 @@ def _spec_panel(ax, yb, xc, u, y_hi, y_lo, title, lab_hi, lab_lo, mk, kind='step
                    (xc + u / 2, y_hi), (xc + u / 2, y_lo), (xc + u, y_lo)])
     else:
         o += poly([(xc - u, yb), (xc - u, y_hi), (xc + u, y_hi), (xc + u, yb)])
-    o += text(xc, 18, title, style='i')
-    o += text(xc - u - 14, y_hi + 4, lab_hi, anchor='end')
+    o += text(xc, 8, title, style='i')
+    o += text(xc + 8, y_hi - 8, lab_hi, anchor='start')
     if lab_lo:
-        o += text(xc - u - 14, y_lo + 4, lab_lo, anchor='end')
+        o += text(xc + 8, y_lo + 4, lab_lo, anchor='start')
     for v in (-u, u):
         o += line(xc + v, yb - 5, xc + v, yb + 5, width=1.2)
+    if kind == 'step':
+        my = yb - 10 if mid_above else yb + 22
+        o += text(xc - u / 2 - 3, my, '-1/2T', size=12, anchor='end')
+        o += text(xc + u / 2 + 3, my, '1/2T', size=12, anchor='start')
     o += text(xc - u, yb + 22, '-1/T', size=12)
     o += text(xc + u, yb + 22, '1/T', size=12)
+    o += text(xc, yb + 22, 'O', size=12)
     o += text(xr + 8, yb + 5, 'f', anchor='start', style='i')
     return o
 
@@ -204,18 +212,18 @@ def _spec_panel(ax, yb, xc, u, y_hi, y_lo, title, lab_hi, lab_lo, mk, kind='step
 def fig_q3s1():
     """三(3)：G_3(f)（上/下两段反号）与 P_s1(f)（±1/T 上的矩形）"""
     mk = 'a19c'
-    s = HEAD.format(w=620, h=210) + marker(mk)
-    s += _spec_panel(40, 100, 170, 60, 52, 148, 'G_3(f)', 'T/2', '-T/2', mk)
-    s += _spec_panel(360, 100, 460, 60, 52, 100, 'P_{s1}(f)', 'T/4', '', mk, kind='rect')
+    s = HEAD.format(w=720, h=210) + marker(mk)
+    s += _spec_panel(30, 100, 170, 100, 52, 148, 'G_3(f)', 'T/2', '-T/2', mk, mid_above=True)
+    s += _spec_panel(390, 100, 530, 100, 52, 100, 'P_{s1}(f)', 'T/4', '', mk, kind='rect')
     return s + '</svg>'
 
 
 def fig_q3s2():
-    """三(4)：|G_4(f)|^2（中心 5T^2/4、外侧 T^2/4）与 P_s2(f)"""
+    """三(4)：|G_4(f)|^2（中心 5T^2/4、外侧 T²/4）与 P_s2(f)（5T/4、T/4，同为阶梯）"""
     mk = 'a19d'
-    s = HEAD.format(w=620, h=230) + marker(mk)
-    s += _spec_panel(40, 130, 170, 60, 48, 88, '|G_4(f)|^2', '5T^2/4', 'T^2/4', mk)
-    s += _spec_panel(360, 130, 460, 60, 48, 88, 'P_{s2}(f)', '5T/4', 'T/4', mk)
+    s = HEAD.format(w=720, h=260) + marker(mk)
+    s += _spec_panel(30, 160, 170, 120, 34, 132, '|G_4(f)|^2', '5T^2/4', 'T^2/4', mk)
+    s += _spec_panel(390, 160, 530, 120, 34, 132, 'P_{s2}(f)', '5T/4', 'T/4', mk)
     return s + '</svg>'
 
 
@@ -268,7 +276,11 @@ def fig_q5const():
         s += line(x, 215, x, 225, width=1.2)
     for y in (130, 175, 265):
         s += line(105, y, 115, y, width=1.2)
-    s += text(188, 240, '√3/2', size=12)
+    # 原卷：1/2、−1/2 水平虚线与 √3/2 竖直虚线（轴 → 星座点）
+    s += line(110, 175, 188, 175, width=1.1, dash='5,4')
+    s += line(110, 265, 188, 265, width=1.1, dash='5,4')
+    s += line(188, 175, 188, 265, width=1.1, dash='5,4')
+    s += text(184, 240, '√3/2', size=12, anchor='end')
     s += text(266, 240, '√3', size=12)
     s += text(102, 179, '1/2', anchor='end', size=12)
     s += text(102, 134, '1', anchor='end', size=12)
@@ -289,25 +301,24 @@ def fig_q5region():
     def px(X):
         return ORX + U * X
 
-    def py(Y):
-        return ORY - U * Y
-
-    # 楔形填充：顶点 (2/√3,0) → 上边界到 y=64 → 右边截断 → 下边界回顶点
-    apex = (px(2 / math.sqrt(3)), py(0))
+    # 原卷：坐标轴 + √3/2 小刻度，无 O/刻度值/区域名/填充
+    s += line(40, 220, 352, 220, marker=mk)
+    s += line(110, 300, 110, 68, marker=mk)
+    s += text(358, 225, 'f_1(t)', anchor='start', style='i')
+    s += text(114, 62, 'f_2(t)', anchor='start', style='i')
+    s += line(px(math.sqrt(3) / 2), 215, px(math.sqrt(3) / 2), 225, width=1.2)
+    apex = (px(2 / math.sqrt(3)), 220)
     up_x = ORX + (400 - 64) / math.sqrt(3)
     lo_x = ORX + (292 - 40) / math.sqrt(3)
-    s += poly([apex, (up_x, 64), (340, 64), (340, 292), (lo_x, 292)], fill='#f2f2f2', close=True, stroke='none')
-    s += _axes_const(s, mk)
-    # 两条起作用的平分线（虚线）：从顶点出发各向右上方/右下方延伸（Voronoi 边界不穿过顶点）
-    s += line(apex[0], apex[1], up_x, 64, width=1.2, dash='5,4', color='#888')
-    s += line(apex[0], apex[1], lo_x, 292, width=1.2, dash='5,4', color='#888')
+    # 两条起作用的平分线（黑色虚线）：从顶点出发各向右上方/右下方延伸
+    s += line(apex[0], apex[1], up_x, 64, width=1.2, dash='5,4')
+    s += line(apex[0], apex[1], lo_x, 292, width=1.2, dash='5,4')
     for lbl, (x, y) in PTS.items():
         s += dot(x, y, 4.2)
     s += text(180, 169, 's_1', anchor='end', style='i')
     s += text(180, 278, 's_2', anchor='end', style='i')
     s += text(274, 214, 's_3', anchor='start', style='i')
     s += text(120, 124, 's_4', anchor='start', style='i')
-    s += text(300, 190, 'D_3', anchor='start', color='#555')
     return s + '</svg>'
 
 
@@ -354,7 +365,6 @@ def fig_q8enc():
     s = HEAD.format(w=600, h=310) + marker('a19j')
     YS, R = 150, 14
     D0, DW, DG = 180, 44, 30
-    s += text(10, YS + 5, 'u', anchor='start', style='i')
     s += line(30, YS, D0, YS, marker='a19j')
     for i in range(3):
         x = D0 + i * (DW + DG)
@@ -382,11 +392,13 @@ def fig_q8enc():
     # D2 输出 → ⊕2 顶部
     s += line(AX2, YS, AX2, YB - R, marker='a19j')
     s += adder(AX1, YA, R) + adder(AX2, YB, R)
-    # 输出
-    s += line(AX1, YA - R, AX1, 36) + line(AX1, 36, 470, 36, marker='a19j')
-    s += text(478, 41, 'c^{(1)}', anchor='start', style='i')
-    s += line(AX2, YB + R, AX2, 270) + line(AX2, 270, 470, 270, marker='a19j')
-    s += text(478, 275, 'c^{(2)}', anchor='start', style='i')
+    # 输出 → 转换开关（原卷样式：双触点 + 掷向上一路的臂）
+    s += line(AX1, YA - R, AX1, 36) + line(AX1, 36, 470, 36) + line(470, 36, 470, 50)
+    s += line(AX2, YB + R, AX2, 270) + line(AX2, 270, 470, 270) + line(470, 270, 470, 256)
+    s += dot(470, 52, 2.6) + dot(470, 254, 2.6)
+    s += dot(505, 153, 3)
+    s += line(505, 153, 473, 54)
+    s += line(505, 153, 548, 153, marker='a19j')
     return s + '</svg>'
 
 
