@@ -1286,26 +1286,28 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   t.push(['2016四 平顶+两斜坡=1', approx(Tb * 2 * TOP + 2 * 0.5 * Tb * (ZERO - TOP), 1, 1e-12)]);
 })();
 (function () {
-  // 三：P_n 为两块不等宽矩形（-f_c 处宽 B、+f_c 处宽 B/3，高 N0/2）。
-  //     P_nc(f)=P_n(f-f_c)+P_n(f+f_c) 逐段求和后数值积分 → E[n_c²]=2N0B/3、E[y]=4N0B/3
+  // 三：P_n 为两块等宽 B 矩形（原卷放大核对：[-fc-2B/3,-fc+B/3] 与 [fc-B/3,fc+2B/3]，高 N0/2；
+  //     B/3 标的是带边偏离 fc 的距离，不是带宽）。两块关于 0 镜像，|H| 共轭对称。
+  //     P_nc(f)=P_n(f-f_c)+P_n(f+f_c) 重叠区相加 → 内平台 N0（|f|≤B/3）、外沿 N0/2（|f|≤2B/3）
+  //     E[n²]=N0B、E[n_c²]=N0B、E[y]=2N0B（与参考答案 2N0B 一致）
   const B = 1, N0 = 1, fc = 1000;
   const Pn = (f) => {
     let v = 0;
-    if (Math.abs(f + fc) <= B / 2) v += N0 / 2;               // -f_c 那块，总宽 B
-    if (Math.abs(f - fc) <= B / 6) v += N0 / 2;               // +f_c 那块，总宽 B/3
+    if (f >= -fc - 2 * B / 3 && f <= -fc + B / 3) v += N0 / 2;   // 左块，宽 B
+    if (f >= fc - B / 3 && f <= fc + 2 * B / 3) v += N0 / 2;     // 右块，宽 B
     return v;
   };
   const integ = (fn, lo, hi, N) => { const h = (hi - lo) / N; let s = 0; for (let i = 0; i < N; i++) s += fn(lo + (i + 0.5) * h) * h; return s; };
-  const I = integ(Pn, -fc - B / 2, -fc + B / 2, 200000) + integ(Pn, fc - B / 6, fc + B / 6, 200000);
-  t.push(['2016三 ∫P_n(f)df=2N0B/3', approx(I, 2 * N0 * B / 3, 1e-9)]);
-  // P_nc：把 P_n 的两块分别平移到 0 再相加
-  const Pnc = (f) => (Math.abs(f) <= B / 6 ? N0 / 2 : 0) + (Math.abs(f) <= B / 2 ? N0 / 2 : 0);
-  // 在跳变点 B/6、B/2 处分段积分（否则中点法跨断点会有 O(h) 误差）
-  const I2 = integ(Pnc, -B / 6, B / 6, 100) + 2 * integ(Pnc, B / 6, B / 2, 100);
-  t.push(['2016三 ∫P_nc(f)df=E[n²]=2N0B/3', approx(I2, 2 * N0 * B / 3, 1e-9)]);
-  t.push(['2016三 E[y]=2∫P_nc=4N0B/3', approx(2 * I2, 4 * N0 * B / 3, 1e-9)]);
-  t.push(['2016三 内平台半宽 B/6、外沿 B/2', Pnc(B * 0.2) === N0 / 2 && Pnc(B * 0.05) === N0 && Pnc(B * 0.4) === N0 / 2]);
-  t.push(['2016三 P_nL 高 4·N0/2=2N0、宽 B/3', approx(4 * N0 / 2 * (B / 3), 2 * N0 * B / 3)]);
+  const I = integ(Pn, -fc - 2 * B / 3, -fc + B / 3, 200000) + integ(Pn, fc - B / 3, fc + 2 * B / 3, 200000);
+  t.push(['2016三 ∫P_n(f)df=N0B', approx(I, N0 * B, 1e-9)]);
+  // P_nc：右带下移 [−B/3,2B/3] + 左带上移 [−2B/3,B/3]，重叠 [−B/3,B/3] 相加为 N0
+  const Pnc = (f) => (Math.abs(f) <= B / 3 ? N0 : (Math.abs(f) <= 2 * B / 3 ? N0 / 2 : 0));
+  // 在跳变点 B/3、2B/3 处分段积分（否则中点法跨断点会有 O(h) 误差）
+  const I2 = integ(Pnc, -B / 3, B / 3, 100) + 2 * integ(Pnc, B / 3, 2 * B / 3, 100);
+  t.push(['2016三 ∫P_nc(f)df=E[n²]=N0B', approx(I2, N0 * B, 1e-9)]);
+  t.push(['2016三 E[y]=2∫P_nc=2N0B（同参考答案）', approx(2 * I2, 2 * N0 * B, 1e-9)]);
+  t.push(['2016三 内平台半宽 B/3、外沿 2B/3', Pnc(B * 0.4) === N0 / 2 && Pnc(B * 0.2) === N0 && Pnc(B * 0.8) === 0]);
+  t.push(['2016三 P_nL 高 4·N0/2=2N0、宽 B（区间 [-B/3,2B/3]）', approx(4 * N0 / 2 * B, 2 * N0 * B)]);
 })();
 (function () {
   // 五：由 E1=5Tb/2、ρ=4/5、∫(s1-s2)²=Tb 反解 E2 与 E12，再验两个噪声方差

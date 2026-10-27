@@ -138,20 +138,23 @@ HEAD = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {w} {h}' "
 # ================================================================ 三、题干 H(f)
 def fig_p3H():
     AX, CX, H = 136, 356, 74
+    F, B3 = 118, 40               # fc 离原点像素、B/3 像素（B = 3*B3）
     s = HEAD.format(w=620, h=210) + MK
     s += line(46, AX, 596, AX, marker='arR')
     s += line(CX, AX, CX, 40, marker='arR')
     s += text(CX + 10, 36, 'H(f)', anchor='start')
     s += text(602, AX + 5, 'f', anchor='start', style='i')
-    # 左块：中心 -fc，宽 B；右块：中心 +fc，宽 B/3
-    s += poly([(196, AX), (196, AX - H), (316, AX - H), (316, AX)], close=True)
-    s += poly([(450, AX), (450, AX - H), (490, AX - H), (490, AX)], close=True)
-    s += line(316, AX - H, 450, AX - H, width=1.1, dash='3,4', color='#999')
+    # 左块 [-fc-2B/3, -fc+B/3]、右块 [fc-B/3, fc+2B/3]，均宽 B；±fc 虚线在块内
+    s += poly([(CX - F - 2 * B3, AX), (CX - F - 2 * B3, AX - H), (CX - F + B3, AX - H), (CX - F + B3, AX)], close=True)
+    s += poly([(CX + F - B3, AX), (CX + F - B3, AX - H), (CX + F + 2 * B3, AX - H), (CX + F + 2 * B3, AX)], close=True)
+    s += line(CX - F + B3, AX - H, CX + F - B3, AX - H, width=1.1, dash='3,4', color='#999')
+    s += line(CX - F, AX, CX - F, AX - H, width=1.1, dash='5,4', color='#888')
+    s += line(CX + F, AX, CX + F, AX - H, width=1.1, dash='5,4', color='#888')
     s += text(CX + 8, AX - H - 4, '1', anchor='start', size=12)
-    s += dimh(196, 316, AX - H - 16, 'B', ly=AX - H - 26)
-    s += dimh(450, 490, AX - H - 16, 'B/3', size=11, ly=AX - H - 26)
-    s += text(256, AX + 18, '-f_c', style='i')
-    s += text(470, AX + 18, 'f_c', style='i')
+    s += dimh(CX - F - 2 * B3, CX - F + B3, AX - H - 16, 'B', ly=AX - H - 26)
+    s += dimh(CX + F - B3, CX + F, AX - H - 16, 'B/3', size=11, ly=AX - H - 26)
+    s += text(CX - F, AX + 18, '-f_c', style='i')
+    s += text(CX + F, AX + 18, 'f_c', style='i')
     s += text(CX - 8, AX + 18, 'O', anchor='end')
     return s + '</svg>'
 
@@ -159,9 +162,8 @@ def fig_p3H():
 # ================================================================ 四、PAM 系统框图 + Eg(f)
 def fig_p4fig():
     """(a) PAM 系统框图；(b) 基带脉冲能量谱（上下叠放，窄画布在页面里不被缩小）"""
-    s = HEAD.format(w=580, h=420) + MK
+    s = HEAD.format(w=580, h=460) + MK
     Y = 128
-    s += text(6, 62, '（a）', anchor='start', size=12, color='#555')
     s += text(6, Y + 5, 'a_k', anchor='start', style='i')
     s += line(30, Y, 62, Y, marker='arR')
     s += rect(62, Y - 24, 78, 48) + text(101, Y + 6, 'g(t)', style='i')
@@ -179,33 +181,35 @@ def fig_p4fig():
     s += line(366, Y, 386, Y - 18)
     s += line(386, Y - 26, 386, Y - 10)
     s += line(386, Y, 448, Y, marker='arR')
-    s += text(392, Y - 34, 't = kT_b', size=13)
+    s += text(392, Y - 34, 't = kT', size=13)
     s += text(456, Y + 5, 'y_k', anchor='start', style='i')
+    s += text(240, 246, '(a)', anchor='middle', size=12, style='i', color='#555')
 
     # (b) Eg(f)
     AX, CX, U = 384, 258, 56
-    s += text(6, 268, '（b）', anchor='start', size=12, color='#555')
     s += line(70, AX, 470, AX, marker='arR')
     s += line(CX, AX, CX, 296, marker='arR')
-    s += text(CX - 8, 288, 'E_g(f)', anchor='end')
+    s += text(CX + 8, 288, 'E_g(f)', anchor='start')
     s += text(478, AX + 5, 'f', anchor='start', style='i')
     s += poly([(CX - 3 * U, AX), (CX - U, AX - 76), (CX + U, AX - 76), (CX + 3 * U, AX)], close=True)
+    for v in (-1, 1):   # 肩点参考虚线（原卷 ±T_b/4 处各一条）
+        s += line(CX + v * U, AX, CX + v * U, AX - 76, width=1.1, dash='5,4', color='#888')
     for v in (-3, -1, 1, 3):
         s += line(CX + v * U, AX, CX + v * U, AX + 5, width=1.2)
-        s += text(CX + v * U, AX + (36 if abs(v) == 1 else 20),
+        s += text(CX + v * U, AX + 20,
                   ('-3/(4T_b)' if v == -3 else '-1/(4T_b)' if v == -1
                    else '1/(4T_b)' if v == 1 else '3/(4T_b)'), size=11)
     s += text(CX - 8, AX + 20, 'O', anchor='end')
     s += text(CX - 54, AX - 84, 'T_b', size=13)
+    s += text(274, AX + 62, '(b)', anchor='middle', size=12, style='i', color='#555')
     return s + '</svg>'
 
 
 # ================================================================ 五、系统框图 + s1/s2 波形
 def fig_p5fig():
     """(a) 二进制传输系统框图；(b) s_1(t)、s_2(t) 波形"""
-    s = HEAD.format(w=580, h=420) + MK
+    s = HEAD.format(w=580, h=450) + MK
     YT, YB, YC = 96, 168, 132
-    s += text(6, 44, '（a）', anchor='start', size=12, color='#555')
     s += text(6, YC - 14, 's_1(t), s_2(t)', anchor='start', style='i')
     s += text(6, YC + 8, '0 ≤ t ≤ T_b', anchor='start', size=12)
     s += line(118, YC, 152, YC, marker='arR')
@@ -227,17 +231,15 @@ def fig_p5fig():
         s += line(366, yy - 26, 366, yy - 10)
         s += line(366, yy, 402, yy)
     s += text(372, 60, 't = kT_b', size=12, anchor='start')
-    s += text(372, 190, 't = kT_b', size=12, anchor='start')
     s += line(402, YT, 440, YT) + line(440, YT, 440, YC - 13, marker='arR')
     s += line(402, YB, 440, YB) + line(440, YB, 440, YC + 13, marker='arR')
     s += adder(440, YC, 13)
     s += text(422, YC - 6, '+', size=15, anchor='end')
-    s += text(424, YC + 16, '-', size=15, anchor='end')
     s += line(453, YC, 496, YC, marker='arR')
     s += text(502, YC + 5, 'y', anchor='start', style='i')
+    s += text(254, 246, '(a)', anchor='middle', size=12, style='i', color='#555')
 
     # (b) 两路波形
-    s += text(6, 258, '（b）', anchor='start', size=12, color='#555')
     for k, (nm, v1, v2) in enumerate([('s_1(t)', 1, 2), ('s_2(t)', 2, 1)]):
         x0 = 46 + k * 270
         AX, LV = 386, 44
@@ -255,6 +257,7 @@ def fig_p5fig():
         s += line(x0 + 220, AX, x0 + 220, AX + 5, width=1.2)
         s += text(x0 + 110, AX + 20, 'T_b/2', size=12)
         s += text(x0 + 220, AX + 20, 'T_b', size=12)
+    s += text(290, AX + 46, '(b)', anchor='middle', size=12, style='i', color='#555')
     return s + '</svg>'
 
 
@@ -269,12 +272,17 @@ def fig_p6const():
     s += line(cx, cy + 3 * U + 26, cx, cy - 3 * U - 26, marker='arR')
     s += text(cx + 3 * U + 32, cy + 5, 'I', anchor='start', style='i')
     s += text(cx + 7, cy - 3 * U - 30, 'Q', anchor='start', style='i')
-    s += text(cx - 8, cy + 18, 'O', anchor='end', size=12)
     pts = {(-2, 2): ('s_1', -1, -1), (2, 2): ('s_2', 1, -1), (2, -2): ('s_3', 1, 1), (-2, -2): ('s_4', -1, 1)}
     for (i, j), (nm, ax, ay) in pts.items():
         s += dot(cx + i * U, cy - j * U, 4)
         s += text(cx + i * U + ax * 10, cy - j * U + ay * 12, nm, size=13,
                   anchor='end' if ax < 0 else 'start', style='i')
+    # 四点投影虚线框（原卷：四个星座点由虚线两两相连）
+    for (x1, y1, x2, y2) in [(cx - 2 * U, cy - 2 * U, cx + 2 * U, cy - 2 * U),
+                             (cx - 2 * U, cy + 2 * U, cx + 2 * U, cy + 2 * U),
+                             (cx - 2 * U, cy - 2 * U, cx - 2 * U, cy + 2 * U),
+                             (cx + 2 * U, cy - 2 * U, cx + 2 * U, cy + 2 * U)]:
+        s += line(x1, y1, x2, y2, width=1.2, dash='5,4', color='#888')
     # 尺寸标注：左=阴影带宽度 2；右=星座点到 I 轴距离 2
     s += dimv(cx - 3 * U - 14, cy - U, cy + U)
     s += text(cx - 3 * U - 14, cy - U - 8, '2', size=12)
@@ -313,37 +321,41 @@ def fig_a6reg():
 # ================================================================ 三(1) n(t) 的功率谱
 def fig_a3pn():
     AX, CX, H = 136, 330, 74
+    F, B3 = 118, 40               # 同 p3H：左块 [-fc-2B/3, -fc+B/3]、右块 [fc-B/3, fc+2B/3]
     s = HEAD.format(w=580, h=200) + MK
     s += line(46, AX, 566, AX, marker='arR')
     s += line(CX, AX, CX, 40, marker='arR')
     s += text(CX + 10, 36, 'P_n(f)', anchor='start')
     s += text(572, AX + 5, 'f', anchor='start', style='i')
-    s += poly([(170, AX), (170, AX - H), (290, AX - H), (290, AX)], close=True)
-    s += poly([(424, AX), (424, AX - H), (464, AX - H), (464, AX)], close=True)
-    s += line(290, AX - H, 424, AX - H, width=1.1, dash='3,4', color='#999')
-    s += text(164, AX - H / 2 + 5, 'N_0/2', anchor='end', size=13)
-    s += dimh(170, 290, AX - H - 16, 'B', ly=AX - H - 26)
-    s += dimh(424, 464, AX - H - 16, 'B/3', size=11, ly=AX - H - 26)
-    s += text(230, AX + 18, '-f_c', style='i')
-    s += text(444, AX + 18, 'f_c', style='i')
+    s += poly([(CX - F - 2 * B3, AX), (CX - F - 2 * B3, AX - H), (CX - F + B3, AX - H), (CX - F + B3, AX)], close=True)
+    s += poly([(CX + F - B3, AX), (CX + F - B3, AX - H), (CX + F + 2 * B3, AX - H), (CX + F + 2 * B3, AX)], close=True)
+    s += line(CX - F + B3, AX - H, CX + F - B3, AX - H, width=1.1, dash='3,4', color='#999')
+    s += line(CX - F, AX, CX - F, AX - H, width=1.1, dash='5,4', color='#888')
+    s += line(CX + F, AX, CX + F, AX - H, width=1.1, dash='5,4', color='#888')
+    s += text(CX + 12, AX - H - 5, 'N_0/2', anchor='start', size=13)
+    s += dimh(CX - F - 2 * B3, CX - F + B3, AX - H - 16, 'B', ly=AX - H - 26)
+    s += dimh(CX + F - B3, CX + F, AX - H - 16, 'B/3', size=11, ly=AX - H - 26)
+    s += text(CX - F, AX + 18, '-f_c', style='i')
+    s += text(CX + F, AX + 18, 'f_c', style='i')
     s += text(CX - 8, AX + 18, 'O', anchor='end')
     return s + '</svg>'
 
 
 # ================================================================ 三(2) 复包络功率谱
 def fig_a3pnl():
-    AX, CX, H = 136, 226, 84
-    s = HEAD.format(w=400, h=200) + MK
+    AX, CX, H = 150, 226, 78
+    B3 = 34                        # 框 [−B/3, 2B/3]，与 P_n(f+fc)u(f+fc) 的右块平移一致
+    s = HEAD.format(w=400, h=230) + MK
     s += line(46, AX, 386, AX, marker='arR')
-    s += line(CX, AX, CX, 40, marker='arR')
-    s += text(CX + 10, 36, 'P_{nL}(f)', anchor='start')
+    s += line(CX, AX, CX, 48, marker='arR')
+    s += text(CX + 10, 44, 'P_{nL}(f)', anchor='start')
     s += text(392, AX + 5, 'f', anchor='start', style='i')
-    s += poly([(CX - 34, AX), (CX - 34, AX - H), (CX + 34, AX - H), (CX + 34, AX)], close=True)
-    s += text(CX - 40, AX - H / 2 + 5, '2N_0', anchor='end', size=13)
-    s += line(CX - 34, AX, CX - 34, AX + 5, width=1.2)
-    s += line(CX + 34, AX, CX + 34, AX + 5, width=1.2)
-    s += text(CX - 34, AX + 20, '-B/6', size=12)
-    s += text(CX + 34, AX + 20, 'B/6', size=12)
+    s += poly([(CX - B3, AX), (CX - B3, AX - H), (CX + 2 * B3, AX - H), (CX + 2 * B3, AX)], close=True)
+    s += text(CX + 12, AX - H - 10, '2N_0', anchor='start', size=13)
+    s += line(CX - B3, AX, CX - B3, AX + 5, width=1.2)
+    s += line(CX + 2 * B3, AX, CX + 2 * B3, AX + 5, width=1.2)
+    s += text(CX - B3, AX + 20, '-B/3', size=12)
+    s += text(CX + 2 * B3, AX + 20, '2B/3', size=12)
     s += text(CX - 8, AX + 20, 'O', anchor='end')
     return s + '</svg>'
 
@@ -351,7 +363,7 @@ def fig_a3pnl():
 # ================================================================ 三(3) 同相分量功率谱
 def fig_a3pnc():
     AX, CX, H1, H2 = 150, 250, 44, 88
-    W1, W2 = 100, 34          # B/2、B/6 对应像素
+    W1, W2 = 100, 50          # 2B/3、B/3 对应像素
     s = HEAD.format(w=520, h=220) + MK
     s += line(46, AX, 486, AX, marker='arR')
     s += line(CX, AX, CX, 40, marker='arR')
@@ -359,14 +371,15 @@ def fig_a3pnc():
     s += text(492, AX + 5, 'f', anchor='start', style='i')
     s += poly([(CX - W1, AX), (CX - W1, AX - H1), (CX - W2, AX - H1), (CX - W2, AX - H2),
                (CX + W2, AX - H2), (CX + W2, AX - H1), (CX + W1, AX - H1), (CX + W1, AX)])
-    s += text(CX - 8, AX - H2 + 16, 'N_0', size=13, anchor='end')
-    s += text(CX + W2 + 8, AX - H1 + 16, 'N_0/2', size=13, anchor='start')
+    s += text(CX + 10, AX - H2 - 6, 'N_0', size=13, anchor='start')
+    s += line(CX - 4, AX - H1, CX + 4, AX - H1, width=1.2)
+    s += text(CX + 10, AX - H1 + 5, 'N_0/2', size=13, anchor='start')
     for v in (-W1, -W2, W2, W1):
         s += line(CX + v, AX, CX + v, AX + 5, width=1.2)
-    s += text(CX - W1, AX + 20, '-B/2', size=12)
-    s += text(CX - W2, AX + 20, '-B/6', size=12)
-    s += text(CX + W2, AX + 20, 'B/6', size=12)
-    s += text(CX + W1, AX + 20, 'B/2', size=12)
+    s += text(CX - W1, AX + 20, '-2B/3', size=12)
+    s += text(CX - W2, AX + 20, '-B/3', size=12)
+    s += text(CX + W2, AX + 20, 'B/3', size=12)
+    s += text(CX + W1, AX + 20, '2B/3', size=12)
     s += text(CX - 8, AX + 20, 'O', anchor='end')
     return s + '</svg>'
 
@@ -377,15 +390,16 @@ def fig_a7tx():
     s = HEAD.format(w=760, h=230) + MK
     s += text(6, YC + 5, 'b_n', anchor='start', style='i')
     s += line(34, YC, 60, YC, marker='arR')
-    s += rect(60, YC - 30, 64, 60) + text(92, YC - 4, '串并') + text(92, YC + 14, '转换')
-    s += line(124, YC, 136, YC)
-    s += line(136, YI, 136, YQ) + dot(136, YC, 3)
-    s += line(136, YI, 152, YI, marker='arR')
-    s += line(136, YQ, 152, YQ, marker='arR')
+    s += rect(60, YI - 24, 64, YQ - YI + 48) + text(92, YC - 4, '串并') + text(92, YC + 14, '转换')
+    # 原卷：高框右缘直接引出，每支路两根平行线
+    s += line(124, YI - 5, 152, YI - 5, marker='arR')
+    s += line(124, YI + 5, 152, YI + 5, marker='arR')
+    s += line(124, YQ - 5, 152, YQ - 5, marker='arR')
+    s += line(124, YQ + 5, 152, YQ + 5, marker='arR')
     for yy in (YI, YQ):
-        s += rect(152, yy - 19, 96, 38) + text(200, yy + 5, '2/4 电平', size=13)
+        s += rect(152, yy - 19, 96, 38) + text(200, yy - 3, '2/4 电平', size=13) + text(200, yy + 12, '变换', size=13)
         s += line(248, yy, 276, yy, marker='arR')
-        s += rect(276, yy - 19, 116, 38) + text(334, yy + 5, '根升余弦成形', size=13)
+        s += rect(276, yy - 19, 116, 38) + text(334, yy - 3, '根升余弦', size=13) + text(334, yy + 12, '频谱成型', size=13)
     s += text(334, YI - 28, 'α = 0.25', size=12)
     s += line(392, YI, 424, YI, marker='arR')
     s += line(392, YQ, 424, YQ, marker='arR')
@@ -421,10 +435,15 @@ def fig_a7rx():
     for yy in (YI, YQ):
         s += line(123, yy, 152, yy, marker='arR')
         s += rect(152, yy - 19, 132, 38) + text(218, yy + 5, '根升余弦匹配滤波', size=13)
-        s += line(284, yy, 312, yy, marker='arR')
-        s += rect(312, yy - 19, 80, 38) + text(352, yy + 5, '四进制判决', size=13)
-        s += line(392, yy, 428, yy, marker='arR')
-    s += text(352, YI - 28, 'α = 0.25', size=12)
+        s += line(284, yy, 292, yy)
+        s += dot(292, yy, 3)
+        s += line(292, yy, 312, yy - 18)
+        s += line(312, yy - 26, 312, yy - 10)
+        s += line(312, yy, 330, yy, marker='arR')
+        s += rect(330, yy - 19, 80, 38) + text(370, yy + 5, '四进制判决', size=13)
+        for dy in (-8, 0, 8):   # 原卷：每支路三根平行线进并串
+            s += line(410, yy + dy, 428, yy + dy, marker='arR')
+    s += text(184, YI - 28, 'α = 0.25', size=12)
     s += rect(428, YI - 18, 64, YQ - YI + 36) + text(460, YC - 4, '并串') + text(460, YC + 14, '转换')
     s += line(492, YC, 536, YC, marker='arR')
     s += text(544, YC + 5, 'b_n', anchor='start', style='i')
@@ -504,52 +523,50 @@ def fig_a11enc():
 
 # ================================================================ 十一(2) 网格图
 def fig_a11trellis():
-    """4 状态网格图：全部转移 + 最大似然路径（支路输出见答案里的状态表，图上不逐边挂标签）"""
+    """4 状态网格图（与原卷一致：col0 只有 00、末段只画 u=0 支路、8 处转移标输出码；
+    维特比路径见解析第 (3) 问文字，不在图上叠加）"""
     ST = [('00', 54), ('10', 124), ('01', 194), ('11', 264)]
     COL0, DX = 40, 78
-    s = HEAD.format(w=700, h=320) + MK
+    s = HEAD.format(w=700, h=330) + MK
     yof = dict(ST)
     TR = {
-        ('00', 0): '00', ('00', 1): '10',
-        ('10', 0): '01', ('10', 1): '11',
-        ('01', 0): '00', ('01', 1): '10',
-        ('11', 0): '01', ('11', 1): '11',
-    }
-    for c in range(9):
-        x = COL0 + c * DX
-        for nm, y in ST:
-            s += circle(x, y, 15, fill='#ffffff')
-            s += text(x, y + 4, nm, size=11)
+        ('00', 0): ('00', '00'), ('00', 1): ('10', '11'),
+        ('10', 0): ('01', '10'), ('10', 1): ('11', '01'),
+        ('01', 0): ('00', '11'), ('01', 1): ('10', '00'),
+        ('11', 0): ('01', '01'), ('11', 1): ('11', '10'),
+    }   # (state, u) -> (次态, 输出)
+    ALL = [nm for nm, _ in ST]
+    cols = [{'00'}, {'00', '10'}] + [set(ALL)] * 5 + [{'00', '10', '01'}, {'00'}]
+    # 末两列与原卷一致：col7 无 11、col8 只剩 00（11 行到 col6 止，01 行到 col7 止）
+    for c, states in enumerate(cols):
+        for nm in (n for n in ALL if n in states):
+            s += circle(COL0 + c * DX, yof[nm], 15, fill='#ffffff')
+            s += text(COL0 + c * DX, yof[nm] + 4, nm, size=11)
     for c in range(8):
-        x1, x2 = COL0 + c * DX + 15, COL0 + (c + 1) * DX - 15
-        for nm, y in ST:
-            for u in (0, 1):
-                y2 = yof[TR[(nm, u)]]
-                if u == 0:
-                    s += line(x1, y, x2, y2, width=1.3)
-                else:
-                    s += line(x1, y, x2, y2, width=1.3, dash='5,4', color='#888')
-    # 最大似然路径：00-00-10-01-10-01-10-01-00
-    path = ['00', '00', '10', '01', '10', '01', '10', '01', '00']
-    for c in range(8):
-        s += line(COL0 + c * DX + 15, yof[path[c]], COL0 + (c + 1) * DX - 15, yof[path[c + 1]],
-                  width=2.6)
-    # 各级接收码组（每 2 bit 一组）
-    rx = ['00', '01', '10', '00', '00', '00', '10', '11']
-    for i, g in enumerate(rx):
-        s += text(COL0 + (i + 0.5) * DX, 26, g, size=11, color='#555')
-    s += text(COL0 + 8.5 * DX - 4, 26, '接收', size=11, anchor='start', color='#555')
-    s += text(COL0, 306, '实线：输入 0　虚线：输入 1　粗线：最大似然路径（累积度量 2）',
-              size=11, anchor='start', color='#555')
+        x1, x2 = COL0 + c * DX, COL0 + (c + 1) * DX
+        for nm, u in TR:
+            nxt = TR[(nm, u)][0]
+            if nm not in cols[c] or nxt not in cols[c + 1]:
+                continue
+            if u == 0:
+                s += line(x1 + 15, yof[nm], x2 - 15, yof[nxt], width=1.3)
+            else:
+                s += line(x1 + 15, yof[nm], x2 - 15, yof[nxt], width=1.3, dash='5,4', color='#888')
+    # 转移输出码：与原卷同位，各标一次（01→00 的输出 11 已由 00→10 处标出）
+    for c, nm, u, x, y, anc in [
+            (0, '00', 0, 79, 44, 'middle'), (0, '00', 1, 73, 104, 'end'),
+            (1, '10', 0, 170, 150, 'start'), (1, '10', 1, 150, 216, 'end'),
+            (2, '00', 1, 210, 76, 'end'), (2, '01', 1, 215, 165, 'end'),
+            (5, '11', 1, 472.5, 255, 'middle'), (6, '11', 0, 565, 248, 'end')]:
+        s += text(x, y, TR[(nm, u)][1], size=12, anchor=anc)
     return s + '</svg>'
 
 
 # ================================================================ 十二(1) m 序列发生器
 def fig_a12gen():
-    """两个 m 序列发生器：⊕ 悬在近端抽头正下方，近端从上、远端从下汇入，输出从左侧折回 D_0 输入"""
+    """两个 m 序列发生器：⊕ 悬在近端抽头正下方，近端从上、远端从右侧汇入，输出从左侧折回 D_0 输入"""
     s = HEAD.format(w=800, h=280) + MK
-    for k, (near, far, tag) in enumerate([(1, 2, '(a)  f_a(x) = 1 + x^2 + x^3'),
-                                         (0, 2, '(b)  f_b(x) = 1 + x + x^3')]):
+    for k, (near, far, tag) in enumerate([(1, 2, '(a)'), (0, 2, '(b)')]):
         ox = k * 420
         Y, YS, W, G = 88, 196, 58, 30
         D0 = ox + 96
@@ -563,36 +580,48 @@ def fig_a12gen():
                 s += line(x + W, Y, x + W + G, Y, marker='arR')
         s += line(xf, Y, xf + 44, Y, marker='arR')
         s += text(xf + 50, Y + 5, '输出', anchor='start', size=13)
-        # ⊕ 与两路抽头
+        # ⊕ 与两路抽头：近端从上入顶，远端降到 ⊕ 高度从右侧入
         s += adder(AXC, YS, 14)
         s += line(xn, Y, xn, YS - 14) + dot(xn, Y, 3)
-        s += line(xf, Y, xf, YS + 24) + dot(xf, Y, 3)
-        s += line(xf, YS + 24, AXC, YS + 24) + line(AXC, YS + 24, AXC, YS + 14, marker='arR')
+        s += line(xf, Y, xf, YS) + dot(xf, Y, 3)
+        s += line(xf, YS, AXC + 14, YS, marker='arR')
         # ⊕ 输出 -> 左折 -> D_0 输入
         s += line(AXC - 14, YS, ox + 60, YS) + line(ox + 60, YS, ox + 60, Y)
-        s += text(ox + 8, YS + 34, tag, anchor='start', size=12, color='#555')
+        s += text(ox + 205, YS + 36, tag, anchor='middle', size=12, style='i', color='#555')
     return s + '</svg>'
 
 
 # ================================================================ 十二(2) a(t) 自相关
 def fig_a12ra():
-    CX, AX, UX, UY = 250, 96, 27, 52
-    s = HEAD.format(w=520, h=210) + MK
-    s += line(CX - 8.6 * UX, AX, CX + 8.6 * UX, AX, marker='arR')
+    CX, AX, UX, UY = 318, 96, 27, 52
+    s = HEAD.format(w=650, h=210) + MK
+    s += line(CX - 10.4 * UX, AX, CX + 10.4 * UX, AX, marker='arR')
     s += line(CX, AX + 26, CX, 34, marker='arR')
     s += text(CX - 8, AX + 22, 'O', anchor='end', size=12)
-    s += text(CX + 8.6 * UX + 6, AX + 5, 'τ/ms', anchor='start', size=12)
+    s += text(CX + 10.4 * UX + 6, AX + 5, 'τ/ms', anchor='start', size=12)
     yv = lambda v: AX - v * UY
-    pts = [(-8.6, -1 / 7), (-8, -1 / 7), (-7, 1), (-6, -1 / 7), (-1, -1 / 7),
-           (0, 1), (1, -1 / 7), (6, -1 / 7), (7, 1), (8, -1 / 7), (8.6, -1 / 7)]
+    pts = [(-10.4, -1 / 7), (-8, -1 / 7), (-7, 1), (-6, -1 / 7), (-1, -1 / 7),
+           (0, 1), (1, -1 / 7), (6, -1 / 7), (7, 1), (8, -1 / 7), (10.4, -1 / 7)]
     s += poly([(CX + t * UX, yv(v)) for t, v in pts])
     s += text(CX + 8, yv(1) + 5, '1', size=12, anchor='start')
-    s += text(CX + 2.2 * UX, yv(-1 / 7) + 16, '-1/7', size=11, anchor='start')
-    s += line(CX + UX, AX, CX + UX, AX + 5, width=1.2)
-    s += line(CX + 7 * UX, AX, CX + 7 * UX, AX + 5, width=1.2)
+    for t in range(-9, 10):
+        s += line(CX + t * UX, AX, CX + t * UX, AX + 5, width=1.2)
     s += text(CX + UX, AX + 20, '1', size=12)
     s += text(CX + 7 * UX, AX + 20, '7', size=12)
+    s += text(CX - 9.7 * UX, AX - 18, '···', size=13, anchor='middle')
+    s += text(CX + 9.7 * UX, AX - 18, '···', size=13, anchor='middle')
+    s += _level_note(CX, AX, UX, yv)
     return s + '</svg>'
+
+
+def _level_note(CX, AX, UX, yv):
+    """-1/7 电平标注：上下小箭头 + 斜指引线 + 文字（与原卷同款）；返回片段由调用方拼接"""
+    lvl = yv(-1 / 7)
+    frag = line(CX + 3.2 * UX, AX - 16, CX + 3.2 * UX, lvl - 3, width=1.1, marker='arR')
+    frag += line(CX + 3.45 * UX, lvl + 18, CX + 3.45 * UX, lvl + 4, width=1.1, marker='arR')
+    frag += line(CX + 4.35 * UX, lvl + 26, CX + 3.65 * UX, lvl + 2, width=1.1)
+    frag += text(CX + 4.45 * UX, lvl + 40, '-1/7', size=11, anchor='start')
+    return frag
 
 
 # ================================================================ 十二(3) c(t) 波形
@@ -615,23 +644,25 @@ def fig_a12c():
 
 # ================================================================ 十二(4) c(t) 自相关
 def fig_a12rc():
-    CX, AX, UX, UY = 250, 96, 27, 52
-    s = HEAD.format(w=520, h=210) + MK
-    s += line(CX - 8.6 * UX, AX, CX + 8.6 * UX, AX, marker='arR')
+    CX, AX, UX, UY = 318, 96, 27, 52
+    s = HEAD.format(w=650, h=210) + MK
+    s += line(CX - 10.4 * UX, AX, CX + 10.4 * UX, AX, marker='arR')
     s += line(CX, AX + 26, CX, 34, marker='arR')
     s += text(CX - 8, AX + 22, 'O', anchor='end', size=12)
-    s += text(CX + 8.6 * UX + 6, AX + 5, 'τ/ms', anchor='start', size=12)
+    s += text(CX + 10.4 * UX + 6, AX + 5, 'τ/ms', anchor='start', size=12)
     yv = lambda v: AX - v * UY
-    pts = [(-8.6, -1 / 7), (-8, 3 / 7), (-7, 1), (-6, 3 / 7), (-5, -1 / 7), (-2, -1 / 7),
-           (-1, 3 / 7), (0, 1), (1, 3 / 7), (2, -1 / 7), (5, -1 / 7), (6, 3 / 7),
-           (7, 1), (8, 3 / 7), (8.6, 3 / 7)]
+    pts = [(-10.4, -1 / 7), (-9, -1 / 7), (-8, 3 / 7), (-7, 1), (-6, 3 / 7), (-5, -1 / 7),
+           (-2, -1 / 7), (-1, 3 / 7), (0, 1), (1, 3 / 7), (2, -1 / 7), (5, -1 / 7),
+           (6, 3 / 7), (7, 1), (8, 3 / 7), (9, -1 / 7), (10.4, -1 / 7)]
     s += poly([(CX + t * UX, yv(v)) for t, v in pts])
     s += text(CX + 8, yv(1) + 5, '1', size=12, anchor='start')
-    s += text(CX + 2.2 * UX, yv(-1 / 7) + 16, '-1/7', size=11, anchor='start')
-    s += text(CX + 1.5 * UX, yv(3 / 7) - 8, '3/7', size=11, anchor='start')
-    for t in (1, 2, 5, 6, 7):
+    for t in range(-9, 10):
         s += line(CX + t * UX, AX, CX + t * UX, AX + 5, width=1.2)
-        s += text(CX + t * UX, AX + 20, str(t), size=11)
+    for t, lbl in [(1, '1'), (2, '2'), (5, '5'), (6, '6'), (7, '7'), (8, '8'), (9, '9')]:
+        s += text(CX + t * UX, AX + 20, lbl, size=11)
+    s += text(CX - 9.7 * UX, AX - 18, '···', size=13, anchor='middle')
+    s += text(CX + 9.7 * UX, AX - 18, '···', size=13, anchor='middle')
+    s += _level_note(CX, AX, UX, yv)
     return s + '</svg>'
 
 
@@ -651,7 +682,7 @@ def fig_p12sys():
     s += line(222, YT, 296, YT, marker='arR')
     s += line(222, YB, 296, YB, marker='arR')
     s += text(259, YT - 8, '{a_n}', size=13)
-    s += text(259, YB - 8, '{b_n}', size=13)
+    s += text(259, YB + 20, '{b_n}', size=13)
     s += rect(296, YT - 19, 108, 38) + text(350, YT + 5, 'NRZ 发生器 1', size=13)
     s += rect(296, YB - 19, 108, 38) + text(350, YB + 5, 'NRZ 发生器 2', size=13)
     s += line(404, YT, 530, YT) + line(530, YT, 530, YC - 15, marker='arR')

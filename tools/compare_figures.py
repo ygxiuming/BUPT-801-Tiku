@@ -37,7 +37,7 @@ INKSCAPE = '/usr/bin/inkscape'          # 本机固定路径；不存在则走 c
 DUMP = os.path.join(ROOT, 'tools', 'dump_figures.js')
 
 YEAR_RE = re.compile(r'^\d{4}$')
-KEY_RE = re.compile(r'^[a-z0-9_]+$')
+KEY_RE = re.compile(r'^[a-zA-Z0-9_]+$')   # 含大写键（如 2016 p3H）也要进对照
 
 
 def crops_year_dir(year):
