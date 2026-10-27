@@ -1,2 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- figureMeta {"key":"p6base","q":"题六","kind":"paper","desc":"数字基带传输系统框图"} -->
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='54 -20 612 152' font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif" font-size='14'><defs><marker id='arR' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'><path d='M0,0 L7,3 L0,6 z' fill='#1a1a1a'/></marker></defs><defs><marker id='arL' markerWidth='8' markerHeight='8' refX='1' refY='3' orient='auto'><path d='M7,0 L0,3 L7,6 z' fill='#1a1a1a'/></marker></defs><text x='206.0' y='61.0' text-anchor='end' font-size='13' font-style='italic' fill='#1a1a1a'><tspan dy='0' font-size='13'>d(t) = Σ a</tspan><tspan dy='4' font-size='9'>n</tspan><tspan dy='-4' font-size='13'> δ(t-nT</tspan><tspan dy='4' font-size='9'>s</tspan><tspan dy='-4' font-size='13'>)</tspan></text><line x1='214.0' y1='56.0' x2='244.0' y2='56.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#arR)'/><rect x='244.0' y='32.0' width='116.0' height='48.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><text x='302.0' y='52.0' text-anchor='middle' font-size='13' fill='#1a1a1a'>发送滤波器</text><text x='302.0' y='72.0' text-anchor='middle' font-size='13' font-style='italic' fill='#1a1a1a'><tspan dy='0' font-size='13'>G</tspan><tspan dy='4' font-size='9'>T</tspan><tspan dy='-4' font-size='13'>(f)</tspan></text><text x='368.0' y='46.0' text-anchor='start' font-style='italic' fill='#1a1a1a'>s(t)</text><line x1='366.0' y1='56.0' x2='402.0' y2='56.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#arR)'/><rect x='408.0' y='32.0' width='116.0' height='48.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><text x='466.0' y='52.0' text-anchor='middle' font-size='13' fill='#1a1a1a'>接收滤波器</text><text x='466.0' y='72.0' text-anchor='middle' font-size='13' font-style='italic' fill='#1a1a1a'><tspan dy='0' font-size='13'>G</tspan><tspan dy='4' font-size='9'>R</tspan><tspan dy='-4' font-size='13'>(f)</tspan></text><text x='532.0' y='46.0' text-anchor='start' font-style='italic' fill='#1a1a1a'>y(t)</text><line x1='530.0' y1='56.0' x2='566.0' y2='56.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#arR)'/><circle cx='578.0' cy='56.0' r='4.5' fill='#fff' stroke='#1a1a1a' stroke-width='1.6'/><circle cx='608.0' cy='56.0' r='4.5' fill='#fff' stroke='#1a1a1a' stroke-width='1.6'/><line x1='614.0' y1='22.0' x2='582.0' y2='51.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#arR)'/><line x1='612.0' y1='56.0' x2='648.0' y2='56.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#arR)'/><text x='552.0' y='8.0' text-anchor='start' font-size='13' font-style='italic' fill='#1a1a1a'><tspan dy='0' font-size='13'>t = nT</tspan><tspan dy='4' font-size='9'>s</tspan></text><line x1='244.0' y1='114.0' x2='524.0' y2='114.0' stroke='#1a1a1a' stroke-width='1.1' marker-start='url(#arL)' marker-end='url(#arR)'/><text x='384.0' y='105.0' text-anchor='middle' font-size='13' font-style='italic' fill='#1a1a1a'>X(f)</text></svg>
+
+<svg
+   viewBox="54 -20 612 152"
+   font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif"
+   font-size="14"
+   version="1.1"
+   id="svg18"
+   sodipodi:docname="2015-六-p6base.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview18"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="5.5852192"
+     inkscape:cx="462.02304"
+     inkscape:cy="48.073314"
+     inkscape:window-width="2560"
+     inkscape:window-height="1379"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg18" />
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect18"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <marker
+       id="arR"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="3"
+       orient="auto">
+      <path
+         d="M0,0 L7,3 L0,6 z"
+         fill="#1a1a1a"
+         id="path1" />
+    </marker>
+  </defs>
+  <defs
+     id="defs2">
+    <marker
+       id="arL"
+       markerWidth="8"
+       markerHeight="8"
+       refX="1"
+       refY="3"
+       orient="auto">
+      <path
+         d="M7,0 L0,3 L7,6 z"
+         fill="#1a1a1a"
+         id="path2" />
+    </marker>
+  </defs>
+  <text
+     x="212.58337"
+     y="59.480762"
+     text-anchor="end"
+     font-size="13px"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text6"><tspan
+       dy="0"
+       font-size="13px"
+       id="tspan2">d(t) = Σ a</tspan><tspan
+       dy="4"
+       font-size="9px"
+       id="tspan3">n</tspan><tspan
+       dy="-4"
+       font-size="13px"
+       id="tspan4">δ(t-nT</tspan><tspan
+       dy="4"
+       font-size="9px"
+       id="tspan5">s</tspan><tspan
+       dy="-4"
+       font-size="13px"
+       id="tspan6">)</tspan></text>
+  <line
+     x1="214.0"
+     y1="56.0"
+     x2="244.0"
+     y2="56.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#arR)"
+     id="line6" />
+  <rect
+     x="244.0"
+     y="32.0"
+     width="116.0"
+     height="48.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="rect6" />
+  <text
+     x="302.0"
+     y="52.0"
+     text-anchor="middle"
+     font-size="13"
+     fill="#1a1a1a"
+     id="text7">发送滤波器</text>
+  <text
+     x="302.0"
+     y="72.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text9"><tspan
+       dy="0"
+       font-size="13"
+       id="tspan7">G</tspan><tspan
+       dy="4"
+       font-size="9"
+       id="tspan8">T</tspan><tspan
+       dy="-4"
+       font-size="13"
+       id="tspan9">(f)</tspan></text>
+  <text
+     x="368.0"
+     y="46.0"
+     text-anchor="start"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text10">s(t)</text>
+  <line
+     x1="366.0"
+     y1="56.0"
+     x2="402.0"
+     y2="56.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#arR)"
+     id="line10" />
+  <rect
+     x="408.0"
+     y="32.0"
+     width="116.0"
+     height="48.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="rect10" />
+  <text
+     x="466.0"
+     y="52.0"
+     text-anchor="middle"
+     font-size="13"
+     fill="#1a1a1a"
+     id="text11">接收滤波器</text>
+  <text
+     x="466.0"
+     y="72.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text13"><tspan
+       dy="0"
+       font-size="13"
+       id="tspan11">G</tspan><tspan
+       dy="4"
+       font-size="9"
+       id="tspan12">R</tspan><tspan
+       dy="-4"
+       font-size="13"
+       id="tspan13">(f)</tspan></text>
+  <text
+     x="532.0"
+     y="46.0"
+     text-anchor="start"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text14">y(t)</text>
+  <line
+     x1="524.93585"
+     y1="56"
+     x2="572.9632"
+     y2="56"
+     stroke="#1a1a1a"
+     stroke-width="1.84804"
+     marker-end="url(#arR)"
+     id="line14" />
+  <circle
+     cx="578.0"
+     cy="56.0"
+     r="4.5"
+     fill="#fff"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="circle14" />
+  <circle
+     cx="608.0"
+     cy="56.0"
+     r="4.5"
+     fill="#fff"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="circle15" />
+  <line
+     x1="613.60748"
+     y1="23.423355"
+     x2="581.60748"
+     y2="52.423355"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#arR)"
+     id="line15" />
+  <line
+     x1="612.0"
+     y1="56.0"
+     x2="648.0"
+     y2="56.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#arR)"
+     id="line16" />
+  <text
+     x="580.28894"
+     y="16.9522"
+     text-anchor="start"
+     font-size="13px"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text17"><tspan
+       dy="0"
+       font-size="13px"
+       id="tspan16">t = nT</tspan><tspan
+       dy="4"
+       font-size="9px"
+       id="tspan17">s</tspan></text>
+  <line
+     x1="244.0"
+     y1="114.0"
+     x2="524.0"
+     y2="114.0"
+     stroke="#1a1a1a"
+     stroke-width="1.1"
+     marker-start="url(#arL)"
+     marker-end="url(#arR)"
+     id="line17" />
+  <text
+     x="384.0"
+     y="105.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text18">X(f)</text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 578.39057,24.184527 28.86554,28.232519"
+     id="path3"
+     inkscape:connector-type="polyline"
+     inkscape:connector-curvature="0" />
+</svg>
