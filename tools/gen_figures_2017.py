@@ -185,7 +185,7 @@ def fig_q2sys():
     for xx in (120, 420):
         s += line(xx, 290, xx, 360, width=1.1, dash='3,4', color='#999')
     s += text(262, 280, '1/1000', size=12, anchor='end')
-    for xx, tt in ((60, '−7'), (120, '−5'), (150, '−4'), (270, '0'), (390, '4'), (420, '5'), (480, '7')):
+    for xx, tt in ((60, '−7'), (120, '−5'), (150, '−4'), (270, 'O'), (390, '4'), (420, '5'), (480, '7')):
         s += text(xx, 378, tt, size=12)
     s += text(506, 365, 'f /kHz', size=12, anchor='start')
     s += text(300, 400, '(b)', size=13, color='#666')
@@ -203,7 +203,7 @@ def fig_q3sys():
     s += text(86, 110, '+1', size=12, anchor='end')
     s += text(86, 150, '−1', size=12, anchor='end')
     s += text(155, 165, '2', size=12)
-    s += text(215, 165, '4', size=12)
+    s += text(215, 116, '4', size=12)
     s += text(126, 168, 't', size=12, anchor='start')
     s += text(130, 186, '(a)', size=13, color='#666')
 
@@ -214,8 +214,9 @@ def fig_q3sys():
     s += line(356, 125, 380, 125, marker='a17b')
     s += dot(383, 125, 3.2)
     s += line(383, 125, 395, 113)
-    s += text(402, 108, 't=t_0', size=12, anchor='start')
+    s += text(402, 104, 't=t_0', size=12, anchor='start')
     s += line(395, 125, 425, 125, marker='a17b')
+    s += text(410, 118, 'y', size=13, style='i')
     s += rect(425, 107, 64, 36) + text(457, 131, '判决', size=13)
     s += text(457, 176, 'V_T=0', size=12)
     s += line(457, 158, 457, 144, marker='a17b')
@@ -280,11 +281,12 @@ def fig_q2nc():
     s += line(280, 380, 280, 240, marker='a17d')
     s += text(286, 246, 'P_nc(f)', size=13, anchor='start')
     s += poly([(200, 380), (240, 357.5), (280, 290), (320, 357.5), (360, 380)])
-    s += line(280, 290, 240, 290, width=1.1, dash='3,4', color='#999')
-    s += text(272, 284, '1/500', size=12, anchor='end')
+    s += line(240, 357.5, 320, 357.5, width=1.1, dash='3,4', color='#999')
+    s += text(288, 284, '1/500', size=12, anchor='start')
     s += text(330, 344, '1/2000', size=12, anchor='start')
+    s += line(240, 357.5, 240, 380, width=1.1, dash='3,4', color='#999')
     s += line(320, 357.5, 320, 380, width=1.1, dash='3,4', color='#999')
-    for xx, tt in ((200, '−2'), (240, '−1'), (280, '0'), (320, '1'), (360, '2')):
+    for xx, tt in ((200, '−2'), (240, '−1'), (280, 'O'), (320, '1'), (360, '2')):
         s += text(xx, 398, tt, size=12)
     s += text(406, 385, 'f /kHz', size=12, anchor='start')
     return s + '</svg>'
@@ -292,49 +294,53 @@ def fig_q2nc():
 
 # ================================================================ 六(1)、8PSK 功率谱
 def fig_q6psd():
-    s = HEAD.format(w=520, h=395) + marker('a17e')
+    """原卷：平底 ±10（Rs(1−α)/2），滚降 10→30；虚线只在右侧（+10 全高、+20 半高）"""
+    s = HEAD.format(w=640, h=395) + marker('a17e')
     s += line(130, 330, 450, 330, marker='a17e')
-    s += line(290, 330, 290, 250, marker='a17e')
-    s += text(284, 240, 'P(f)', size=13, anchor='end')
-    s += poly([(130, 330), (162, 300), (180, 272), (190, 250)])
-    s += poly([(390, 250), (400, 272), (418, 300), (450, 330)])
-    s += line(190, 250, 390, 250)
-    s += line(190, 250, 190, 330, width=1.1, dash='3,4', color='#999')
-    s += line(390, 250, 390, 330, width=1.1, dash='3,4', color='#999')
-    for xx, tt in ((130, '−30'), (190, '−20'), (290, '0'), (390, '20'), (450, '30')):
+    s += line(290, 330, 290, 252, marker='a17e')
+    s += text(290, 240, 'P_s(f)', size=13)
+    s += poly([(130, 330), (152, 324), (178, 307), (205, 281), (225, 262), (237, 250)])
+    s += poly([(343, 250), (355, 262), (375, 281), (402, 307), (428, 324), (450, 330)])
+    s += line(237, 250, 343, 250)
+    s += line(343, 250, 343, 330, width=1.1, dash='3,4', color='#999')
+    s += line(397, 330, 397, 288, width=1.1, dash='3,4', color='#999')
+    for xx, tt in ((130, '−30'), (290, '0'), (397, '20'), (450, '30')):
         s += text(xx, 348, tt, size=12)
-    s += text(290, 372, 'f − f_c / kHz', size=12)
+    s += text(456, 322, 'f − f_c /kHz', size=13, anchor='start')
     return s + '</svg>'
 
 
 # ================================================================ 六(1)、调制框图
 def fig_q6mod():
-    s = HEAD.format(w=560, h=225) + marker('a17f')
-    s += text(10, 110, 'b_1b_2b_3', size=13, anchor='start')
-    s += line(64, 105, 90, 105, marker='a17f')
-    s += rect(90, 83, 80, 46)
-    s += text(130, 103, '三比特') + text(130, 121, '变换')
-    s += line(170, 105, 200, 105) + line(200, 60, 200, 150)
+    """原卷：三根输入箭头进高框（将三比特变换 a_ic 与 a_is），载波均从下方入 ⊗，输出无文字"""
+    s = HEAD.format(w=640, h=225) + marker('a17f')
+    for yy in (88, 105, 122):
+        s += line(48, yy, 90, yy, marker='a17f')
+    s += rect(90, 70, 96, 70)
+    s += text(138, 92, '将三比') + text(138, 110, '特变换')
+    s += text(138, 129, 'a_{ic} 与 a_{is}', size=12)
+    s += line(186, 105, 200, 105) + line(200, 60, 200, 150)
     s += dot(200, 105, 3)
     s += line(200, 60, 240, 60, marker='a17f')
-    s += text(220, 50, 'a_i', size=13, style='i')
+    s += text(220, 50, 'a_{ic}', size=13, style='i')
     s += line(200, 150, 240, 150, marker='a17f')
-    s += text(220, 142, 'a_q', size=13, style='i')
+    s += text(220, 140, 'a_{is}', size=13, style='i')
     s += rect(240, 39, 112, 42)
     s += text(296, 56, 'α=0.5 根升') + text(296, 74, '余弦滤波器')
     s += rect(240, 129, 112, 42)
     s += text(296, 146, 'α=0.5 根升') + text(296, 164, '余弦滤波器')
     s += line(352, 60, 367, 60) + mul(380, 60, 13)
     s += line(352, 150, 367, 150) + mul(380, 150, 13)
-    s += text(380, 28, 'cos 2πf_ct', size=13)
-    s += line(380, 38, 380, 46, marker='a17f')
+    s += text(390, 102, 'cos 2πf_ct', size=13, anchor='start')
+    s += line(380, 95, 380, 75, marker='a17f')
     s += text(380, 196, '−sin 2πf_ct', size=13)
     s += line(380, 178, 380, 164, marker='a17f')
-    s += line(393, 60, 430, 60) + line(430, 60, 430, 91)
-    s += line(393, 150, 430, 150) + line(430, 150, 430, 119)
-    s += adder(440, 105, 14)
-    s += line(454, 105, 490, 105, marker='a17f')
-    s += text(498, 110, '8PSK', size=13, anchor='start')
+    s += line(393, 60, 470, 60) + line(470, 60, 470, 91)
+    s += line(393, 150, 470, 150) + line(470, 150, 470, 119)
+    s += adder(484, 105, 14)
+    s += text(458, 88, '+', size=13)
+    s += text(458, 124, '+', size=13)
+    s += line(498, 105, 545, 105, marker='a17f')
     return s + '</svg>'
 
 
@@ -347,15 +353,14 @@ def fig_q6mseq():
     s += line(104, 97, 140, 97, marker='a17g')
     s += line(184, 97, 220, 97, marker='a17g')
     s += dot(184, 97, 3) + dot(264, 97, 3)
-    # 输出
-    s += line(264, 97, 290, 97) + line(290, 97, 290, 50)
-    s += line(290, 50, 330, 50, marker='a17g')
-    s += text(338, 55, '输出', size=13, anchor='start')
-    # 反馈：D2 ⊕ D3
-    s += adder(160, 160, 13)
-    s += line(184, 97, 184, 160) + line(184, 160, 173, 160, marker='a17g')
-    s += line(290, 97, 290, 180) + line(290, 180, 160, 180) + line(160, 180, 160, 173, marker='a17g')
-    s += line(147, 160, 30, 160) + line(30, 160, 30, 97) + line(30, 97, 60, 97, marker='a17g')
+    # 输出：直线右行，输出抽头在分支点折下进 ⊕ 右侧（原卷样式）
+    s += line(264, 97, 330, 97, marker='a17g')
+    s += text(338, 88, '输出', size=13, anchor='start')
+    # 反馈：D2 ⊕ D3（⊕ 正对结点下方；近端从上入顶，远端从右侧入）
+    s += adder(184, 160, 13)
+    s += line(184, 97, 184, 146, marker='a17g')
+    s += line(264, 97, 264, 160) + line(264, 160, 198, 160, marker='a17g')
+    s += line(171, 160, 30, 160) + line(30, 160, 30, 97) + line(30, 97, 60, 97, marker='a17g')
     return s + '</svg>'
 
 
@@ -367,22 +372,22 @@ def fig_q6state():
         '000': (120, 100), '001': (380, 100), '010': (640, 100), '011': (900, 100),
         '100': (120, 340), '101': (380, 340), '110': (640, 340), '111': (900, 340),
     }
-    # (from, to, bow, label, lx, ly, anchor)
+    # (from, to, bow, label, lx, ly, anchor) —— 标注格式与原卷一致：输出 b1b2b3 / 输入
     edges = [
-        ('000', '100', 0, '1/111', 138, 220, 'start'),
-        ('001', '000', 0, '0/011', 250, 82, 'middle'),
-        ('001', '100', 0, '1/100', 285, 246, 'middle'),
-        ('010', '001', 0, '0/010', 510, 86, 'middle'),
-        ('010', '101', -25, '1/101', 468, 160, 'middle'),
-        ('101', '010', 25, '0/010', 545, 258, 'middle'),
-        ('011', '001', 110, '0/001', 640, 40, 'middle'),
-        ('011', '101', -60, '1/110', 600, 232, 'middle'),
-        ('100', '010', 0, '0/001', 415, 240, 'middle'),
-        ('100', '110', 80, '1/110', 380, 402, 'middle'),
-        ('101', '110', 0, '1/101', 510, 320, 'middle'),
-        ('110', '011', 0, '0/011', 810, 244, 'middle'),
-        ('110', '111', 0, '1/100', 770, 362, 'middle'),
-        ('111', '011', 0, '1/111', 918, 220, 'start'),
+        ('000', '100', 0, '111/1', 138, 220, 'start'),
+        ('001', '000', 0, '011/0', 250, 82, 'middle'),
+        ('001', '100', 0, '100/1', 285, 246, 'middle'),
+        ('010', '001', 0, '010/0', 510, 86, 'middle'),
+        ('010', '101', -25, '101/1', 468, 160, 'middle'),
+        ('101', '010', 25, '010/0', 545, 258, 'middle'),
+        ('011', '001', 110, '001/0', 640, 40, 'middle'),
+        ('011', '101', -60, '110/1', 600, 232, 'middle'),
+        ('100', '010', 0, '001/0', 415, 240, 'middle'),
+        ('100', '110', 80, '110/1', 380, 402, 'middle'),
+        ('101', '110', 0, '101/1', 510, 320, 'middle'),
+        ('110', '011', 0, '011/0', 810, 244, 'middle'),
+        ('110', '111', 0, '100/1', 770, 362, 'middle'),
+        ('111', '011', 0, '111/1', 918, 220, 'start'),
     ]
     for a, b, bow, lbl, lx, ly, anc in edges:
         p0, p1 = trim(nodes[a], nodes[b], R)
@@ -394,13 +399,12 @@ def fig_q6state():
     # 两个自环
     s += circle(120, 52, 17) + circle(900, 392, 17)
     s += arrow(120, 74, 0, 1) + arrow(900, 370, 0, -1)
-    s += text(120, 22, '0/000', size=12)
-    s += text(900, 428, '1/111', size=12)
+    s += text(120, 22, '000/0', size=12)
+    s += text(900, 428, '111/1', size=12)
     # 节点
     for name, (cx, cy) in nodes.items():
         s += circle(cx, cy, R)
         s += text(cx, cy + 4, name, size=12)
-    s += text(500, 20, '边标注：输入 / 输出 b_1b_2b_3', size=12, color='#666')
     return s + '</svg>'
 
 
@@ -411,8 +415,6 @@ def fig_q7h():
     s += line(60, 200, 60, 55, marker='a17i')
     s += text(52, 50, 'H(p_1)', size=13, anchor='end')
     s += text(346, 205, 'p_1', size=13, anchor='start')
-    s += line(200, 200, 200, 70, width=1.1, dash='3,4', color='#999')
-    s += line(60, 70, 200, 70, width=1.1, dash='3,4', color='#999')
     pts = []
     for i in range(1, 100):
         p = i / 100.0
@@ -422,6 +424,7 @@ def fig_q7h():
     s += text(52, 74, '1', size=12, anchor='end')
     s += text(52, 204, '0', size=12, anchor='end')
     s += text(60, 218, '0', size=12)
+    s += line(200, 200, 200, 206, width=1.2)
     s += text(200, 218, '1/2', size=12)
     s += text(340, 218, '1', size=12)
     return s + '</svg>'
@@ -432,35 +435,27 @@ def fig_q8const():
     s = HEAD.format(w=380, h=340) + marker('a17j')
     s += line(60, 200, 340, 200, marker='a17j')
     s += line(200, 340, 200, 60, marker='a17j')
-    s += text(210, 54, 'r_2', size=13, anchor='start')
-    s += text(346, 205, 'r_1', size=13, anchor='start')
     s += dot(260, 140, 4.5) + dot(140, 260, 4.5)
-    s += text(272, 130, 's_1=(+1,+1)', size=13, anchor='start')
-    s += text(128, 280, 's_2=(−1,−1)', size=13, anchor='end')
+    # 原卷：四段黑色虚线引导线（轴上 ±1 到点）
+    s += line(200, 140, 260, 140, width=1.1, dash='5,4')
+    s += line(260, 200, 260, 140, width=1.1, dash='5,4')
+    s += line(200, 260, 140, 260, width=1.1, dash='5,4')
+    s += line(140, 200, 140, 260, width=1.1, dash='5,4')
     s += text(258, 218, '1', size=12)
-    s += text(136, 218, '−1', size=12)
+    s += text(134, 218, '−1', size=12, anchor='end')
     s += text(190, 146, '1', size=12, anchor='end')
-    s += text(190, 268, '−1', size=12, anchor='end')
+    s += text(190, 277, '−1', size=12, anchor='end')
     return s + '</svg>'
 
 
 # ================================================================ 八(3)、最大似然判决域
 def fig_q8dom():
+    """原卷只有坐标轴、黑色虚线分角线与两个信号点，无任何文字标注"""
     s = HEAD.format(w=380, h=340) + marker('a17k')
     s += line(60, 200, 340, 200, marker='a17k')
     s += line(200, 340, 200, 60, marker='a17k')
-    s += text(210, 54, 'r_2', size=13, anchor='start')
-    s += text(346, 205, 'r_1', size=13, anchor='start')
-    s += line(100, 100, 300, 300, width=1.2, dash='5,4', color='#888')
+    s += line(100, 100, 300, 300, width=1.2, dash='5,4')
     s += dot(260, 140, 4.5) + dot(140, 260, 4.5)
-    s += text(272, 130, 's_1', size=13, anchor='start', style='i')
-    s += text(128, 280, 's_2', size=13, anchor='end', style='i')
-    s += text(312, 152, 'D_1', size=12, color='#555')
-    s += text(98, 316, 'D_2', size=12, color='#555')
-    s += text(258, 218, '1', size=12)
-    s += text(136, 218, '−1', size=12)
-    s += text(190, 146, '1', size=12, anchor='end')
-    s += text(190, 268, '−1', size=12, anchor='end')
     return s + '</svg>'
 
 
