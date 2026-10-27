@@ -8,6 +8,7 @@ const path = require('path');
 
 module.paths.unshift(path.dirname(__dirname));   // 让 require('data/...') 从项目根解析
 
+require('data/figures/2013/_index.js');
 require('data/figures/2014/_index.js');
 require('data/figures/2015/_index.js');
 require('data/figures/2016/_index.js');
@@ -22,7 +23,7 @@ require('data/figures/2024/_index.js');
 require('data/figures/2025/_index.js');
 require('data/figures/2026/_index.js');
 
-const YEARS = ['2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
+const YEARS = ['2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
 const F = global.window.BUPT801.figures || {};
 const M = global.window.BUPT801.figureMeta || {};
 const data = {};

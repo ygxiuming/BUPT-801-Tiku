@@ -49,8 +49,11 @@ require('../data/questions/2018/answer.js');
 require('../data/figures/2016/_index.js');
 require('../data/questions/2016/paper.js');
 require('../data/questions/2016/answer.js');
+require('../data/figures/2013/_index.js');
 require('../data/figures/2014/_index.js');
 require('../data/figures/2015/_index.js');
+require('../data/questions/2013/paper.js');
+require('../data/questions/2013/answer.js');
 require('../data/questions/2014/paper.js');
 require('../data/questions/2014/answer.js');
 require('../data/questions/2015/paper.js');
@@ -103,7 +106,9 @@ const EXPECT = {
   // 2015 原卷：一（40 空 × 1 分 = 40 分）+ 二～十二（10×11 = 110）= 150 分
   2015: { choice: 40, big: 11, score: 150 },
   // 2014 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（13/10/15/12/16/13/11/10 = 100 分）= 150 分
-  2014: { choice: 30, big: 18, score: 150 }
+  2014: { choice: 30, big: 18, score: 150 },
+  // 2013 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（10/13/12/14/14/10/12/15 = 100 分）= 150 分
+  2013: { choice: 30, big: 18, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -1556,6 +1561,43 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   // 十：β'=Δf/fm'=25000/5000=5、B=2(1+β)fm'=60kHz
   t.push(['2014十(3) β=5、B=60kHz', approx(25000 / 5000, 5, 1e-12) && approx(2 * 6 * 5000, 60000, 1e-12)]);
 })();
+
+// ---------------- 2013 数值抽查（独立方法复核） ----------------
+(() => {
+  // 三：R_I(m)=ΣΣR_a(m+j−k)，按非零配对数 × R_a(0)=2 独立重数
+  const RI = (m) => { let n = 0; for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (m + j - k === 0) n++; return n * 2; };
+  t.push(['2013三(1) R_I=6/4/2（配对计数）', RI(0) === 6 && RI(1) === 4 && RI(-1) === 4 && RI(2) === 2 && RI(3) === 0]);
+  // 四：B=(1+α)Rs → Rs=6MBaud、η=2/3；α=9/8−1=1/8
+  t.push(['2013四(1) Rs=6、η=2/3', approx(9 / 1.5, 6, 1e-12) && approx(6 / 9, 2 / 3, 1e-12)]);
+  t.push(['2013四(3) α=1/8', approx(9 / 8 - 1, 0.125, 1e-12)]);
+  // 五：系数/能量/ρ/d（x1=−f1+f2−f3、x2=f1+f3）
+  t.push(['2013五(3) E=3/2、ρ=−2/√6、d=3', approx(Math.sqrt(9), 3, 1e-12) && approx(-2 / Math.sqrt(6), -Math.sqrt(2 / 3), 1e-12)]);
+  // 六：T1=0 时 E12=−A²T（对映），Pe 指数 A²(T−T1)/N0=A²T/N0
+  t.push(['2013六(4) T1=0 → E12=−E_b', approx(2 * 0 - 1, -1, 1e-12)]);
+  // 七：带通抽样 k=⌊10/2⌋=5、fs=4k；13折线 0.9V→1843.2 单位、段7、电平1824、误差 0.009375V
+  t.push(['2013七(1) fs=2f2/k=4kHz', approx(2 * 10 / Math.floor(10 / 2), 4, 1e-12)]);
+  const u13 = 0.9 / 2 * 4096, seg7lo = 1024, seg7step = 64;
+  const idx13 = Math.floor((u13 - seg7lo) / seg7step), mid13 = seg7lo + (idx13 + 0.5) * seg7step;
+  t.push(['2013七(3) 段7级13电平1824、误差0.009375V', idx13 === 12 && mid13 === 1824 && approx((u13 - mid13) / 4096 * 2, 0.009375, 1e-12)]);
+  // 八：H(0.3775) 与 I(X;Y)（直接按定义算，不用参考答案的中间数）
+  const H2b = (p, q) => -p * Math.log2(p) - q * Math.log2(q);
+  const Hy = H2b(0.3775, 0.6225), Hyx = H2b(0.99, 0.01);
+  t.push(['2013八(1) H(Y)=0.9563、R=875.5bps', approx(Hy, 0.9563, 5e-4) && approx(1000 * (Hy - Hyx), 875.5, 0.5)]);
+  t.push(['2013八(2) R_max=919bps', approx(1000 * (1 - Hyx), 919.2, 0.5)]);
+  // 九：卷积码 (100)(101)(111) 编码 101100 → 111 001 100 110 010 011（逐拍仿真）
+  let r1 = 0, r2 = 0, out13 = '';
+  for (const b of [1, 0, 1, 1, 0, 0]) { out13 += '' + b + (b ^ r2) + (b ^ r1 ^ r2); r2 = r1; r1 = b; }
+  t.push(['2013九(4) 输出 111001100110010011', out13 === '111001100110010011']);
+  // 十：τ=5T/6、Pm=5、η=0.162/1.162、P_T=20/η≈143.5W
+  const eta13 = 0.162 / 1.162;
+  t.push(['2013十(1) η=13.94%', approx(eta13, 0.1394, 1e-4)]);
+  t.push(['2013十(2) P_T=20/η≈143.5W', approx(20 / eta13, 143.5, 0.1)]);
+  // (22)(24)：|H|² 单侧面积 B/2 → P=N0B/2、E[R²]=N0B（数值积分，N0/2=0.5、B=1）
+  let area = 0; const N = 2e6;
+  for (let i = 0; i < N; i++) { const f = -3 + 6 * i / N; const d = Math.abs(Math.abs(f) - 1); area += (d <= 0.5 ? 1 - d / 0.5 : 0) * 6 / N; }
+  t.push(['2013(22)(24) P=(N0/2)·B=N0B/2、E[R²]=2P=N0B', approx(0.5 * area, 0.5, 1e-3) && approx(area, 1.0, 1e-3)]);
+})();
+
 
 t.forEach(([n, ok]) => { if (!ok) errors.push('数值抽查失败: ' + n); });
 console.log('\n数值抽查: ' + t.map(([n, ok]) => (ok ? '✓' : '✗') + n).join(' '));
