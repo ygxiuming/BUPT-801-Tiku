@@ -409,12 +409,12 @@ def fig_q8enc():
     # ---- 第二级输出（b_{n-2}）反馈到上相加器右侧
     s += line(B2 + BW, YS, 536, YS) + line(536, YS, 536, YT)
     s += line(536, YT, AX + RA + 1, YT, marker='m20k')
-    # ---- 两路输出
+    # ---- 两路输出（原卷为大写 C 带下标）
     s += line(AX, YT - RA, AX, 40)
     s += line(AX, 40, 618, 40, marker='m20k')
-    s += text(630, 45, 'c_10c_11c_12c_13', anchor='start', style='i')
+    s += text(630, 45, 'C_10C_11C_12C_13', anchor='start', style='i')
     s += line(AX + RA, YB, 618, YB, marker='m20k')
-    s += text(630, YB + 5, 'c_20c_21c_22c_23', anchor='start', style='i')
+    s += text(630, YB + 5, 'C_20C_21C_22C_23', anchor='start', style='i')
     return s + '</svg>'
 
 
@@ -476,8 +476,10 @@ def fig_q9psd():
     roll = [2 + k * 0.125 for k in range(0, 17)]
     pts = [(X(-f), Y(f)) for f in reversed(roll)] + [(X(f), Y(f)) for f in roll]
     s += poly(pts, width=1.8)
-    for v in (-3, 3):
-        s += line(X(v), BASE, X(v), Y(v), width=1.1, dash='3,4', color='#999')
+    for v in (-2, 2):                     # 原卷：±2 全高虚线（平顶边界）
+        s += line(X(v), BASE, X(v), Y(2), width=1.1, dash='5,4')
+    for v in (-3, 3):                     # ±3 半高虚线
+        s += line(X(v), BASE, X(v), Y(v), width=1.1, dash='5,4')
     for v in (-4, -3, -2, 2, 3, 4):
         s += text(X(v), BASE + 22, str(v), size=12)
     s += text(OX - 8, BASE + 22, 'O', size=12)
