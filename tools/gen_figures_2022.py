@@ -16,6 +16,13 @@ def marker(mid, color=INK):
             f"<path d='M0,0 L7,3 L0,6 z' fill='{color}'/></marker></defs>")
 
 
+def hatch(mid, color='#9a9a9a', step=7):
+    """45° 斜线填充（原卷判决域/阴影区就是斜线，不用灰底）"""
+    return (f"<defs><pattern id='{mid}' width='{step}' height='{step}' patternUnits='userSpaceOnUse' "
+            f"patternTransform='rotate(45)'><line x1='0' y1='0' x2='0' y2='{step}' "
+            f"stroke='{color}' stroke-width='1.1'/></pattern></defs>")
+
+
 def line(x1, y1, x2, y2, width=1.6, dash=None, color=INK, marker=None):
     da = f" stroke-dasharray='{dash}'" if dash else ''
     mk = f" marker-end='url(#{marker})'" if marker else ''
@@ -221,11 +228,11 @@ def fig_q2am():
     s += line(84, 156, 84, Y + 14, marker='a22')
     s += text(84, 176, 'A', size=13)
     s += line(180, 156, 180, Y + 14, marker='a22')
-    s += text(180, 176, 'cos(2πf_ct)', size=11.5)
+    s += text(180, 178, 'cos(2πf_c t)', size=12.5)
     s += line(300, 156, 300, Y + 14, marker='a22')
     s += text(300, 176, 'n_w(t)', size=12)
     s += line(470, 156, 470, Y + 14, marker='a22')
-    s += text(470, 176, '2cos(2πf_ct)', size=11.5)
+    s += text(470, 178, '2cos(2πf_c t)', size=12.5)
     return tighten(s + '</svg>')
 
 
@@ -255,7 +262,7 @@ def fig_q4rx():
     s += line(104, 156, 104, Y + 14, marker='a42')
     s += text(104, 176, '白高斯噪声', size=12)
     s += line(170, 156, 170, Y + 14, marker='a42')
-    s += text(170, 176, 'cos(2πf_ct)', size=11.5)
+    s += text(178, 178, 'cos(2πf_c t)', size=12.5)
     s += line(389, 160, 389, 126, marker='a42')
     s += text(389, 180, 'V_{th}', size=13)
     return tighten(s + '</svg>')
@@ -278,11 +285,9 @@ def fig_q5const():
     s = HEAD.format(w=520, h=400) + marker('a52')
     s += line(BC - 150, BY, BC + 152, BY, width=1.4, marker='a52')
     s += line(BC, BY + 150, BC, BY - 152, width=1.4, marker='a52')
-    s += text(BC + 156, BY + 16, 'Re', size=12, anchor='start')
-    s += text(BC + 10, BY - 140, 'Im', size=12, anchor='start')
-    # 两个正方形的虚线框
+    # 两个正方形的虚线框（原卷只有箭头、无 Re/Im 轴标）
     ox, oy = px(B * 1.41421356, B * 1.41421356)
-    s += rect(ox, oy, 2 * (BC - ox), 2 * (BY - oy), dash='5,4', width=1.3)
+    s += rect(2 * BC - ox, oy, 2 * (ox - BC), 2 * (BY - oy), dash='5,4', width=1.3)
     pts = [px(*p) for p in [(B, 0), (0, B), (-B, 0), (0, -B)]]
     s += poly(pts, dash='5,4', width=1.3, close=True)
     # 星座点
@@ -375,122 +380,140 @@ def fig_q5region():
     def P2(u, v):
         return ox + u * K, oy - v * K
 
-    s = HEAD.format(w=560, h=560) + marker('a5r')
-    # 判决域阴影：V 形边界以上的区域（裁到绘图框内）
-    s += area([P2(0, 8.2), P2(8.2, 8.2), P2(8.2, 0),
-               P2(7.243, 0), P2(1.641, 1.641), P2(0, 7.243)], opacity=0.08)
-    # 坐标轴
+    s = HEAD.format(w=560, h=560) + marker('a5r') + hatch('h5r', '#555')
+    # 判决域：原卷用 45° 斜线填充（不是灰底），按原卷的裁切框收到 ~5×5
+    s += area([P2(0.597, 5.2), P2(5.0, 5.2), P2(5.0, 0.657),
+               P2(1.641, 1.641), P2(0.597, 5.2)], fill='url(#h5r)', opacity=1)
+    # 坐标轴（原卷只有箭头，无 Re/Im 轴标）
     ax1, ay1 = P2(-3.3, 0)
     ax2, ay2 = P2(8.3, 0)
     s += line(ax1, ay1, ax2, ay2, width=1.4, marker='a5r')
     bx1, by1 = P2(0, -3.3)
     bx2, by2 = P2(0, 8.3)
     s += line(bx1, by1, bx2, by2, width=1.4, marker='a5r')
-    s += text(ax2 + 6, ay1 + 16, 'Re', size=12, anchor='start')
-    s += text(bx1 + 8, by2 - 6, 'Im', size=12, anchor='start')
     # 星座几何（虚线外方框 + 内菱形），弱化为参考
     x0, y0 = P2(-2.8284, 2.8284)
     x1, y1 = P2(2.8284, -2.8284)
-    s += rect(x0, y0, x1 - x0, y1 - y0, dash='5,4', width=1.1, color='#888')
+    s += rect(x0, y0, x1 - x0, y1 - y0, dash='5,4', width=1.1)
     s += poly([P2(2, 0), P2(0, 2), P2(-2, 0), P2(0, -2)],
-              stroke='#888', dash='5,4', width=1.1, close=True)
+              stroke=INK, dash='5,4', width=1.1, close=True)
     # 八个星座点
     for u, v in [(2, 0), (0, 2), (-2, 0), (0, -2),
                  (2.8284, 2.8284), (-2.8284, 2.8284), (-2.8284, -2.8284), (2.8284, -2.8284)]:
         s += dot(*P2(u, v), 4.2)
-    # 两条中垂线（判决域边界，V 形）
-    s += poly([P2(0, 7.243), P2(1.641, 1.641), P2(7.243, 0)], stroke='#888', width=1.4, dash='5,4')
-    # 点标签
-    s += text(257, 397, 's_1', size=13, anchor='start')
+    # 两条中垂线（判决域边界，V 形）：原卷为细实线
+    s += poly([P2(0.597, 5.2), P2(1.641, 1.641), P2(5.0, 0.657)], stroke=INK, width=1.2)
+    # 点标签（原卷 s1、s5 标在点的右上方，其余同）
+    s += text(259, 371, 's_1', size=13, anchor='start')
     s += text(292, 258, 's_2', size=13, anchor='start')
     s += text(173, 295, 's_3', size=13, anchor='start')
     s += text(38, 258, 's_4', size=13, anchor='end')
-    s += text(73, 397, 's_5', size=13, anchor='end')
+    s += text(73, 371, 's_5', size=13, anchor='end')
     s += text(38, 512, 's_6', size=13, anchor='end')
     s += text(173, 477, 's_7', size=13, anchor='start')
     s += text(292, 512, 's_8', size=13, anchor='start')
-    s += text(312, 142, 's_2 的判决域', size=13, color='#a8322a')
     return tighten(s + '</svg>')
 
 
 # ---------------------------------------------------------------- 九(1)、编码器框图
 def fig_q9enc():
-    s = HEAD.format(w=500, h=300) + marker('a93')
-    Y = 74          # 移位寄存器所在水平线
-    B1, B2 = 152, 236
-    s += line(16, Y, 62, Y, marker='a93')
-    s += text(30, 66, 'u', size=13, style='i')
-    s += rect(62, 52, 58, 44)
-    s += text(91, 80, 'D', size=14)
-    s += line(120, Y, 162, Y)
-    s += rect(162, 52, 58, 44)
-    s += text(191, 80, 'D', size=14)
-    s += line(220, Y, 250, Y)
-    # 抽头与母线
-    for tx in (40, 150, 250):
-        s += dot(tx, Y)
-    s += line(40, Y, 40, B2)
-    s += line(150, Y, 150, B2)
-    s += line(250, Y, 250, B2)
-    s += line(40, B1, 306, B1, marker='a93')
-    s += line(40, B2, 306, B2, marker='a93')
-    s += dot(40, B1) + dot(250, B1)
-    s += dot(40, B2) + dot(150, B2) + dot(250, B2)
-    # 两个相加器
-    s += adder(320, B1) + adder(320, B2)
-    s += line(334, B1, 408, B1, marker='a93')
-    s += line(334, B2, 408, B2, marker='a93')
-    s += text(420, B1 + 5, 'c_1', size=13, anchor='start')
-    s += text(420, B2 + 5, 'c_2', size=13, anchor='start')
-    # 抽头说明
-    s += text(36, 268, 'u_n', size=12, anchor='middle')
-    s += text(150, 268, 'u_{n-1}', size=12)
-    s += text(250, 268, 'u_{n-2}', size=12)
+    """照原卷版式：D 盒一行，两个相加器分居该行上方/下方，输出各向上/向下引出后
+    经并串转换开关（双触点 + 掷臂）出 c^1 / c^2。
+
+    原卷把 D1–D2 结点的 u_{n-1} 同时接进了上、下两个相加器，那样两路输出都等于
+    g2=1+x+x²，与题干给出的 g1=1+x² 矛盾；此处上相加器只取 u 与 u_{n-2}（见解析日志）。
+    """
+    s = HEAD.format(w=1070, h=390) + marker('a93')
+    Y = 200                     # 输入 / D 盒所在行
+    YT, YB = 105, 295           # 上 / 下支路母线
+    R = 26                      # 相加器半径
+    XT, XJ, XF, XS = 135, 405, 675, 800
+    # 输入与两支路（输入抽头一分为二）
+    s += line(40, Y, 235, Y, marker='a93')
+    s += line(XT, YT, XT, YB)
+    s += line(XT, YT, XJ - R, YT, marker='a93')
+    s += line(XT, YB, XJ - R, YB, marker='a93')
+    # 两个 D 盒
+    s += rect(235, Y - 30, 95, 60)
+    s += text(282, Y + 8, 'D', size=20, style='i')
+    s += rect(500, Y - 30, 95, 60)
+    s += text(547, Y + 8, 'D', size=20, style='i')
+    s += line(330, Y, 500, Y, marker='a93')
+    # D2 输出 → 右侧反馈竖线（u_{n-2} 同时进两个相加器的右侧输入）
+    s += line(595, Y, XF, Y)
+    s += line(XF, YT, XF, YB)
+    s += line(XJ + R, YT, XF, YT)
+    s += line(XJ + R, YB, XF, YB)
+    # 相加器
+    s += adder(XJ, YT, R) + adder(XJ, YB, R)
+    s += line(XJ, Y, XJ, YB - R, marker='a93')          # u_{n-1} 只进下相加器
+    # 输出：上→c¹，下→c²
+    s += line(XJ, YT - R, XJ, 45)
+    s += line(XJ, 45, XS, 45)
+    s += line(XS, 45, XS, 170)
+    s += line(XJ, YB + R, XJ, 352)
+    s += line(XJ, 352, XS, 352)
+    s += line(XS, 352, XS, 256)
+    # 并串转换开关（双触点 + 掷臂）
+    s += circle(XS, 176, 6, fill='#fff')
+    s += circle(XS, 250, 6, fill='#fff')
+    s += text(XS - 12, 170, 'c^1', size=15, anchor='end')
+    s += text(XS - 12, 244, 'c^2', size=15, anchor='end')
+    PX, PY = 885, 213
+    s += circle(PX, PY, 6, fill='#fff')
+    s += line(PX - 6, PY - 4, XS + 8, 180, marker='a93')
+    s += line(PX - 6, PY + 4, XS + 8, 246, marker='a93')
+    s += line(PX + 6, PY, 1040, PY, marker='a93')
     return tighten(s + '</svg>')
 
 
 # ---------------------------------------------------------------- 九(3)、网格图
 def fig_q9trellis():
-    s = HEAD.format(w=560, h=340) + marker('a94')
-    rows = {'00': 62, '01': 122, '10': 182, '11': 242}
-    X0, DX = 52, 74
-    N = 6
+    """照原卷版式：状态画成圆圈、状态名在圈内，转移标号（两路输出）写在边旁，
+    虚线＝输入 1、实线＝输入 0，最优路径红色粗线；原卷无坐标轴/列号/说明文字。"""
+    s = HEAD.format(w=700, h=520) + marker('a94')
+    rows = {'00': 60, '10': 190, '01': 320, '11': 450}
+    X0, DX, N = 56, 96, 6
+    R = 16
 
     def X(t):
         return X0 + t * DX
 
-    trans = {'00': [('00', '0'), ('10', '1')],
-             '01': [('00', '0'), ('10', '1')],
-             '10': [('01', '0'), ('11', '1')],
-             '11': [('01', '0'), ('11', '1')]}
+    trans = {'00': [('00', '0', '00'), ('10', '1', '11')],
+             '10': [('01', '0', '01'), ('11', '1', '10')],
+             '01': [('00', '0', '11'), ('10', '1', '00')],
+             '11': [('01', '0', '10'), ('11', '1', '01')]}
+    # 初始状态 00：第 0 列只有 00、第 1 列只有 00/10（原卷同款阶梯展开）
+    live = [{'00'}, {'00', '10'}] + [set(rows)] * (N - 1)
     for t in range(N):
-        for st, outs in trans.items():
-            for to, u in outs:
-                dash = '5 4' if u == '1' else None
-                s += line(X(t), rows[st], X(t + 1), rows[to], width=1.1, dash=dash, color=AUX)
-    # 节点
-    for t in range(N + 1):
-        for st, y in rows.items():
-            s += f"<circle cx='{X(t):.1f}' cy='{y:.1f}' r='2.6' fill='{INK}'/>"
-    # 状态标签与列号
-    for st, y in rows.items():
-        s += text(X0 - 14, y + 5, st, size=12.5, anchor='end')
-    for t in range(N + 1):
-        s += text(X(t), rows['11'] + 30, str(t), size=11.5, color=AUX)
-    s += text(X0 - 44, rows['11'] + 30, 't', size=11.5, anchor='end', color=AUX, style='i')
-    # 接收码组
-    recv = ['10', '00', '10', '11', '10', '00']
-    for t in range(N):
-        s += text((X(t) + X(t + 1)) / 2, 26, recv[t], size=12.5)
-    s += text(X0 - 14, 26, '接收', size=11.5, anchor='end', color=AUX)
-    # 最优路径（单条折线，只在末端一个箭头，避免箭头堆叠）
+        for st in live[t]:
+            for to, u, _out in trans[st]:
+                dash = '5,4' if u == '1' else None
+                s += line(X(t) + R, rows[st], X(t + 1) - R, rows[to],
+                          width=1.2, dash=dash, color=INK)
+    # 最优路径（红色：输入 1 段画虚线、输入 0 段画实线，同原卷）
     win = ['00', '10', '11', '01', '00', '00', '00']
-    pts = [(X(t), rows[win[t]]) for t in range(N + 1)]
-    d = 'M' + ' L'.join(f'{px:.1f},{py:.1f}' for px, py in pts)
-    s += path(d, width=2.8, color=HOT, marker='a94')
-    s += text(X0, rows['11'] + 66, '实线＝输入 0，虚线＝输入 1；粗线＝最优路径', size=11.5, anchor='start', color=AUX)
-    s += text(X0, rows['11'] + 90, '最优路径输出 11 10 10 11 00 00', size=11.5, anchor='start', color=HOT)
-    s += text(X0, rows['11'] + 112, '与接收码组距 3 位 → 译码 1100', size=11.5, anchor='start', color=HOT)
+    win_u = ['1', '1', '0', '0', '0', '0']
+    for t in range(N):
+        s += line(X(t) + R, rows[win[t]], X(t + 1) - R, rows[win[t + 1]],
+                  width=2.6, color=HOT, dash='5,4' if win_u[t] == '1' else None)
+    # 状态圆圈（白底，压住穿过的连线）
+    for t in range(N + 1):
+        for st in sorted(live[t]):
+            y = rows[st]
+            s += circle(X(t), y, R, fill='#fff')
+            s += text(X(t), y + 4, st, size=10.5)
+    # 转移标号：每类只标一次（原卷同法），标在该类首现阶段的边上
+    for x, y, lab, anc in [
+            (104, 36, '00', 'middle'),    # 00→00（第 0 段横线之上）
+            (92, 140, '11', 'middle'),    # 00→10
+            (200, 232, '01', 'middle'),   # 10→01
+            (220, 348, '10', 'middle'),   # 10→11
+            (296, 159, '11', 'middle'),   # 01→00
+            (296, 289, '00', 'middle'),   # 01→10
+            (296, 419, '10', 'middle'),   # 11→01
+            (296, 470, '01', 'middle')]:  # 11→11
+        s += text(x, y, lab, size=11, anchor=anc)
     return tighten(s + '</svg>')
 
 
