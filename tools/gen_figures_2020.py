@@ -264,6 +264,77 @@ def fig_q7pdf():
     return s + '</svg>'
 
 
+# ---------------------------------------------------------------- 七(3)（解析）：哈夫曼编码树
+def fig_q7huf():
+    """哈夫曼树：叶在左（电平＋概率）、根在右、码字列在最右（与 2018 六(2) 同一“阶梯”版式）。
+
+    六个电平概率 1/4,1/4,1/6,1/6,1/12,1/12，合并次序：
+    (1/12+1/12)=1/6 → (1/6+1/6)=1/3 → (1/6+1/4)=5/12 → (1/4+1/3)=7/12 → 1。
+    母节点落在较高那一支的同一行，较低那一支用竖杆接上来；母概率写在竖杆右侧，
+    0/1 标在各自引线上方，与右侧码字逐位对齐：
+    +1→01、−1→10、+3→11、−3→000、+5→0010、−5→0011（码长 2,2,2,3,4,4）。
+    平均码长 L = 2×2/3 + 3×1/6 + 4×1/6 = 5/2 比特/符号（按码长分组：长 2 的共 1/4+1/4+1/6=2/3）。
+    """
+    leaves = [('p1', '+1', '1/4', '01'),
+              ('n1', '−1', '1/4', '10'),
+              ('p3', '+3', '1/6', '11'),
+              ('n3', '−3', '1/6', '000'),
+              ('p5', '+5', '1/12', '0010'),
+              ('n5', '−5', '1/12', '0011')]
+    # (母, 上支, 下支, 母概率, 上支标号, 下支标号)；列序 = 自下而上的合并次序
+    merges = [('M1', 'p5', 'n5', '1/6', '0', '1'),      # 1/12 + 1/12
+              ('M2', 'n3', 'M1', '1/3', '0', '1'),      # 1/6 + 1/6
+              ('M3', 'n1', 'p3', '5/12', '0', '1'),     # 1/4 + 1/6
+              ('M4', 'p1', 'M2', '7/12', '1', '0'),     # 1/4 + 1/3
+              ('RT', 'M4', 'M3', '', '0', '1')]         # 7/12 + 5/12（总概率 1 不标）
+    Y0, DY = 42, 46                        # 叶行基线 / 行距
+    XN, XP, XW = 52, 60, 100               # 电平名（右对齐）/ 概率（左对齐）/ 引线起点
+    C0, GAP, LW = 152, 78, 46              # 第 1 列 / 列距 / 母概率占位宽
+    CX = 552                               # 码字列
+
+    y = {k: Y0 + i * DY for i, (k, *_1) in enumerate(leaves)}
+    x_in = {k: XW for k, *_1 in leaves}    # 本节点引线的起点（在本节点标签右侧）
+    col = {}
+    for i, (mid, u, l, pr, bu, bl) in enumerate(merges, 1):
+        col[mid] = C0 + (i - 1) * GAP
+        y[mid] = min(y[u], y[l])           # 母节点落在较高那一支的同一行（阶梯式）
+        x_in[mid] = col[mid] + LW
+    parent = {}
+    for mid, u, l, *_1 in merges:
+        parent[u] = parent[l] = mid
+    bars = [(col[m[0]], min(y[m[1]], y[m[2]]), max(y[m[1]], y[m[2]])) for m in merges]
+    wires = [(x_in[k], col[parent[k]], y[k]) for k in y if k in parent]
+
+    s = HEAD.format(w=620, h=390)
+    for x0, x1, yy in wires:                                 # 引线：本节点标签右侧 → 母竖杆
+        s += line(x0, yy, x1, yy, width=1.4)
+    for bx, b0, b1 in bars:                                  # 竖杆：被别的引线横穿处断 12px
+        cuts = sorted(yy for x0, x1, yy in wires
+                      if x0 + 2 < bx < x1 - 2 and b0 + 7 < yy < b1 - 7)
+        segs, cur = [], b0
+        for yy in cuts:
+            segs.append((cur, yy - 6))
+            cur = yy + 6
+        segs.append((cur, b1))
+        for a_, b_ in segs:
+            s += line(bx, a_, bx, b_, width=1.4)
+    s += line(col['RT'], y['RT'], col['RT'] + 24, y['RT'], width=1.4)   # 根出线 → 码字列
+    for mid, u, l, pr, bu, bl in merges:
+        cx = col[mid]
+        s += text(cx - 8, y[u] - 9, bu, size=11, anchor='end')
+        s += text(cx - 8, y[l] - 9, bl, size=11, anchor='end')
+        if pr:                                               # 母概率写在竖杆右侧（根的“1”同样处理）
+            s += text(cx + 8, y[mid] + 4, pr, size=12, anchor='start')
+    for k, name, pr, code in leaves:
+        s += text(XN, y[k] + 4, name, size=12, anchor='end')
+        s += text(XP, y[k] + 4, pr, size=12, anchor='start')
+        s += text(CX, y[k] + 4, code, size=12, anchor='start')
+    # 图注：按码长分组的平均码长（与原卷参考图末行一致）
+    s += text(8, y['n5'] + 62, '平均码长 L = 2×2/3 + 3×1/6 + 4×1/6 = 5/2 比特/符号',
+              size=13, anchor='start')
+    return s + '</svg>'
+
+
 # ---------------------------------------------------------------- 三（解析）：A 点噪声功率谱
 def fig_q3psdA():
     s = HEAD.format(w=600, h=230) + marker('m20d')
@@ -495,6 +566,7 @@ FIGS = [
     ('q8enc', '八', False, '卷积码编码器框图'),
     ('q3psdA', '三', True, 'A 点噪声功率谱'),
     ('q3psdB', '三', True, 'B 点噪声功率谱'),
+    ('q7huf', '七', True, '哈夫曼编码树'),
     ('q5const', '五', True, '16QAM 星座图'),
     ('q5region', '五', True, 'ML 判决域'),
     ('q5gray', '五', True, '格雷码标注'),
@@ -504,8 +576,8 @@ FIGS = [
 SVGS = {
     'q3block': fig_q3block(), 'q4rx': fig_q4rx(), 'q7pdf': fig_q7pdf(),
     'q8enc': fig_q8enc(),
-    'q3psdA': fig_q3psdA(), 'q3psdB': fig_q3psdB(), 'q5const': fig_q5const(),
-    'q5region': fig_q5region(), 'q5gray': fig_q5gray(), 'q8state': fig_q8state(),
+    'q3psdA': fig_q3psdA(), 'q3psdB': fig_q3psdB(), 'q7huf': fig_q7huf(),
+    'q5const': fig_q5const(), 'q5region': fig_q5region(), 'q5gray': fig_q5gray(), 'q8state': fig_q8state(),
     'q9psd': fig_q9psd(),
 }
 # 全部图统一把 viewBox 收到内容边界（四边各留 18px），与 2025/2026 同一套口径：
