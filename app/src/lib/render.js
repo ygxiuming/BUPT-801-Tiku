@@ -53,9 +53,27 @@ function nextFigPrefix(year, key) {
   return 'f' + year + '-' + key + '-' + n
 }
 
+// 图库注册值有两种形态，页面必须都认（老库全是字符串，截图链路是对象）：
+//   '<svg …>…</svg>'        矢量图：生成器产出的 .svg 真身
+//   { src, w, h }           位图：原卷截图（src 可为 /data/… 绝对路径或 data: URI，w/h 是像素尺寸）
+// 统一转成"只有一张 <image> 的 svg 外壳"，下游（fitSvg / inlineFigure / 点击放大 / 图库页 /
+// 版式审计 / check_figure_overlap 的留白检查）就不用各认一套了 —— 位图在页面上仍然是一张 <svg>。
+export function figToSvg(v, pad = 18) {
+  if (!v) return ''
+  if (typeof v === 'string') return v
+  if (typeof v !== 'object' || !v.src) return ''
+  const w = Math.max(1, Math.round(+v.w || 1200))
+  const h = Math.max(1, Math.round(+v.h || w * 0.6))
+  const p = v.pad === undefined ? pad : Math.max(0, +v.pad)
+  const src = String(v.src).replace(/&/g, '&amp;').replace(/'/g, '&#39;')
+  return "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' " +
+    "viewBox='0 0 " + (w + 2 * p) + ' ' + (h + 2 * p) + "' font-size='14'>" +
+    "<image x='" + p + "' y='" + p + "' width='" + w + "' height='" + h + "' xlink:href='" + src + "'/></svg>"
+}
+
 export function figureSvg(year, key) {
   const f = (window.BUPT801.figures || {})[String(year)]
-  const s = (f && f[key]) || ''
+  const s = figToSvg(f && f[key])
   if (!s) return s
   const meta = (window.BUPT801.figureMeta || {})[String(year)] || {}
   const desc = (meta[key] && meta[key].desc) || key
@@ -111,5 +129,8 @@ export function fitSvg(svgStr, maxW, maxH) {
     const rest = st.replace(/max-width\s*:[^;]*;?/gi, '').replace(/;\s*$/, '').trim()
     return rest ? head + ' style="' + rest + '"' : head
   })
-  return s.replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')
+  // 注意：Inkscape 存过的 svg 标签是 `<svg\n   viewBox=…`（标签后是换行不是空格），
+  // 以前用 '<svg ' 做字面替换会失配 —— 上一步刚剥掉的 width/height 补不回来，
+  // 图就退回「无固有尺寸」被撑满正文宽。这里按 `<svg` 词边界匹配，两种写法都吃到。
+  return s.replace(/<svg\b/i, (tag) => tag + ' width="' + W + '" height="' + H + '"')
 }

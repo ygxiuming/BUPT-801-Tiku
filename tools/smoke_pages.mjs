@@ -826,6 +826,30 @@ await step('统计页：粘贴备份文本 → 导入 → 记录数回来', asyn
   w2.close()
 })
 
+// 2021 七(2)：图靠 body 里的 `[[fig:q7enc]]` 内联，必须落在「编码器框图如下：」之后、
+// 而不是被追加到整段 body 末尾。钉死这条，防止 mdBlocks 的 fig 块回退成「图总在段末」。
+await step('试卷页2021：七(2) 编码器框图内联在「框图如下」之后', async () => {
+  const w = await openPage('/paper/2021', 'figorder')
+  const st = [...w.document.querySelectorAll('details.sol-step')]
+    .find((d) => /卷积码编码器/.test(d.querySelector('summary')?.textContent || ''))
+  if (!st) throw new Error('找不到七(2) 的解析步')
+  const kids = [...st.querySelector('.step-body').children]
+  const fi = kids.findIndex((k) => k.classList.contains('figblock'))
+  if (fi < 0) throw new Error('该步没有图块')
+  if (fi === kids.length - 1) throw new Error('图排在段末（[[fig:]] 没生效）')
+  if (!/框图如下/.test(kids[fi - 1].textContent || '')) {
+    throw new Error('图前一行不是「框图如下」：' + (kids[fi - 1].textContent || '').slice(0, 24))
+  }
+  const img = st.querySelector('.figblock svg image')
+  if (!img) throw new Error('图块里没有 <image>（位图没内联进去）')
+  // 两种存法都认：base64 内联，或 /data/figures/<年>/assets/*.png 外链（最新约定，注册表更小）
+  const href = img.getAttribute('xlink:href') || img.getAttribute('href') || ''
+  if (!/^data:image\/png;base64,/.test(href) && !/\/assets\/[\w.-]+\.png$/.test(href)) {
+    throw new Error('图块的 href 既不是 base64 PNG 也不是 assets 外链：' + href.slice(0, 40))
+  }
+  w.close()
+})
+
 const pad = (s, n) => String(s).padEnd(n, ' ')
 console.log('\n页面冒烟（jsdom + dist）')
 console.log(pad('路由', 18) + pad('文字量', 8) + pad('katex', 7) + pad('svg', 5) + pad('图块', 6) + '结论')

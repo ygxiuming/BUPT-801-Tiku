@@ -125,12 +125,19 @@ export default {
           `</div>${q.exp.note ? `<div class="ans-note"><b>💡 提示：</b>${mdBlock(q.exp.note)}</div>` : ''}</div>`
       }
       const bigSol = (q) => {
-        const steps = (q.sol.steps || []).map((st) =>
-          `<details class="sol-step" open><summary>${mdBlock(normSubNo(st.q))}</summary><div class="step-body">` +
-          mdBlocks(st.body).map((b) => `<div class="step-line${b.t === 'table' ? ' step-table' : ''}">${b.html}</div>`).join('') +
-          (st.fig ? `<figure class="figblock">${figureSvg(this.year, st.fig)}</figure>` : '') +
-          (st.ans ? `<div class="step-ans">${mdBlock(st.ans)}</div>` : '') +
-          `</div></details>`).join('')
+        const steps = (q.sol.steps || []).map((st) => {
+          // body 里单独一行 `[[fig:key]]` 表示「图插在这里」；此时末尾的 st.fig 不再重复出图
+          const blks = mdBlocks(st.body)
+          const hasFig = blks.some((b) => b.t === 'fig')
+          const inner = blks.map((b) => b.t === 'fig'
+            ? `<figure class="figblock">${figureSvg(this.year, b.key)}</figure>`
+            : `<div class="step-line${b.t === 'table' ? ' step-table' : ''}">${b.html}</div>`).join('')
+          return `<details class="sol-step" open><summary>${mdBlock(normSubNo(st.q))}</summary><div class="step-body">` +
+            inner +
+            (st.fig && !hasFig ? `<figure class="figblock">${figureSvg(this.year, st.fig)}</figure>` : '') +
+            (st.ans ? `<div class="step-ans">${mdBlock(st.ans)}</div>` : '') +
+            `</div></details>`
+        }).join('')
         return `<div class="ans"><div class="ans-title">参考解析</div><div class="ans-concl">${mdBlock(q.sol.intro)}</div>${steps}` +
           `<div class="sol-summary"><b>答案汇总：</b>${mdBlock(q.sol.summary)}</div>` +
           (q.sol.pitfalls ? `<div class="ans-note"><b>💡 易错点：</b>${mdBlock(Array.isArray(q.sol.pitfalls) ? q.sol.pitfalls.join('\n') : q.sol.pitfalls)}</div>` : '') + `</div>`

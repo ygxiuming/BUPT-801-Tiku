@@ -415,53 +415,10 @@ def fig_q6pdf():
 
 
 # ------------------------------------------------------------------ 题七解析图：卷积码编码器
-def fig_q7enc():
-    s = HEAD.format(w=760, h=440) + marker('m21l')
-    Y = 120
-    # 输入与 D 链
-    s += text(38, Y + 5, 'u', size=14, anchor='end', style='i')
-    s += line(50, Y, 140, Y, marker='m21l')
-    s += dot(100, Y, 3.2)
-    for i, (x, nm) in enumerate(((140, 'D_1'), (210, 'D_2'), (280, 'D_3'))):
-        s += rect(x, Y - 18, 44, 36)
-        s += text(x + 22, Y + 5, nm, size=13, style='i')
-        if i < 2:
-            s += line(x + 44, Y, x + 70, Y, marker='m21l')
-            s += dot(x + 57, Y, 3.2)
-    s += line(324, Y, 450, Y)
+# 七(2) 的编码器框图改用原卷位图（data/figures/2021/assets/q7enc.png），由
+#   node tools/embed_figure_images.mjs 2021
+# 内联进 answer/2021-七-q7enc.svg。这里不再生成，避免 emit 把位图版覆盖回矢量图。
 
-    # 三个加法器：右下到左上错开，避免连线交叉
-    C1, C2, C3 = (620, 80), (560, 180), (500, 280)
-    for cx, cy in (C1, C2, C3):
-        s += adder(cx, cy, 15)
-
-    # u 母线：左侧下行，底部横线，三路上升进加法器底部
-    s += line(100, Y, 100, 350)
-    s += line(100, 350, 620, 350)
-    for cx, cy in (C1, C2, C3):
-        s += line(cx, 350, cx, cy + 15, marker='m21l')
-        s += dot(cx, 350, 3.2)
-
-    # D3 抽头：右侧竖干线，分别进入三个加法器左侧
-    s += dot(450, Y, 3.2)
-    s += line(450, 80, 450, 280)
-    for cx, cy in (C1, C2, C3):
-        s += line(450, cy, cx - 15, cy, marker='m21l')
-    for cy in (80, 180, 280):
-        s += dot(450, cy, 3.2)
-
-    # D1、D2 抽头从上方分别进入 c1、c2 顶部
-    s += line(197, Y, 197, 40) + line(197, 40, 620, 40) + line(620, 40, 620, 65, marker='m21l')
-    s += line(267, Y, 267, 50) + line(267, 50, 560, 50) + line(560, 50, 560, 165, marker='m21l')
-
-    # 输出
-    for cx, cy, nm in ((C1[0], C1[1], 'c_1'), (C2[0], C2[1], 'c_2'), (C3[0], C3[1], 'c_3')):
-        s += line(cx + 15, cy, cx + 45, cy, marker='m21l')
-        s += text(cx + 40, cy - 10, nm, size=13, style='i')
-
-    s += text(60, 410, 'c_1 = u + D_1 + D_3,   c_2 = u + D_2 + D_3,   c_3 = u + D_3   (模 2 和)',
-              size=12, anchor='start', color='#666')
-    return s + '</svg>'
 
 
 # (key, 题号, 是否解析配图, 描述)
@@ -477,13 +434,12 @@ FIGS = [
     ('q3eye2', '三', True, 'T_b=0.5 s 眼图'),
     ('q5region', '五', True, '12 进制最佳判决域'),
     ('q6pdf', '六', True, '量化器输出概率密度'),
-    ('q7enc', '七', True, '(3,1,4) 卷积码编码器'),
 ]
 SVGS = {
     'q14rc': fig_q14rc(), 'q2block': fig_q2block(), 'q3block': fig_q3block(),
     'q4rx': fig_q4rx(), 'q5stem': fig_q5stem(), 'q2psd2': fig_q2psd2(),
     'q2psd3': fig_q2psd3(), 'q3eye1': fig_q3eye1(), 'q3eye2': fig_q3eye2(),
-    'q5region': fig_q5region(), 'q6pdf': fig_q6pdf(), 'q7enc': fig_q7enc(),
+    'q5region': fig_q5region(), 'q6pdf': fig_q6pdf(),
 }
 # 统一收边：四边各留 18px
 SVGS = {k: tighten(v, PAD) for k, v in SVGS.items()}

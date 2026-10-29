@@ -246,11 +246,20 @@ export function mdBlock(src) {
   return out.join('')
 }
 
-/** body 数组 → 块数组 [{ t:'p'|'table', html }]，把连续表格行合成为一个 table 块 */
+/** body 数组 → 块数组 [{ t:'p'|'table'|'fig', html, key? }]，把连续表格行合成为一个 table 块
+ *  单独一行写 `[[fig:key]]` 时可把图插到正文中间（否则图只能排在整段 body 之后，
+ *  与「…框图如下：<图> …」的原卷排法对不上） */
+const FIG_LINE = /^\s*\[\[fig:([\w-]+)\]\]\s*$/
+
 export function mdBlocks(arr) {
   const src = Array.isArray(arr) ? arr : [arr]
   const out = []
   for (let i = 0; i < src.length; i++) {
+    const fm = FIG_LINE.exec(String(src[i] == null ? '' : src[i]))
+    if (fm) {
+      out.push({ t: 'fig', key: fm[1], html: '' })
+      continue
+    }
     if (isRow(src[i]) && isRow(src[i + 1]) && isSep(src[i + 1])) {
       const head = mdCells(src[i])
       const rows = []

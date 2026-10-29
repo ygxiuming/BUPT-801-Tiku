@@ -5,14 +5,16 @@
     <details class="sol-step" v-for="(st, i) in q.sol.steps" :key="i" :open="openSteps">
       <summary class="math-zone" v-html="md(normSubNo(st.q))"></summary>
       <div class="step-body">
-        <div
-          class="step-line math-zone"
-          :class="{ 'step-table': p.t === 'table' }"
-          v-for="(p, j) in blocks(st.body)"
-          :key="j"
-          v-html="p.html"
-        ></div>
-        <FigBlock v-if="st.fig" :year="year" :fig-key="st.fig" />
+        <template v-for="(p, j) in blocks(st.body)" :key="j">
+          <FigBlock v-if="p.t === 'fig'" :year="year" :fig-key="p.key" />
+          <div
+            v-else
+            class="step-line math-zone"
+            :class="{ 'step-table': p.t === 'table' }"
+            v-html="p.html"
+          ></div>
+        </template>
+        <FigBlock v-if="st.fig && !hasFig(st)" :year="year" :fig-key="st.fig" />
         <div class="step-ans math-zone" v-if="st.ans" v-html="md(st.ans)"></div>
       </div>
     </details>
@@ -42,6 +44,8 @@ export default {
     // 不在这里挂一份，`normSubNo(st.q)` 会被编译成 this.normSubNo(...) → 直接抛 TypeError
     normSubNo,
     blocks(body) { return mdBlocks(body) },
+    // body 里有 `[[fig:key]]` 时图已经在原位渲染，末尾的 st.fig 不再重复出图
+    hasFig(st) { return mdBlocks(st.body).some((b) => b.t === 'fig') },
     // pitfalls 有的是数组、有的是字符串，统一成一段文本
     blockText(v) { return Array.isArray(v) ? v.join('\n') : v }
   }
