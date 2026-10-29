@@ -591,8 +591,11 @@ window.BUPT801.answers["2021"] = {
           "q": "(3) $T_b=1$ s 时的眼图与 C 点 ISI",
           "body": [
             "接收滤波器与发送滤波器都是 $g(t)$，B 点总冲激响应为 $$h(t)=g(t)*g(t)=\\operatorname{sinc}(t)*\\operatorname{sinc}(t)=\\operatorname{sinc}(t)$$",
+            "总响应的波形如下（$t=\\pm1,\\pm2,\\cdots$ 处取值为零）：",
+            "[[fig:q3ht]]",
             "$\\operatorname{sinc}(t)$ 在 $t=k$（整数）处为零，而采样时刻正是 $T_b=1$ s 的整倍数，故 $$h(nT_b)=\\begin{cases}1,&n=0\\\\0,&n\\ne0\\end{cases}$$",
-            "满足奈奎斯特第一准则，C 点无符号间干扰。眼图完全张开，最佳采样时刻的垂直张开度为 2（电平 $\\pm1$）。"
+            "满足奈奎斯特第一准则，C 点无符号间干扰。眼图完全张开，最佳采样时刻的垂直张开度为 2（电平 $\\pm1$）。",
+            "[[fig:q3eye1]]"
           ],
           "ans": "眼图张开；C 点无符号间干扰",
           "fig": "q3eye1"

@@ -1,0 +1,15 @@
+{
+  "q14rc": { "q": "题一", "kind": "paper", "desc": "升余弦滚降功率谱" },
+  "q2block": { "q": "题二", "kind": "paper", "desc": "SSB 相干解调框图" },
+  "q2psd2": { "q": "题二", "kind": "answer", "desc": "BPF 1000~1100 Hz 时 A/B 点噪声谱" },
+  "q2psd3": { "q": "题二", "kind": "answer", "desc": "BPF 950~1100 Hz 时 A/B 点噪声谱" },
+  "q3block": { "q": "题三", "kind": "paper", "desc": "双极性 PAM 传输系统框图" },
+  "q3ht": { "q": "题三", "kind": "answer", "desc": "收发总响应 h(t)=sinc(t) 波形" },
+  "q3eye1": { "q": "题三", "kind": "answer", "desc": "T_b=1 s 眼图" },
+  "q3eye2": { "q": "题三", "kind": "answer", "desc": "T_b=0.5 s 眼图" },
+  "q4rx": { "q": "题四", "kind": "paper", "desc": "2PSK 相关接收框图" },
+  "q5stem": { "q": "题五", "kind": "paper", "desc": "12 进制星座图" },
+  "q5region": { "q": "题五", "kind": "answer", "desc": "12 进制最佳判决域" },
+  "q6pdf": { "q": "题六", "kind": "answer", "desc": "量化器输出概率密度" },
+  "q7enc": { "q": "题七", "kind": "answer", "desc": "(3,1,4) 卷积码编码器框图" }
+}
