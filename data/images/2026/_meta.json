@@ -1,0 +1,7 @@
+{
+  "q2psd": { "q": "题二", "kind": "answer", "desc": "功率谱" },
+  "q3recv": { "q": "题三", "kind": "paper", "desc": "相关接收机框图" },
+  "q5stem": { "q": "题五", "kind": "paper", "desc": "16QAM 星座题图" },
+  "q5const": { "q": "题五", "kind": "answer", "desc": "格雷映射与判决域" },
+  "q6block": { "q": "题六", "kind": "paper", "desc": "调制框图" }
+}
