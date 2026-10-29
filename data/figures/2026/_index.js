@@ -6,11 +6,11 @@ window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 
-(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q2psd = { src: '/data/images/2026/answer/2026-二-q2psd.png', w: 1512, h: 322 };
-(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q3recv = { src: '/data/images/2026/2026-三-q3recv.png', w: 1362, h: 387 };
-(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q5stem = { src: '/data/images/2026/2026-五-q5stem.png', w: 1273, h: 1114 };
-(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q5const = { src: '/data/images/2026/answer/2026-五-q5const.png', w: 1350, h: 1120 };
-(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q6block = { src: '/data/images/2026/2026-六-q6block.png', w: 1411, h: 649 };
+(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q2psd = { src: '/data/images/2026/answer/2026-二-q2psd.png', w: 1680, h: 490 };
+(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q3recv = { src: '/data/images/2026/2026-三-q3recv.png', w: 1392, h: 443 };
+(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q5stem = { src: '/data/images/2026/2026-五-q5stem.png', w: 1372, h: 1199 };
+(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q5const = { src: '/data/images/2026/answer/2026-五-q5const.png', w: 1458, h: 1180 };
+(window.BUPT801.figures["2026"] = window.BUPT801.figures["2026"] || {}).q6block = { src: '/data/images/2026/2026-六-q6block.png', w: 1515, h: 739 };
 
 (window.BUPT801.figureMeta["2026"] = window.BUPT801.figureMeta["2026"] || {}).q2psd = { q: "题二", kind: "answer", desc: "功率谱" };
 (window.BUPT801.figureMeta["2026"] = window.BUPT801.figureMeta["2026"] || {}).q3recv = { q: "题三", kind: "paper", desc: "相关接收机框图" };
