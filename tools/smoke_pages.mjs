@@ -850,6 +850,27 @@ await step('试卷页2021：七(2) 编码器框图内联在「框图如下」之
   w.close()
 })
 
+// 练习页的综合题走 BigSol.vue（试卷页走 PaperView 自己那份 bigSol），两处都实现了
+// `[[fig:key]]` 原位出图，模板写法还不一样（v-for 在 <template> 上 + v-if/v-else），
+// 只测试卷页漏不到这个分支，所以这里再用 ?type=big 单独走一遍。
+await step('练习页2021 综合题：BigSol 的 [[fig:]] 图原位渲染', async () => {
+  // ?id= 是深链（PracticeView 的 deepId），直接落到七(2)，免得靠队列顺序碰运气
+  const w = await openPage('/practice?y=2021&type=big&id=2021-%E4%B8%83', 'prac21big')
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('综合题卡没有「查看解析」按钮')
+  click(w, b)
+  await sleep(260)
+  const st = [...w.document.querySelectorAll('details.sol-step')]
+    .find((d) => /卷积码编码器/.test(d.querySelector('summary')?.textContent || ''))
+  if (!st) throw new Error('BigSol 里找不到七(2) 的解析步')
+  const kids = [...st.querySelector('.step-body').children]
+  const fi = kids.findIndex((k) => k.classList.contains('figblock'))
+  if (fi < 0) throw new Error('BigSol 的七(2) 没有图块')
+  if (fi === kids.length - 1) throw new Error('BigSol 把图排在段末（[[fig:]] 没生效）')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
 const pad = (s, n) => String(s).padEnd(n, ' ')
 console.log('\n页面冒烟（jsdom + dist）')
 console.log(pad('路由', 18) + pad('文字量', 8) + pad('katex', 7) + pad('svg', 5) + pad('图块', 6) + '结论')
