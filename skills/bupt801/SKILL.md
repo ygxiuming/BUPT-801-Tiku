@@ -427,6 +427,15 @@ node tools/emit_figures.mjs <年>                    # 默认只重建注册表 
 - 裁图规格：源 300dpi 页图（字小用 400）→ 宽 900~1600px、PNG（不用 JPEG）、单张 ≤250 kB；
   含图注 / 轴标签 / 子图编号 (a)(b)，**不含**题干正文与题号「三、」；不重画、不美化。
 - 只有截图、没有 `.svg` 的 key：在 `data/images/<年>/_meta.json` 里写 `{ "<key>": { q, kind, desc } }`。
+- **用户给的「年份-大题号-小题号-第几张图」这种文件名，末段不是 key**：`keyFromImageName()` 只剥「年份-题号-」前缀，
+  `2021-三-3-1.png` 会注册成 key `3-1` —— 图进得去图库，但没题目引用，卷面上还是老 svg（静默失败）。
+  **先按内容对回语义 key 再改名**：`2021-三-3-1.png` → `2021-三-q3ht.png`、`2021-三-3-2.png` → `2021-三-q3eye1.png`。
+  自查口径：`check_assets.mjs` 该年「N引/M图」必须相等，且不出现「孤儿图」。
+- **一题多图**（同一小问要出两张）：把它们都写成 body 里的 `[[fig:key]]`，`st.fig` 只保留其中一个。
+  `BigSol.vue`/`PaperView` 的 `hasFig(st)` 一旦为真就不再在段末补 `st.fig`，所以**别只在 `fig` 字段上想办法**，
+  否则要么少一张、要么出一对重复。图序 = `[[fig:]]` 在 body 里的先后。
+- **`_meta.json` 要么不写，要么把该年全部 key 按题号序写全**：`rebuildIndex()` 的排序 hint 优先级是
+  `orderHint > _meta.json 键序 > 旧 _index.js`，只写一个 key 会把其余全排到末尾（2021 的 `q3ht` 因此跑到图库第一位）。
 - 提交：png 一起 commit，并 `npm run sync`（`sync-data.mjs` 会下发 `data/images/`；`check_assets.mjs` 抓"引用了但快照里没有"）。
 
 **前端兼容层（混合排布，页面不区分）**：注册表 `_index.js` 两种值都合法——`'<svg …>'` 与 `{ src, w, h }`；
