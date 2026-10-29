@@ -13,6 +13,7 @@
 产出：默认写到 /tmp/w801/figures-<年>.png（每个年份一张）；--out 只对单年份生效。
 """
 import argparse
+import base64
 import os
 import re
 import subprocess
@@ -22,15 +23,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def dump_svgs(year, dst):
-    """用 node 把 data/figures/<年>/_index.js 里的图逐个落盘，并换成 CJK 字体。"""
+    """用 node 把 data/figures/<年>/_index.js 里的图逐个落盘，并换成 CJK 字体。
+
+    注册值有两种：'<svg …>'（矢量）与 { src, w, h }（位图替换，assets/<key>.png 优先于 svg）。
+    后者在这里现包一层 svg 外壳（18px 留白），和前端 figToSvg() 的口径一致。
+    """
     os.makedirs(dst, exist_ok=True)
     script = (
         "const fs=require('fs');global.window={};"
         "require(%r);"
         "const figs=window.BUPT801.figures[%r]||{};"
-        "for(const [k,svg] of Object.entries(figs))"
+        "for(const [k,svg0] of Object.entries(figs)){"
+        "  let svg=svg0;"
+        "  if(svg&&typeof svg==='object'&&svg.src){"
+        "    const w=svg.w||1200,h=svg.h||800;"
+        "    svg=\"<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' \"+"
+        "      \"viewBox='0 0 \"+(w+36)+\" \"+(h+36)+\"'><image x='18' y='18' width='\"+w+\"' height='\"+h+\"' \"+"
+        "      \"xlink:href='\"+svg.src+\"'/></svg>\";"
+        "  }"
         "  fs.writeFileSync(%r+k+'.svg',"
         "    svg.replace(/font-family=\"[^\"]*\"/,'font-family=\"Noto Sans CJK SC\"'));"
+        "}"
         "console.log(Object.keys(figs).length);"
         % (os.path.join(ROOT, 'data', 'figures', year, '_index.js'),
            year, dst.rstrip('/') + '/')
@@ -43,6 +56,32 @@ def dump_svgs(year, dst):
     if n == 0:
         sys.exit('%s 没有导出任何图：先跑 node tools/emit_figures.mjs %s' % (year, year))
     return n
+
+
+# 位图外壳里的 href 是站点绝对路径（/data/figures/<年>/assets/x.png）。
+# 坑：cairosvg 只认 **base64 data URI**，既不认站点路径、也不认 file://（实测 2.9.1 三种写法只有 data 出图，
+# 路径写法不报错、静默画空白）。所以预览前把外链就地换成 data URI——只改 /tmp 下的临时副本，不动仓库里的图。
+HREF_SITE = re.compile(r'(xlink:href|href)=(["\'])(/data/[^"\']+)\2')
+IMG_MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+            '.webp': 'image/webp', '.gif': 'image/gif'}
+
+
+def inline_hrefs(svg_path):
+    txt = open(svg_path, encoding='utf-8').read()
+
+    def rep(m):
+        f = os.path.join(ROOT, m.group(3).lstrip('/'))
+        if not os.path.exists(f):
+            print('警告：%s 引用的 %s 不存在，预览里这张会是空白' % (os.path.basename(svg_path), m.group(3)))
+            return m.group(0)
+        mime = IMG_MIME.get(os.path.splitext(f)[1].lower(), 'image/png')
+        b64 = base64.b64encode(open(f, 'rb').read()).decode()
+        return '%s=%sdata:%s;base64,%s%s' % (m.group(1), m.group(2), mime, b64, m.group(2))
+
+    out = HREF_SITE.sub(rep, txt)
+    if out != txt:
+        open(svg_path, 'w', encoding='utf-8').write(out)
+    return out != txt
 
 
 def main():
@@ -80,6 +119,7 @@ def main():
         tiles = []
         for n in names:
             svg = os.path.join(tmp, n + '.svg')
+            inline_hrefs(svg)
             png = svg[:-4] + '.png'
             cairosvg.svg2png(url=svg, write_to=png, scale=a.scale,
                              background_color='white')

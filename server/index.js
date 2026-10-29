@@ -11,12 +11,13 @@ const ROOT = path.dirname(path.dirname(__filename))
 const DIST = path.join(ROOT, 'app', 'dist')
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome'
 
-// ---- 图库注册表自动同步：.svg 是唯一维护对象，_index.js 只是自动生成的缓存 ----
-// 启动时全量对齐一次；运行中监听 .svg 变化（Inkscape 手调存盘 → 自动重建 → 浏览器刷新即生效）。
+// ---- 图库注册表自动同步：截图（data/images）优先、历史 .svg 兜底，_index.js 只是自动生成的缓存 ----
+// 启动时全量对齐一次；运行中监听 data/images 的图片与 data/figures 的 .svg 变化（存盘 → 自动重建 → 刷新即生效）。
 // 任何失败只告警不退出（同步不了时 _index.js 保持上次内容，页面照常工作）。
 module.paths.unshift(ROOT) // require('tools/...') 从项目根解析（require(变量)/路径 .. 字面量会被 Mimosa 拦）
 const figRegistry = require('tools/fig_registry.js')
 const FIG_ROOT = path.join(ROOT, 'data', 'figures')
+const IMG_ROOT = path.join(ROOT, 'data', 'images')
 
 function syncFigures(years, tag) {
   const changed = []
@@ -28,12 +29,17 @@ function syncFigures(years, tag) {
       console.warn('图库注册表同步失败（' + y + '）：' + e.message)
     }
   }
-  if (changed.length) console.log('[' + tag + '] 图库注册表已从 .svg 重建：' + changed.join(', '))
+  if (changed.length) console.log('[' + tag + '] 图库注册表已重建：' + changed.join(', '))
   return changed
 }
 
+// 年份 = figures/ ∪ images/（新年份可能只有截图，没有 figures 目录）
 const FIG_YEARS = (() => {
-  try { return fs.readdirSync(FIG_ROOT).filter((y) => /^\d{4}$/.test(y)) } catch { return [] }
+  const ys = new Set()
+  for (const d of [FIG_ROOT, IMG_ROOT]) {
+    try { for (const y of fs.readdirSync(d)) if (/^\d{4}$/.test(y)) ys.add(y) } catch { /* 目录还没建 */ }
+  }
+  return [...ys].sort()
 })()
 
 let figWatchTimer = null
@@ -49,6 +55,23 @@ try {
   })
 } catch (e) {
   console.warn('图库 .svg 监听不可用（不影响启动）：' + e.message)
+
+}
+
+// 截图监听：往 data/images/<年>/ 丢一张 png → 该年注册表自动重建（新图立刻可用，不用重启）
+let imgWatchTimer = null
+try {
+  fs.watch(IMG_ROOT, { recursive: true }, (_ev, name) => {
+    const n = String(name || '')
+    if (!/\.(png|jpe?g|webp|gif)$/i.test(n)) return
+    clearTimeout(imgWatchTimer)
+    imgWatchTimer = setTimeout(() => {
+      const year = n.split(path.sep)[0].split('/')[0]
+      syncFigures(/^\d{4}$/.test(year) ? [year] : FIG_YEARS, '截图变更')
+    }, 300)
+  })
+} catch (e) {
+  console.warn('data/images 监听不可用（不影响启动）：' + e.message)
 }
 
 const app = express()

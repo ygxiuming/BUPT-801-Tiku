@@ -9,10 +9,10 @@ const root = dirname(dirname(fileURLToPath(import.meta.url))) // app/
 const proj = join(root, '..')                                // 项目根
 const pub = join(root, 'public')
 
-// 图库注册表全盘重建：.svg 是唯一维护对象，_index.js 是自动生成的缓存。
+// 图库注册表全盘重建：data/images 的截图 + data/figures 的历史 .svg → _index.js（自动生成）。
 // npm run dev 每次启动都走这里（用户要求：启动服务就全盘重建一次），生产 3000 的
-// 对称修复在 server/index.js 启动同步 + svg 监听。手改 svg 后重启 dev 或跑
-// node tools/emit_figures.mjs <年> --from-svg 都能生效。失败只告警，不阻塞快照。
+// 对称修复在 server/index.js 启动同步 + 目录监听。放新截图 / 改 svg 后重启 dev 或跑
+// node tools/emit_figures.mjs <年> 都能生效。失败只告警，不阻塞快照。
 const emitAll = spawnSync('node', [join(proj, 'tools', 'emit_figures.mjs'), '--sync-all'],
   { cwd: proj, encoding: 'utf8' })
 if (emitAll.status !== 0) console.error('图库注册表重建失败（沿用上次的 _index.js）：' + (emitAll.stderr || '').trim())
@@ -22,10 +22,14 @@ mkdirSync(join(pub, 'data'), { recursive: true })
 mkdirSync(join(pub, 'vendor'), { recursive: true })
 
 // data/ → public/data 逐文件镜像（页面按单文件 <script> 引用）。
-// 图库只拷 _index.js（自动生成的注册表，浏览器渲染用）——**.svg 真身不下发**，
-// 它是唯一维护对象、只存在于项目 data/figures/ 下（防止改错副本后被 sync 覆盖）。
+// 图库只拷 _index.js（自动生成的注册表，浏览器渲染用）——**历史 .svg 真身不下发**，
+// 它们只存在于项目 data/figures/ 下（防止改错副本后被 sync 覆盖）。
+// **截图必须下发**：图库主链路是 data/images/<年>/**（注册值是 `{ src: '/data/images/…', w, h }`），
+// 那张 png 不进快照就等于图空白。旧通道 data/figures/<年>/assets/*.png 同理（仍兼容）。
 // 镜像式清理：源里已删除的文件（旧格式 .js、删掉的图）同步从 public 移除，防老版本残留。
+const RASTER_RE = /\.(png|jpe?g|webp|gif|bmp)$/i
 function copyAll(srcDir, dstDir) {
+  if (!existsSync(srcDir)) { rmSync(dstDir, { recursive: true, force: true }); return } // 源目录整个没了 = 快照也别留
   mkdirSync(dstDir, { recursive: true })
   const srcNames = readdirSync(srcDir)
   const kept = new Set()
@@ -33,6 +37,7 @@ function copyAll(srcDir, dstDir) {
     const src = join(srcDir, name)
     const dst = join(dstDir, name)
     if (statSync(src).isDirectory()) { kept.add(name); copyAll(src, dst) }
+    else if (RASTER_RE.test(name)) { kept.add(name); copyFileSync(src, dst) }
     else if (name.endsWith('.js') && (!name.startsWith('_') || name === '_index.js')) { kept.add(name); copyFileSync(src, dst) }
   }
   // dst 里不在保留集合的一律清掉（旧格式残留、被过滤的文件类型、已删除的数据）
@@ -41,6 +46,7 @@ function copyAll(srcDir, dstDir) {
   }
 }
 copyFileSync(join(proj, 'data', 'chapters.js'), join(pub, 'data', 'chapters.js'))
+copyAll(join(proj, 'data', 'images'), join(pub, 'data', 'images'))
 copyAll(join(proj, 'data', 'figures'), join(pub, 'data', 'figures'))
 copyAll(join(proj, 'data', 'questions'), join(pub, 'data', 'questions'))
 

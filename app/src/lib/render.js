@@ -53,7 +53,7 @@ function nextFigPrefix(year, key) {
   return 'f' + year + '-' + key + '-' + n
 }
 
-// 图库注册值有两种形态，页面必须都认（老库全是字符串，截图链路是对象）：
+// 图库注册值有两种形态，页面必须都认（矢量图是字符串，换成原卷截图后是对象）：
 //   '<svg …>…</svg>'        矢量图：生成器产出的 .svg 真身
 //   { src, w, h }           位图：原卷截图（src 可为 /data/… 绝对路径或 data: URI，w/h 是像素尺寸）
 // 统一转成"只有一张 <image> 的 svg 外壳"，下游（fitSvg / inlineFigure / 点击放大 / 图库页 /

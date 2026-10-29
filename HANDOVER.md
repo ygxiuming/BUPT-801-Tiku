@@ -1,20 +1,25 @@
 # 交接文档 · 北邮801真题库
 
 > 数据格式、加载链路、工具链与已知坑的速查手册。配合 `skills/bupt801/SKILL.md`（入库流程）与 `README.md`（使用说明）阅读。
-> 最后更新：2026-10-27
+> 最后更新：2026-10-29（图件：SVG 重绘为主，某张可换成原卷截图）
 
-## 一、data/ 目录格式（2026-10-26 定稿）
+## 一、data/ 目录格式（2026-10-29 定稿：SVG 为主 + 可选截图覆盖）
 
 ```
 data/
 ├── chapters.js                    # 全站筛选维度：[{ id, name, points: [知识点...] }]
-├── figures/
-│   └── <年>/                      # 每年一个目录
-│       ├── <年>-<题号>-<图名>.svg  # 题目原图：纯 SVG 真身，首行 <!-- figureMeta {...} --> 注释
-│       ├── _index.js              # emit 自动生成的注册表（浏览器/Node 两用；源文件是 .svg，勿手改）
-│       ├── assets/                # 少量原卷扫描位图（如 2018 眼图，base64 内嵌进 svg）
-│       └── answer/                # 解析配图（只出现在解析里的图），同 .svg 形态
-│           └── <年>-<题号>-<图名>.svg
+├── images/                        # 可选：把某张图换成原卷截图（同名 key 优先于 svg）
+│   └── <年>/
+│       ├── <年>-<题号>-<key>.png   # 覆盖题图（一般不加；照片型题图才用）
+│       ├── answer/                # 覆盖解析配图，同命名
+│       │   └── <年>-<题号>-<key>.png
+│       └── _meta.json             # 可选：{ "<key>": { q, kind, desc } }，键序 = 图库显示序
+├── figures/                       # 矢量图真身（默认画法）+ 每年一个自动生成的注册表
+│   └── <年>/
+│       ├── <年>-<题号>-<图名>.svg  # 矢量图真身（新图照 SKILL.md 第 5 节画；首行 figureMeta 注释）
+│       ├── _index.js              # emit 自动生成的注册表（浏览器/Node 两用，勿手改）
+│       ├── assets/                # 2026-10 的旧截图通道（仍兼容，优先级低于 data/images）
+│       └── answer/                # 解析配图 .svg
 └── questions/
     └── <年>/
         ├── paper.js               # 真题：试卷元数据 + groups(选项组) + 题目（题干/选项/章节/标签，无答案无解析）
@@ -24,7 +29,7 @@ data/
 ### 关键约定
 
 - **题目与答案分离**：paper.js 不含 `answer/exp/sol`；answer.js 按题目 id 存答案与解析。加载后由 `hydrateAnswers()` 就地合并回题目对象（前端 `app/src/lib/data.js`，server `server/lib/load-data.js`，校验器 `tools/validate_data.js` 三处同逻辑）。
-- **图库两层：.svg 真身 + 自动注册表**：`<年>-<题号>-<图名>.svg` 是**唯一维护对象、只存在于项目 `data/figures/`**（首行 figureMeta 注释带 key/q/kind/desc；Inkscape 手调后直接存盘）；`_index.js` 是自动生成的缓存——server 启动时全量对齐 + 运行中监听 .svg 变化自动重建（`tools/fig_registry.js`），没起 server 就跑 `node tools/emit_figures.mjs <年> --from-svg`。注册 `figures["年"][key]` 与 `figureMeta["年"][key]`。题目数据里 `fig: "key"`（q.fig 题图 / sol.steps[].fig 解析图）与文件名解耦。**两个覆盖陷阱**：①`app/public/data` 是下发快照，别改那里的副本（sync 会用 data/ 覆盖回去，svg 也不下发）；②`emit` 全量跑会按生成器输出覆盖 .svg——生成器维护的图别手改，手改生效走 `--from-svg`。
+- **图库两层：`.svg` 真身 + 自动注册表**：`data/figures/<年>/[answer/]<年>-<题号>-<图名>.svg` 是**默认来源与唯一维护对象**（首行 `figureMeta` 带 key/q/kind/desc；Inkscape 手调后直接存盘）。要让**某一张**改用原卷截图，就把同名 png 放进 `data/images/<年>/[answer/]<年>-<题号>-<key>.png`（key = 文件名最后一个 `-` 之后那段，必须等于数据里的 `fig:"key"`），`.svg` 不用删也不用改。`data/figures/<年>/_index.js` 是自动生成的注册表——server 启动时全量对齐 + 运行中监听 `data/images` 与 `data/figures` 变化自动重建（`tools/fig_registry.js`），没起 server 就跑 `node tools/emit_figures.mjs <年> --rebuild`。注册 `figures["年"][key]`（`'<svg …>'` 或 `{ src, w, h }` 两种形态可混排）与 `figureMeta["年"][key]`。**优先级：`data/images` > `figures/<年>/assets` > `figures/<年>/*.svg`**——删掉那张图就自动回落矢量，一秒钟复原。**两个覆盖陷阱**：①`app/public/data` 是下发快照，别改那里的副本（sync 会用 data/ 覆盖回去，svg 也不下发）；②`emit` 默认会先跑 `gen_figures_<年>.py` 覆盖 `.svg`——手改过 svg 就加 `--rebuild`（= 老参数 `--from-svg`）。
 - **选项组多套选项**：2026 起组内可声明 `optionSets: ["options5","options6"]` 且题目用 `oKey` 指定用哪套；2025 旧约定（`options12/13/25/26` 按 blank 号）继续兼容。渲染端（PaperView / print-html.js）先看 optionSets 再回退旧键。
 - **公式**：`$...$` / `$$...$$`（KaTeX）；JS 字符串里反斜杠双写。渲染层统一做 HTML 转义（公式里的裸 `<` 会被 innerHTML 当标签吞掉）。
 - **数据一律是挂 `window.BUPT801` 的 .js**（不用 fetch/json）。
@@ -45,10 +50,11 @@ data/
 
 | 工具 | 作用 |
 |---|---|
-| `tools/gen_figures_<年>.py` | 画 SVG，按 `FIGS = [(key, 题号, 是否解析图, 描述)]` 输出 `###FILE:` 分隔的单图块 |
-| `node tools/emit_figures.mjs <年>` | 落盘：生成器输出 → `data/figures/<年>/*.svg`（含 answer/）+ 重建 `_index.js`；`--from-svg` 不跑生成器、直接由现有 .svg 重建（手改 svg 后用） |
-| `tools/crop_orig.py` | 原卷裁图助手：整页 PNG + x,y,w,h → `待解析/crops/<年>/<key>.png`（对照用，gitignore） |
-| `tools/compare_figures.py <年>` | **保真对照**：左原卷/右重绘逐图 `.cmp.png` + 整年总表 `_cmp-<年>.png`（Inkscape 渲染优先）；`--overlay` 叠加、`--grid` 网格标尺 |
+| `tools/gen_figures_<年>.py` + `node tools/emit_figures.mjs <年>` | **默认画图链路**：生成器输出 → `data/figures/<年>/*.svg` + `answer/` → 重建 `_index.js` |
+| `node tools/emit_figures.mjs <年> --rebuild` | **只重建注册表**（`data/images` 覆盖 + `data/figures` 的 .svg → `_index.js`），不跑生成器；`--sync-all` 全量 |
+| `tools/crop_orig.py` | 裁图：整页 PNG + x,y,w,h → `data/images/<年>/[answer/]<年>-<题号>-<key>.png`（换截图、对照原卷时用；`--norm` 按页面比例） |
+| `tools/preview_figures.py <年>` | 整年图件拼成带图名的网格（矢量与截图都支持，`--only` 单张放大） |
+| `tools/compare_figures.py <年>` | 左原卷/右重绘逐图对照（核「画得像不像原卷」） |
 | `tools/dump_figures.js` | 图库 JSON 导出（compare 的数据通道）；新年份在文件头加一行静态 require |
 | `node tools/split_questions.mjs <年>` | 旧格式 `<年>.js/-b.js/-big.js` → `<年>/paper.js + answer.js`（用后删旧文件） |
 | `node tools/validate_data.js` | 结构/引用/公式/数值抽查校验；新年份在文件头 require 区和 EXPECT 里各登记一次 |
@@ -62,7 +68,8 @@ data/
 
 ## 四、已知坑（重要）
 
-1. **viewBox 四边留白统一 18px**（`tools/svgkit.py` 的 `tighten()`，2025-10 定稿口径；旧的"≤30px + svg_fit/fit_figures_render 两步收"已废弃）：viewBox-only 的 SVG 全宽渲染，留白不均会让图"看起来靠左"；内容超出画布会被裁切。验收：`node tools/check_figure_overlap.js <年>` 报 18/18/18/18（±2，四边差 ≤4）。**注意别裁掉中文标签**：预览/渲染量墨迹时必须换 CJK 字体（见第 8 条），否则中文整段不画、包围盒偏小，会把左边的"输入"这类标签裁掉。
+1. **图件默认 SVG 重绘**（`data/figures/<年>/**.svg`，规范见 SKILL.md 第 5 节）；需要时**逐张**换原卷截图：从 `pdftoppm -r 300` 页图上裁，存 `data/images/<年>/[answer/]<年>-<题号>-<key>.png`，宽 900~1600、PNG、≤250 kB，框内含图注/轴标签、不含题干与题号。同名 key 截图优先于 svg；删掉截图就回落矢量。截图外壳由 `figToSvg()` 补 18px 留白，所以 `node tools/check_figure_overlap.js <年>` 对截图报 `18/18/18/18`、`文字0 线段0 位图N` 是正常的。
+1b. **文件名就是 key**：`<年>-<题号>-<key>.png` 里最后一个 `-` 之后那段必须等于数据里 `fig:"key"`；截图工具默认名（`截图 2026-10-29 19-32-25.png`）会被注册表拒收（emit 会打印清单）。
 2. **公式里的 `<`**：数据必须经 `escHtml`（前端）/`esc`（server）转义再进 innerHTML，否则如 `$H\le L<H+1$` 的 `<H+1$…>` 整段被浏览器吞成标签。
 3. **Lightbox 里的 SVG**：只有 viewBox 无固有尺寸会塌缩成小白块，打开时按宽高比显式注入 width/height（Lightbox.vue figSvg）。
 4. **KaTeX 渲染范围**：只对 `.math-zone` / v-html 容器跑 auto-render；对 Vue 管理的节点整体渲染会破坏 vdom 锚点导致视图冻结。
@@ -142,6 +149,6 @@ git add data/questions/<年> data/figures/<年> app/index.html tools/ 解析日�
 git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 ```
 
-- 提交类型：`feat` 入库新年份 / `fix` 纠错与重画图 / `docs` 文档与日志 / `chore` 工具链；没校验过的中间态写 `wip(<年>): …`。
+- 提交类型：`feat` 入库新年份 / `fix` 纠错与换图（重裁截图） / `docs` 文档与日志 / `chore` 工具链；没校验过的中间态写 `wip(<年>): …`。
 - `解析日志.md` 是"当时怎么算的"唯一留痕：来源、统计、校验与实测结论、**与参考答案的分歧与自纠**、遗留。只追加不改写。
 - `.gitignore` 忽略 `node_modules/`、`app/dist/`、`app/public/`（皆可再生，避免 diff 噪音）。

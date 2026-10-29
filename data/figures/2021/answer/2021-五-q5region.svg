@@ -1,2 +1,260 @@
 <!-- figureMeta {"key":"q5region","q":"题五","kind":"answer","desc":"12 进制最佳判决域"} -->
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='62 2 522 456' font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif" font-size='14'><defs><marker id='m21j' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'><path d='M0,0 L7,3 L0,6 z' fill='#1a1a1a'/></marker></defs><line x1='310.0' y1='240.0' x2='540.0' y2='240.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21j)'/><line x1='310.0' y1='240.0' x2='80.0' y2='240.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21j)'/><line x1='310.0' y1='440.0' x2='310.0' y2='40.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21j)'/><text x='552.0' y='245.0' text-anchor='start' font-size='13' font-style='italic' font-weight='bold' fill='#1a1a1a'><tspan dy='0' font-size='13'>X</tspan><tspan dy='4' font-size='9'>I</tspan></text><text x='310.0' y='30.0' text-anchor='middle' font-size='13' font-style='italic' font-weight='bold' fill='#1a1a1a'><tspan dy='0' font-size='13'>X</tspan><tspan dy='4' font-size='9'>Q</tspan></text><line x1='230.0' y1='160.0' x2='230.0' y2='320.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='160.0' x2='390.0' y2='320.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='160.0' x2='390.0' y2='160.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='320.0' x2='390.0' y2='320.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='72.0' x2='230.0' y2='160.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='72.0' x2='390.0' y2='160.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='320.0' x2='230.0' y2='408.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='320.0' x2='390.0' y2='408.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='142.0' y1='160.0' x2='230.0' y2='160.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='142.0' y1='320.0' x2='230.0' y2='320.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='160.0' x2='478.0' y2='160.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='320.0' x2='478.0' y2='320.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='160.0' x2='478.0' y2='72.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='160.0' x2='142.0' y2='72.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='230.0' y1='320.0' x2='142.0' y2='408.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><line x1='390.0' y1='320.0' x2='478.0' y2='408.0' stroke='#888' stroke-width='1.2' stroke-dasharray='5,4'/><circle cx='190.0' cy='280.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='190.0' cy='200.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='270.0' cy='360.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='270.0' cy='280.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='270.0' cy='200.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='270.0' cy='120.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='350.0' cy='360.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='350.0' cy='280.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='350.0' cy='200.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='350.0' cy='120.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='430.0' cy='280.0' r='4.6' fill='#1a1a1a' stroke='none'/><circle cx='430.0' cy='200.0' r='4.6' fill='#1a1a1a' stroke='none'/></svg>
+<svg
+   viewBox="62 2 522 456"
+   font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif"
+   font-size="14"
+   version="1.1"
+   id="svg32"
+   sodipodi:docname="2021-五-q5region.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview32"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.5767544"
+     inkscape:cx="260.98723"
+     inkscape:cy="228"
+     inkscape:window-width="2560"
+     inkscape:window-height="1379"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg32" />
+  <defs
+     id="defs1">
+    <marker
+       id="m21j"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="3"
+       orient="auto">
+      <path
+         d="M0,0 L7,3 L0,6 z"
+         fill="#1a1a1a"
+         id="path1" />
+    </marker>
+  </defs>
+  <line
+     x1="310.0"
+     y1="240.0"
+     x2="540.0"
+     y2="240.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21j)"
+     id="line1" />
+  <line
+     x1="310.0"
+     y1="240.0"
+     x2="80.0"
+     y2="240.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21j)"
+     id="line2" />
+  <line
+     x1="310.0"
+     y1="440.0"
+     x2="310.0"
+     y2="40.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21j)"
+     id="line3" />
+  <text
+     x="552.0"
+     y="245.0"
+     text-anchor="start"
+     font-size="13"
+     font-style="italic"
+     font-weight="bold"
+     fill="#1a1a1a"
+     id="text4"><tspan
+       dy="0"
+       font-size="13"
+       id="tspan3">X</tspan><tspan
+       dy="4"
+       font-size="9"
+       id="tspan4">I</tspan></text>
+  <text
+     x="310.0"
+     y="30.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     font-weight="bold"
+     fill="#1a1a1a"
+     id="text6"><tspan
+       dy="0"
+       font-size="13"
+       id="tspan5">X</tspan><tspan
+       dy="4"
+       font-size="9"
+       id="tspan6">Q</tspan></text>
+  <line
+     x1="230.0"
+     y1="160.0"
+     x2="230.0"
+     y2="320.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line6" />
+  <line
+     x1="390.0"
+     y1="160.0"
+     x2="390.0"
+     y2="320.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line7" />
+  <line
+     x1="230.0"
+     y1="160.0"
+     x2="390.0"
+     y2="160.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line8" />
+  <line
+     x1="230.0"
+     y1="320.0"
+     x2="390.0"
+     y2="320.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line9" />
+  <line
+     x1="390.0"
+     y1="160.0"
+     x2="478.0"
+     y2="72.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line18" />
+  <line
+     x1="230.0"
+     y1="160.0"
+     x2="142.0"
+     y2="72.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line19" />
+  <line
+     x1="230.0"
+     y1="320.0"
+     x2="142.0"
+     y2="408.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line20" />
+  <line
+     x1="390.0"
+     y1="320.0"
+     x2="478.0"
+     y2="408.0"
+     stroke="#888"
+     stroke-width="1.2"
+     stroke-dasharray="5,4"
+     id="line21" />
+  <circle
+     cx="190.0"
+     cy="280.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle21" />
+  <circle
+     cx="190.0"
+     cy="200.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle22" />
+  <circle
+     cx="270.0"
+     cy="360.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle23" />
+  <circle
+     cx="270.0"
+     cy="280.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle24" />
+  <circle
+     cx="270.0"
+     cy="200.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle25" />
+  <circle
+     cx="270.0"
+     cy="120.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle26" />
+  <circle
+     cx="350.0"
+     cy="360.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle27" />
+  <circle
+     cx="350.0"
+     cy="280.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle28" />
+  <circle
+     cx="350.0"
+     cy="200.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle29" />
+  <circle
+     cx="350.0"
+     cy="120.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle30" />
+  <circle
+     cx="430.0"
+     cy="280.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle31" />
+  <circle
+     cx="430.0"
+     cy="200.0"
+     r="4.6"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle32" />
+</svg>

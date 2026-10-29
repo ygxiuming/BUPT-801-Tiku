@@ -117,11 +117,16 @@ for (const y of YEARS) {
   // D. 图件尺寸
   const figs = (global.BUPT801.figures || {})[String(y)] || {}
   for (const [k, s] of Object.entries(figs)) {
-    const m = /viewBox=['"]([-0-9.]+) ([-0-9.]+) ([-0-9.]+) ([-0-9.]+)['"]/.exec(s)
-    if (!m) { warn(y, `图 ${k} 没有 viewBox`); continue }
-    const w = +m[3], h = +m[4]
+    // 注册值两种：'<svg …>'（矢量）或 { src, w, h }（位图替换，assets/<key>.png 优先于 svg）。
+    // 位图没有 viewBox 可读，按外壳口径算：图宽+36 × 图高+36（四边 18 留白）。
+    const isImg = s && typeof s === 'object'
+    const m = isImg ? null
+      : /viewBox=['"]([-0-9.]+) ([-0-9.]+) ([-0-9.]+) ([-0-9.]+)['"]/.exec(s)
+    if (!isImg && !m) { warn(y, `图 ${k} 没有 viewBox`); continue }
+    if (isImg && !(s.src && s.w && s.h)) { warn(y, `图 ${k} 位图描述符不完整（需 src/w/h）`); continue }
+    const w = isImg ? +s.w + 36 : +m[3], h = isImg ? +s.h + 36 : +m[4]
     if (w < 180) warn(y, `图 ${k} 只有 ${w}px 宽，正文里会被放大到失真（建议 ≥300）`)
-    if (w > 900) console.log(`  · ${y} 图 ${k} ${Math.round(w)}×${Math.round(h)}（正文按 680px 显示，点击可放大）`)
+    if (w > 900) console.log(`  · ${y} 图 ${k} ${Math.round(w)}×${Math.round(h)}${isImg ? '（位图）' : ''}（正文按 680px 显示，点击可放大）`)
   }
   console.log(`  ${y}: 选择题 ${ch.length} 空 / ${Object.keys(byGroup).length} 组，大题 ${big.length} 题，图 ${Object.keys(figs).length} 张`)
 }

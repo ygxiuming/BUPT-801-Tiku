@@ -1,5 +1,7 @@
 // 2012 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件是本目录（含 answer/）的 *.svg（唯一维护对象），勿手改本文件
+// 源文件：data/images/2012/**（原卷截图，唯一维护对象）→ 优先级最高
+//         data/figures/2012/**.svg（历史矢量，只读保留，没有同名截图时才用）
+// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};

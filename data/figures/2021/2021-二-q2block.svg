@@ -1,2 +1,250 @@
 <!-- figureMeta {"key":"q2block","q":"题二","kind":"paper","desc":"SSB 相干解调框图"} -->
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='12 42 612 155' font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif" font-size='14'><defs><marker id='m21b' markerWidth='8' markerHeight='8' refX='7' refY='3' orient='auto'><path d='M0,0 L7,3 L0,6 z' fill='#1a1a1a'/></marker></defs><text x='30.0' y='90.0' text-anchor='start' font-style='italic' fill='#1a1a1a'>s(t)</text><line x1='68.0' y1='85.0' x2='127.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><circle cx='140.0' cy='85.0' r='13.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><line x1='130.0' y1='85.0' x2='150.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6'/><line x1='140.0' y1='75.0' x2='140.0' y2='95.0' stroke='#1a1a1a' stroke-width='1.6'/><line x1='140.0' y1='155.0' x2='140.0' y2='99.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><text x='140.0' y='176.0' text-anchor='middle' font-size='13' fill='#1a1a1a'>加性白高斯噪声</text><line x1='153.0' y1='85.0' x2='198.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><rect x='200.0' y='66.0' width='80.0' height='38.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><text x='240.0' y='91.0' text-anchor='middle' font-size='13' font-style='italic' fill='#1a1a1a'>BPF</text><line x1='280.0' y1='85.0' x2='386.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><circle cx='305.0' cy='85.0' r='3.2' fill='#1a1a1a' stroke='none'/><circle cx='361.0' cy='85.0' r='3.2' fill='#1a1a1a' stroke='none'/><text x='333.0' y='70.0' text-anchor='middle' font-size='13' fill='#1a1a1a'>A</text><circle cx='400.0' cy='85.0' r='13.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><line x1='390.8' y1='75.8' x2='409.2' y2='94.2' stroke='#1a1a1a' stroke-width='1.6'/><line x1='409.2' y1='75.8' x2='390.8' y2='94.2' stroke='#1a1a1a' stroke-width='1.6'/><line x1='400.0' y1='155.0' x2='400.0' y2='99.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><text x='400.0' y='176.0' text-anchor='middle' font-size='13' fill='#1a1a1a'><tspan dy='0' font-size='13'>2cos(2πf</tspan><tspan dy='4' font-size='9'>c</tspan><tspan dy='-4' font-size='13'> t)</tspan></text><line x1='413.0' y1='85.0' x2='458.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><rect x='460.0' y='66.0' width='82.0' height='38.0' fill='none' stroke='#1a1a1a' stroke-width='1.6'/><text x='501.0' y='91.0' text-anchor='middle' font-size='13' font-style='italic' fill='#1a1a1a'>LPF</text><line x1='542.0' y1='85.0' x2='606.0' y2='85.0' stroke='#1a1a1a' stroke-width='1.6' marker-end='url(#m21b)'/><circle cx='578.0' cy='85.0' r='3.2' fill='#1a1a1a' stroke='none'/><text x='578.0' y='70.0' text-anchor='middle' font-size='13' fill='#1a1a1a'>B</text></svg>
+<svg
+   viewBox="12 42 612 155"
+   font-family="Helvetica,Arial,'PingFang SC','Microsoft YaHei',sans-serif"
+   font-size="14"
+   version="1.1"
+   id="svg14"
+   sodipodi:docname="2021-二-q2block.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview14"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.3963048"
+     inkscape:cx="273.22115"
+     inkscape:cy="59.442608"
+     inkscape:window-width="1094"
+     inkscape:window-height="1022"
+     inkscape:window-x="45"
+     inkscape:window-y="29"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg14" />
+  <defs
+     id="defs1">
+    <marker
+       id="m21b"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="3"
+       orient="auto">
+      <path
+         d="M0,0 L7,3 L0,6 z"
+         fill="#1a1a1a"
+         id="path1" />
+    </marker>
+  </defs>
+  <text
+     x="45.039696"
+     y="90.716179"
+     text-anchor="start"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text1">s(t)</text>
+  <line
+     x1="68.0"
+     y1="85.0"
+     x2="127.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21b)"
+     id="line1" />
+  <circle
+     cx="140.0"
+     cy="85.0"
+     r="13.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="circle1" />
+  <line
+     x1="130.0"
+     y1="85.0"
+     x2="150.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="line2" />
+  <line
+     x1="140.0"
+     y1="75.0"
+     x2="140.0"
+     y2="95.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="line3" />
+  <line
+     x1="140"
+     y1="123.48826"
+     x2="140"
+     y2="99"
+     stroke="#1a1a1a"
+     stroke-width="1.05805"
+     marker-end="url(#m21b)"
+     id="line4" />
+  <text
+     x="140.71617"
+     y="143.77208"
+     text-anchor="middle"
+     font-size="13px"
+     fill="#1a1a1a"
+     id="text4">加性白高斯噪声</text>
+  <line
+     x1="153.0"
+     y1="85.0"
+     x2="198.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21b)"
+     id="line5" />
+  <rect
+     x="200.0"
+     y="66.0"
+     width="80.0"
+     height="38.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="rect5" />
+  <text
+     x="240.0"
+     y="91.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text5">BPF</text>
+  <line
+     x1="280.0"
+     y1="85.0"
+     x2="386.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21b)"
+     id="line6" />
+  <circle
+     cx="334.36322"
+     cy="85"
+     r="3.2"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle6" />
+  <text
+     x="333.0"
+     y="70.0"
+     text-anchor="middle"
+     font-size="13"
+     fill="#1a1a1a"
+     id="text7">A</text>
+  <circle
+     cx="400.0"
+     cy="85.0"
+     r="13.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="circle8" />
+  <line
+     x1="390.8"
+     y1="75.8"
+     x2="409.2"
+     y2="94.2"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="line8" />
+  <line
+     x1="409.2"
+     y1="75.8"
+     x2="390.8"
+     y2="94.2"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="line9" />
+  <line
+     x1="400"
+     y1="119.90738"
+     x2="400"
+     y2="99"
+     stroke="#1a1a1a"
+     stroke-width="0.977633"
+     marker-end="url(#m21b)"
+     id="line10" />
+  <text
+     x="400"
+     y="138.04268"
+     text-anchor="middle"
+     font-size="13px"
+     fill="#1a1a1a"
+     id="text12"><tspan
+       dy="0"
+       font-size="13px"
+       id="tspan10">2cos(2πf</tspan><tspan
+       dy="4"
+       font-size="9px"
+       id="tspan11">c</tspan><tspan
+       dy="-4"
+       font-size="13px"
+       id="tspan12">t)</tspan></text>
+  <line
+     x1="413.0"
+     y1="85.0"
+     x2="458.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21b)"
+     id="line12" />
+  <rect
+     x="460.0"
+     y="66.0"
+     width="82.0"
+     height="38.0"
+     fill="none"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     id="rect12" />
+  <text
+     x="501.0"
+     y="91.0"
+     text-anchor="middle"
+     font-size="13"
+     font-style="italic"
+     fill="#1a1a1a"
+     id="text13">LPF</text>
+  <line
+     x1="542.0"
+     y1="85.0"
+     x2="606.0"
+     y2="85.0"
+     stroke="#1a1a1a"
+     stroke-width="1.6"
+     marker-end="url(#m21b)"
+     id="line13" />
+  <circle
+     cx="578.0"
+     cy="85.0"
+     r="3.2"
+     fill="#1a1a1a"
+     stroke="none"
+     id="circle13" />
+  <text
+     x="578.0"
+     y="70.0"
+     text-anchor="middle"
+     font-size="13"
+     fill="#1a1a1a"
+     id="text14">B</text>
+</svg>

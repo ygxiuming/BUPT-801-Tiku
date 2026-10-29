@@ -194,13 +194,41 @@ const normAttrs = (svg) => svg
   .replace(/<[^>]+>/g, (tag) => tag.replace(/\s+/g, ' '))
   .replace(GEO_ATTR, (m, name, q, val) => name + "='" + val + "'");
 
+// 位图题（原卷截图 / 扫描图直接嵌进图库）：<image> 的矩形本身就是墨迹，留白与溢出都要算它。
+// 属性顺序不固定（我们的外壳是 x,y,width,height，Inkscape 重存会换序），所以逐个抓，
+// 且必须用 (?:^|\s) 而不是 \b 锚定属性名——否则 stroke-width 会被当成 width。
+function images(svg) {
+  const out = [];
+  for (const m of svg.matchAll(/<image\b[^>]*>/g)) {
+    const num = (n) => {
+      const r = new RegExp('(?:^|\\s)' + n + "='([-\\d.]+)'").exec(m[0]);
+      return r ? +r[1] : null;
+    };
+    const x = num('x'), y = num('y'), w = num('width'), h = num('height');
+    if ([x, y, w, h].some((v) => v === null)) continue;
+    out.push({ x: x, y: y, w: w, h: h });
+  }
+  return out;
+}
+
+// 注册值两种形态（见 app/src/lib/render.js figToSvg）：'<svg …>' 矢量图，或 { src, w, h } 位图描述符
+// （assets/<key>.png 覆盖了同名 svg 时）。描述符包成等价外壳再进解析器：图框 (18,18,w,h)、
+// 四边留白天生 18，<image> 当墨迹参与留白/溢出判断。
+const asSvg = (v) => {
+  if (typeof v === 'string') return v;
+  if (!v || typeof v !== 'object' || !v.src) return '';
+  const w = Math.round(+v.w || 1200), h = Math.round(+v.h || w * 0.6), p = 18;
+  return "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " + (w + 2 * p) + ' ' + (h + 2 * p) + "' font-size='14'>" +
+    "<image x='" + p + "' y='" + p + "' width='" + w + "' height='" + h + "'/></svg>";
+};
+
 let total = 0;
 for (const k of Object.keys(figs)) {
-  const svg = normAttrs(figs[k]);
+  const svg = normAttrs(asSvg(figs[k]));
   const vb = (svg.match(/viewBox='([^']+)'/) || [, '0 0 0 0'])[1].split(/\s+/).map(Number);
-  const boxes = textBoxes(svg), S = segs(svg), C = circles(svg);
+  const boxes = textBoxes(svg), S = segs(svg), C = circles(svg), I = images(svg);
   // 归一后仍一个图元都读不到 ⇒ 解析器和这份 SVG 的写法对不上，必须报错而不是当成干净
-  if (vb[2] > 0 && !boxes.length && !S.hard.length && !C.length) {
+  if (vb[2] > 0 && !boxes.length && !S.hard.length && !C.length && !I.length) {
     console.log('\n== ' + k + ' == 无法解析出任何图元（属性写法与本工具不兼容），本次未被检查 ⚠');
     total += 1;
     continue;
@@ -243,13 +271,14 @@ for (const k of Object.keys(figs)) {
   for (const s of S.soft) { mm(s[0], s[1]); mm(s[2], s[3]); }
   for (const b of boxes) { mm(b.x0, b.y0); mm(b.x1, b.y1); }
   for (const c of C) { mm(c.cx - c.r, c.cy - c.r); mm(c.cx + c.r, c.cy + c.r); }
-  // 位图题（原卷扫描图直接嵌入）：<image> 的矩形就是墨迹
-  for (const m of svg.matchAll(/<image[^>]*x='([-\d.]+)'[^>]*y='([-\d.]+)'[^>]*width='([-\d.]+)'[^>]*height='([-\d.]+)'/g)) { mm(+m[1], +m[2]); mm(+m[1] + +m[3], +m[2] + +m[4]); }
+  // 位图题（原卷截图 / 扫描图直接嵌入）：<image> 的矩形就是墨迹
+  for (const im of I) { mm(im.x, im.y); mm(im.x + im.w, im.y + im.h); }
   // 注意 viewBox 可能是 'vx vy vw vh'（收边后原点不是 0,0），留白必须按绝对边界算
   const pad = [x0 - vb[0], y0 - vb[1], vb[0] + vb[2] - x1, vb[1] + vb[3] - y1].map(Math.round);
   const warn = pad.some((v) => v < 0 || v > 30) ? '  ⚠ 留白/溢出' : '';
   total += hits.length + tHits.length;
   console.log('\n== ' + k + ' == 文字' + boxes.length + ' 线段' + (S.hard.length + S.soft.length) +
+    (I.length ? ' 位图' + I.length : '') +
     ' 硬交叠' + (hits.length + tHits.length) + ' 复核' + soft.length + ' 净距预警' + near.length +
     ' 留白L/T/R/B=' + pad.join('/') + warn);
   Array.from(new Set(hits)).slice(0, 10).forEach((h) => console.log('    线:', h));

@@ -12,7 +12,8 @@
  *  2. 在同目录里加载题目数据（paper.js / answer.js）与图库，核对「引用了但没注册」
  *     的悬空图 key。
  *  3. 反向核对「注册了但没人引用」的孤儿图（多为改题后忘删，不算错，只提示）。
- *  4. 检查每个注册的图确实是 <svg 开头的字符串。
+ *  4. 检查每个注册的图确实是 <svg 开头的字符串或 {src,w,h} 截图描述符。
+ *  5. 核对 data/images/<年>/ 里的截图是否都进了注册表（忘跑 emit 的静默漏图）。
  *
  * 用法：
  *   node tools/check_assets.mjs            # public + dist 全查
@@ -71,8 +72,30 @@ function loadInSandbox(files) {
   return win
 }
 
+/**
+ * 图上一条命：截图放进 data/images 只是"源文件到位"，还得经过 emit 才进注册表。
+ * 忘了重建注册表时页面照常、图静默保持旧版（或整块空白），这里把它抓出来。
+ * key 规则与 tools/fig_registry.js: keyFromImageName 一致。
+ */
+function scanImageKeys(dir, acc = { keys: [], bad: [] }) {
+  let names = []
+  try { names = fs.readdirSync(dir, { withFileTypes: true }) } catch { return acc }
+  for (const d of names) {
+    if (d.name.startsWith('_') || d.name.startsWith('.')) continue
+    const full = path.join(dir, d.name)
+    if (d.isDirectory()) { scanImageKeys(full, acc); continue }
+    if (!/\.(png|jpe?g|webp|gif)$/i.test(d.name)) continue
+    const stem = path.basename(d.name, path.extname(d.name))
+    const m = /^\d{4}-([^-]+)-(.+)$/.exec(stem)
+    const key = (m ? m[2] : stem).trim()
+    if (/^[A-Za-z0-9_-]+$/.test(key)) acc.keys.push(key)
+    else acc.bad.push(path.relative(ROOT, full))
+  }
+  return acc
+}
+
 for (const t of TARGETS) {
-  const r = { missing: [], dangling: [], orphan: [], badSvg: [], years: {}, refs: 0 }
+  const r = { missing: [], dangling: [], orphan: [], badSvg: [], unregistered: [], strayImage: [], years: {}, refs: 0 }
   // 1) 静态资源存在性
   if (!fs.existsSync(t.index)) {
     r.missing.push({ file: path.relative(ROOT, t.index), why: 'index.html 不存在' })
@@ -108,14 +131,39 @@ for (const t of TARGETS) {
       r.years[y] = { used: used.size, registered: regKeys.length }
       for (const k of used) if (!regKeys.includes(k)) r.dangling.push({ year: y, fig: k, why: '题干/解析引用了，但图库里没有' })
       for (const k of regKeys) {
-        const s = reg[k]
-        if (!/^\s*<svg\b/i.test(String(s || ''))) r.badSvg.push({ year: y, fig: k, why: '注册值不是 <svg 字符串' })
+        const v = reg[k]
+        // 注册值两种形态：'<svg …>'（矢量图，也是老 base64 外壳的形态）；或 { src, w, h } 位图描述符
+        // （assets/<key>.png 覆盖了同名 svg 时，emit 自动生成——png 优先于 svg）。
+        const isObj = v && typeof v === 'object'
+        if (isObj) {
+          if (!v.src) r.badSvg.push({ year: y, fig: k, why: '位图描述符缺 src' })
+          if (v.w < 40 || v.h < 40) r.badSvg.push({ year: y, fig: k, why: `位图描述符尺寸可疑：${v.w}x${v.h}` })
+        } else if (!/^\s*<svg\b/i.test(String(v || ''))) {
+          r.badSvg.push({ year: y, fig: k, why: '注册值既不是 <svg 字符串也不是 {src,w,h}' })
+        }
+        // 图片引用（两种形态都要查）：描述符的 src，或外壳 svg 里的 <image xlink:href="/data/…">。
+        // 它们是浏览器真实请求路径，必须在快照目录下真的存在，否则图静默空白（FigBlock 的 v-if 为假）。
+        const refs = isObj ? [String(v.src || '')]
+          : [...String(v || '').matchAll(/(?:xlink:href|href|src)=["'](\/data\/[^"']+)["']/g)].map((m) => m[1])
+        for (const ref of refs) {
+          if (!ref.startsWith('/data/')) continue
+          if (!fs.existsSync(path.join(t.dir, ref))) {
+            r.missing.push({ file: ref, why: `图 ${y}/${k} 引用的图片在快照里不存在（图会空白）` })
+          }
+        }
         if (!used.has(k)) r.orphan.push({ year: y, fig: k })
       }
+
+      // 截图到位但没进注册表（忘跑 emit）：页面不报错、只显示老图/空白，smoke/audit 都看不见
+      const imgScan = scanImageKeys(path.join(t.dir, 'data', 'images', y))
+      for (const k of imgScan.keys) {
+        if (!regKeys.includes(k)) r.unregistered.push({ year: y, fig: k, why: 'data/images 里有这张截图，但注册表里没有（先跑 node tools/emit_figures.mjs ' + y + '）' })
+      }
+      for (const f of imgScan.bad) r.strayImage.push({ file: f, why: '文件名不合规范，未注册（应改名成 <年>-<题号>-<key>.png/.jpg）' })
     }
   }
 
-  if (r.missing.length || r.dangling.length || r.badSvg.length) failed = true
+  if (r.missing.length || r.dangling.length || r.badSvg.length || r.unregistered.length) failed = true
   report[t.name] = r
 }
 
@@ -145,7 +193,15 @@ for (const [name, r] of Object.entries(report)) {
     console.log(`  ! 孤儿图 ${r.orphan.length}（注册了但题干/解析没引用，仅提示）`)
     for (const o of r.orphan) console.log(`    - ${o.year} ${o.fig}`)
   }
-  if (!r.missing.length && !r.dangling.length && !r.badSvg.length) console.log('  ✓ 资源与图库注册全部对上')
+  if (r.unregistered.length) {
+    console.log(`  ✗ 截图未注册 ${r.unregistered.length}（data/images 里有图，注册表里没有 —— 页面会用老图/空白）`)
+    for (const u of r.unregistered) console.log(`    - ${u.year} ${u.fig}  (${u.why})`)
+  }
+  if (r.strayImage.length) {
+    console.log(`  ! 文件名不合规范的截图 ${r.strayImage.length}（不会生效，仅提示）`)
+    for (const s of r.strayImage) console.log(`    - ${s.file}  (${s.why})`)
+  }
+  if (!r.missing.length && !r.dangling.length && !r.badSvg.length && !r.unregistered.length) console.log('  ✓ 资源与图库注册全部对上')
 }
 
 console.log(`\n== 结果 ==\n${failed ? '✗ 有问题（见上）' : '✓ 全部通过'}`)

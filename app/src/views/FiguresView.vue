@@ -3,9 +3,9 @@
     <div class="section-head" style="margin-top:6px">
       <div>
         <div class="eyebrow">FIGURES</div>
-        <h2>矢量图库</h2>
+        <h2>图库</h2>
       </div>
-      <span class="desc">全部由 SVG 重绘 · 点击放大查看细节</span>
+      <span class="desc">SVG 重绘（个别题图为原卷截图）· 点击放大查看细节</span>
       <span class="spacer"></span>
       <span class="badge gray">共 {{ total }} 张</span>
     </div>
@@ -52,7 +52,7 @@
 <script>
 import Icon from '../components/Icon.vue'
 import { papers, figuresOf } from '../lib/data.js'
-import { fitSvg, withTitle, scopeIds } from '../lib/render.js'
+import { fitSvg, withTitle, scopeIds, figToSvg } from '../lib/render.js'
 
 export default {
   name: 'FiguresView',
@@ -91,11 +91,13 @@ export default {
     }
   },
   methods: {
-    // 卡片内限高 176px、基准宽 560px 注入显式尺寸（viewBox-only 的 svg 无固有尺寸）
+    // 卡片内限高 176px、基准宽 560px 注入显式尺寸（viewBox-only 的 svg 无固有尺寸）。
+    // figToSvg 负责把位图描述符（某张图换成原卷截图时是 {src,w,h}）也变成一张 svg 外壳，这里不区分两种形态。
     fitted(it) {
-      const s = scopeIds(it.svg, 'f' + it.year + '-' + it.key)
+      const s = scopeIds(figToSvg(it.svg), 'f' + it.year + '-' + it.key)
       return withTitle(fitSvg(s, 560, 176), it.meta.desc || it.key)
     },
+    isRaster(it) { return !!(it.svg && typeof it.svg === 'object' && it.svg.src) },
     itemsOf(y) { return this.filtered.filter((it) => it.year === y) },
     groupsOf(y) {
       const items = this.itemsOf(y)
@@ -106,6 +108,8 @@ export default {
       ].filter((g) => g.items.length)
     },
     fileName(y, it) {
+      // 截图类图件的真身是 assets/<key>.png（外壳 svg 只是外壳，改它没用）
+      if (this.isRaster(it)) return 'assets/' + it.key + '.png'
       const qnum = (it.meta.q || '').replace('题', '')
       const base = y + '-' + qnum + '-' + it.key + '.js'
       return it.meta.kind === 'answer' ? 'answer/' + base : base
