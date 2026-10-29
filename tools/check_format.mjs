@@ -17,7 +17,9 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const require = createRequire(path.join(ROOT, 'package.json'))
-const ALL = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+// 2012 于 2026-10-29 补入。2013–2015 仍在表外（这三年的数据早于本工具），
+// 其中 2013 已查出一处已知缺陷（g10.o20 只有 A/B/C，缺 D），纳入前须先核原卷。
+const ALL = [2012, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
 const args = process.argv.slice(2).map(Number).filter(Boolean)
 const YEARS = args.length ? args : ALL
 

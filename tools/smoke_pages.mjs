@@ -77,6 +77,9 @@ const ROUTES = [
   ['/paper/2013', '试卷页2013'],
   ['/practice?y=2013', '练习页2013'],
   ['/exam?y=2013', '考试页2013'],
+  ['/paper/2012', '试卷页2012'],
+  ['/practice?y=2012', '练习页2012'],
+  ['/exam?y=2012', '考试页2012'],
   ['/stats', '统计页'],
   ['/figures', '图库页'],
   ['/review', '复习页'],
@@ -580,6 +583,43 @@ await step('练习页2014：选选项 → 查看解析', async () => {
   const kx = w.document.querySelectorAll('.katex').length
   if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
   if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2012：选选项 → 查看解析', async () => {
+  // 2012 第 1 空（随参信道）解析是纯文字，用默认首题断言 katex 会误报；
+  // 指到第 3 空（m 序列，题干与解析都含公式）才验得到公式渲染。
+  const w = await openPage('/practice?y=2012&type=choice&id=2012-3', 'prac12')
+  const opt = w.document.querySelector('td[data-k]')
+  if (!opt) throw new Error('找不到选项单元格 td[data-k]')
+  click(w, opt)
+  await sleep(120)
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  const kx = w.document.querySelectorAll('.katex').length
+  if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+// 2012 首次入库时组干写成 __(01)__ 占位，boldBlanks 只认全角（n），
+// 结果页面把占位符原样印出来、空号既不显眼也与选项表对不上。这里钉死这条。
+await step('试卷页2012：选择题组干的空号必须是加粗的（n）', async () => {
+  const w = await openPage('/paper/2012', 'paper12blank')
+  // 试卷页每组组干只渲染一次（练习页才按空重复），故加粗空号总数应正好等于空数
+  const lines = [...w.document.querySelectorAll('.qline.qn')]
+  if (!lines.length) throw new Error('试卷页没有选择题组干（.qline.qn）')
+  const raw = lines.filter((el) => el.innerHTML.includes('__('))
+  if (raw.length) throw new Error(raw.length + ' 段组干残留 __(n)__ 占位符')
+  const got = [...new Set([...w.document.querySelectorAll('.qline.qn strong.blank')].map((el) => Number(el.textContent)))]
+    .sort((a, b) => a - b)
+  const want = w.BUPT801.papers['2012'].questions.filter((q) => q.type === 'choice').length
+  const lack = []
+  for (let i = 1; i <= want; i++) if (!got.includes(i)) lack.push(i)
+  if (lack.length) throw new Error('组干里缺这些空号的加粗标记：' + lack.join('、'))
   w.close()
 })
 

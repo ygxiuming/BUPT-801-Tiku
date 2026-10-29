@@ -52,6 +52,9 @@ require('../data/questions/2016/answer.js');
 require('../data/figures/2013/_index.js');
 require('../data/figures/2014/_index.js');
 require('../data/figures/2015/_index.js');
+require('../data/figures/2012/_index.js');
+require('../data/questions/2012/paper.js');
+require('../data/questions/2012/answer.js');
 require('../data/questions/2013/paper.js');
 require('../data/questions/2013/answer.js');
 require('../data/questions/2014/paper.js');
@@ -87,6 +90,8 @@ const warns = [];
 // ---------------- 期望值（每年） ----------------
 const EXPECT = {
   // 2021 原卷：一（40 分）+ 二～八（15/15/15/15/15/15/20 = 110 分）
+  // 2012 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（8/13/15/8/16/15/13/12 = 100 分）= 150 分
+  2012: { choice: 30, big: 18, score: 150 },
   2021: { choice: 40, big: 7, score: 150 },
   // 2022 原卷：一（40 分）+ 二～九（12/16/12/14/12/12/12/16 = 106 分），原卷标注合计 146 分
   2022: { choice: 40, big: 8, score: 146 },

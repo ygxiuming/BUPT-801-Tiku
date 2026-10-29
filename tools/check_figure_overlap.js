@@ -10,6 +10,7 @@ module.paths.unshift(path.dirname(__dirname));
 const year = String(process.argv[2] || '2025');
 let loaded = false;
 switch (year) {
+  case '2012': require('data/figures/2012/_index.js'); loaded = true; break;
   case '2013': require('data/figures/2013/_index.js'); loaded = true; break;
   case '2014': require('data/figures/2014/_index.js'); loaded = true; break;
   case '2015': require('data/figures/2015/_index.js'); loaded = true; break;
@@ -183,11 +184,27 @@ function segBoxDist(s, b) {
   return d;
 }
 
+// 属性归一：本检查器的正则按「单引号 + 同一行相邻」写（生成器输出就是这样）。
+// 图件被 Inkscape 等外部工具重存后，属性会变成双引号、还会被换行拆成一行一个，
+// 于是 <line>/<text> 一个都匹配不上——结果是「0 文字 0 线段、留白 1e9、合计 0 交叠」，
+// 看起来完全干净、实际什么都没检查。2020/2021 就被这样静默放过一轮。
+// 这里把标签内的空白压成单空格，再把几何/字体这类纯数值属性改回单引号（值里不会含引号）。
+const GEO_ATTR = /(\b(?:x|y|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|dy|dx|font-size|text-anchor|viewBox|stroke-width|stroke|fill))=(")([^"<>=]*)\2/g;
+const normAttrs = (svg) => svg
+  .replace(/<[^>]+>/g, (tag) => tag.replace(/\s+/g, ' '))
+  .replace(GEO_ATTR, (m, name, q, val) => name + "='" + val + "'");
+
 let total = 0;
 for (const k of Object.keys(figs)) {
-  const svg = figs[k];
+  const svg = normAttrs(figs[k]);
   const vb = (svg.match(/viewBox='([^']+)'/) || [, '0 0 0 0'])[1].split(/\s+/).map(Number);
   const boxes = textBoxes(svg), S = segs(svg), C = circles(svg);
+  // 归一后仍一个图元都读不到 ⇒ 解析器和这份 SVG 的写法对不上，必须报错而不是当成干净
+  if (vb[2] > 0 && !boxes.length && !S.hard.length && !C.length) {
+    console.log('\n== ' + k + ' == 无法解析出任何图元（属性写法与本工具不兼容），本次未被检查 ⚠');
+    total += 1;
+    continue;
+  }
   const hits = [], soft = [], near = [];
   for (const b of boxes) {
     for (const s of S.hard) {
