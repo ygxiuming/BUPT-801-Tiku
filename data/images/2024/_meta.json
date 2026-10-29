@@ -1,0 +1,12 @@
+{
+  "q3tx": { "q": "题三", "kind": "answer", "desc": "16QAM 发送框图（α=1/7 根升余弦成形）" },
+  "q3block": { "q": "题三", "kind": "answer", "desc": "16QAM 相干接收框图（根升余弦匹配滤波+四进制判决）" },
+  "q4recv": { "q": "题四", "kind": "paper", "desc": "DSB-SC 相干解调接收机框图" },
+  "q6const": { "q": "题六", "kind": "answer", "desc": "8 点星座图（s1~s8 位置）" },
+  "q6voronoi": { "q": "题六", "kind": "answer", "desc": "最大似然判决域（Voronoi 胞）" },
+  "q8state": { "q": "题八", "kind": "paper", "desc": "(3,1,3) 卷积码状态转移图" },
+  "q8enc": { "q": "题八", "kind": "answer", "desc": "卷积码编码器原理框图（3 级移位寄存器）" },
+  "q8trellis": { "q": "题八", "kind": "answer", "desc": "维特比网格图与幸存路径（收码 11111111）" },
+  "q9recv": { "q": "题九", "kind": "paper", "desc": "二进制反极性波形相关接收机框图" },
+  "q10quant": { "q": "题十", "kind": "answer", "desc": "量化器输入概率密度 p(x)=x/2 与量化区间" }
+}

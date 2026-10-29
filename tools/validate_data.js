@@ -898,18 +898,18 @@ t.push(['2026三(3) 门限 -3Tb、Pe=Q(√(E_b/N0))', approx((2 - 8) / 2, -3) &&
   t.push(['2024五 H(Y)=92/63、H(Y|X)=26/21', approx(HY, 92 / 63, 1e-9) && approx(HYX, 26 / 21, 1e-9)]);
   t.push(['2024五 H(X,Y)=47/21、I=2/9', approx(1 + HYX, 47 / 21, 1e-9) && approx(HY - HYX, 2 / 9, 1e-9)]);
 })();
-// 六：Es、dmin，以及 s8 的胞——三条中垂线距离 0.5 / 0.707 / 0.707
+// 六：Es、dmin，以及 s3 的胞——矩形近似下边界距 0.5 / 1
 (function () {
   const S = [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [0, 2], [-1, -1], [1, -1]];
   const Es = S.reduce((a, p) => a + p[0] * p[0] + p[1] * p[1], 0) / S.length;
   let dmin = Infinity;
   for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) dmin = Math.min(dmin, Math.hypot(S[i][0] - S[j][0], S[i][1] - S[j][1]));
   const sig = Math.sqrt(0.005);
-  // s8 的胞由 3 条中垂线围成：上方 y=-0.5 距 0.5；两条斜边距 0.7071。
-  // 折算到 erfc 自变量 d/(σ√2)：0.5→5、0.7071→10，即 Pe≈Q(5√2)=½erfc(5)。
-  const u1 = 0.5 / sig, u2 = Math.SQRT1_2 / sig;
+  // s3（原点）的胞：左右 y_x=±0.5 距 0.5，上方 y_y=1 距 1（矩形近似）。
+  // 折算到 erfc 自变量 d/(σ√2)：0.5→5、1→10，Pe=erfc(5)+erfc(10)−erfc(5)erfc(10)。
+  const u1 = 0.5 / (sig * Math.SQRT2), u2 = 1 / (sig * Math.SQRT2);
   t.push(['2024六 Es=9/4、dmin=1', approx(Es, 2.25, 1e-12) && approx(dmin, 1, 1e-12)]);
-  t.push(['2024六(3) 三条边距→½erfc(5)', approx(u1, 5 * Math.SQRT2, 1e-9) && approx(u2, 10, 1e-9)]);
+  t.push(['2024六(3) 边距→erfc(5)、erfc(10)', approx(u1, 5, 1e-9) && approx(u2, 10, 1e-9)]);
 })();
 // 七：(8,4) 系统码——GHᵀ=0、dmin=4、伴随式 1100 的码重 2 图样 4 个
 (function () {
