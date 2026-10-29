@@ -10,7 +10,7 @@
 //
 // 用法：
 //   node tools/emit_figures.mjs <年>             重建该年注册表（扫 data/images 截图 + data/figures 历史 svg）
-//   node tools/emit_figures.mjs <年> --run-gen   额外先跑 tools/gen_figures_<年>.py 覆盖 .svg（仅维护旧年份）
+//   node tools/emit_figures.mjs <年> --run-gen   额外先跑 tools/gen_figures_<年>.py 覆盖 .svg（改了生成器才用）
 //   node tools/emit_figures.mjs <年> --rebuild   兼容旧写法，等同于默认行为（= 老参数 --from-svg）
 //   node tools/emit_figures.mjs --sync-all       全部年份重建（sync/dev 启动用）
 import { execFileSync } from 'node:child_process'
@@ -62,9 +62,9 @@ if (isMain) {
     console.log('figure registries synced（截图 data/images 优先，无截图回落 .svg）')
   } else {
     const year = process.argv[2] || '2025'
-    // 默认**只重建注册表**：图件主链路已是 data/images 的截图，跑生成器没有意义，
-    // 而生成器会按输出**覆盖** .svg —— 手改过的图一跑就没（2021 出过事）。
-    // 只有维护 2023/2024 这类还靠生成器的旧年份时才显式加 --run-gen。
+    // 默认**只重建注册表**，不动 .svg：图件默认是 SVG 重绘（+ 可选的逐张截图覆盖），
+    // 而生成器会按输出**覆盖**同名 .svg —— Inkscape 手改过的图一跑就没（2021 出过事）。
+    // 要由生成器产出/刷新 .svg，显式加 --run-gen（新画一批图时用）。
     const runGen = process.argv.includes('--run-gen')
     const figDir = join(root, 'data', 'figures', year)
     let hint = null
