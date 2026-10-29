@@ -842,10 +842,14 @@ await step('试卷页2021：七(2) 编码器框图内联在「框图如下」之
   }
   const img = st.querySelector('.figblock svg image')
   if (!img) throw new Error('图块里没有 <image>（位图没内联进去）')
-  // 两种存法都认：base64 内联，或 /data/figures/<年>/assets/*.png 外链（最新约定，注册表更小）
+  // 三种存法都认：base64 内联 / /data/figures/<年>/assets/*.png（旧截图通道）/
+  // /data/images/<年>/[answer/]*.png（现行截图通道：注册表直接写外链，不再内联）
   const href = img.getAttribute('xlink:href') || img.getAttribute('href') || ''
-  if (!/^data:image\/png;base64,/.test(href) && !/\/assets\/[\w.-]+\.png$/.test(href)) {
-    throw new Error('图块的 href 既不是 base64 PNG 也不是 assets 外链：' + href.slice(0, 40))
+  const okHref = /^data:image\/png;base64,/.test(href)
+    || /\/assets\/[\w.-]+\.png$/.test(href)
+    || /^\/data\/images\/\d{4}\/(?:[^/]+\/)*[^/]+\.(png|jpe?g|webp|gif)$/i.test(href)
+  if (!okHref) {
+    throw new Error('图块的 href 既不是 base64 PNG / assets 外链 / data-images 外链：' + href.slice(0, 48))
   }
   w.close()
 })
@@ -867,6 +871,29 @@ await step('练习页2021 综合题：BigSol 的 [[fig:]] 图原位渲染', asyn
   const fi = kids.findIndex((k) => k.classList.contains('figblock'))
   if (fi < 0) throw new Error('BigSol 的七(2) 没有图块')
   if (fi === kids.length - 1) throw new Error('BigSol 把图排在段末（[[fig:]] 没生效）')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+// 一个小问可以配多张图（第3小问 h(t) 波形 + 眼图），这时两张都写成正文里的 [[fig:]]：
+// st.fig 一旦被内联顶掉就不会再在段末重复出图，所以「张数 + 顺序」要单独断言，
+// 否则「少了一张」或「顺序颠倒」在页面上看不出来（页面照常、只是少一幅）。
+await step('练习页2021 综合题：一题多图（题三(3) 两张、题三(4) 一张）', async () => {
+  const w = await openPage('/practice?y=2021&type=big&id=2021-%E4%B8%89', 'prac21big2')
+  const b = btnByText(w, '查看解析')
+  if (!b) throw new Error('综合题卡没有「查看解析」按钮')
+  click(w, b)
+  await sleep(260)
+  const steps = [...w.document.querySelectorAll('details.sol-step')]
+  const eye = steps.filter((d) => /眼图/.test(d.querySelector('summary')?.textContent || ''))
+  if (eye.length !== 2) throw new Error('题三应有 (3)(4) 两步讲眼图，实际 ' + eye.length)
+  const hrefs = (el) => [...el.querySelectorAll('.figblock svg image')]
+    .map((i) => i.getAttribute('xlink:href') || i.getAttribute('href') || '')
+  const h3 = hrefs(eye[0])
+  const h4 = hrefs(eye[1])
+  if (h3.length !== 2) throw new Error('题三(3) 应有 2 张图（h(t) 波形 + 眼图），实际 ' + h3.length)
+  if (!/q3ht/.test(h3[0]) || !/q3eye1/.test(h3[1])) throw new Error('题三(3) 图序不对：' + h3.join(' | '))
+  if (h4.length !== 1 || !/q3eye2/.test(h4[0])) throw new Error('题三(4) 应只有 q3eye2，实际 ' + h4.join(' | '))
   if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
   w.close()
 })

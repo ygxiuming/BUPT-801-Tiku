@@ -51,8 +51,12 @@ function localRefs(html) {
     .filter(u => !u.startsWith('/src/'))
 }
 
-/** 从任意嵌套结构里收集所有 fig 字段 */
+/** 从任意嵌套结构里收集所有 fig 引用：fig/figKey 字段 + 正文里单独一行的 [[fig:key]] */
 function collectFigKeys(obj, acc = new Set()) {
+  if (typeof obj === 'string') { // 数组元素是字符串，必须在这一层收内联图，否则只能捡到对象上的 fig 字段
+    for (const m of obj.matchAll(/\[\[fig:([A-Za-z0-9_-]+)\]\]/g)) acc.add(m[1])
+    return acc
+  }
   if (!obj || typeof obj !== 'object') return acc
   if (Array.isArray(obj)) { obj.forEach(o => collectFigKeys(o, acc)); return acc }
   for (const [k, v] of Object.entries(obj)) {

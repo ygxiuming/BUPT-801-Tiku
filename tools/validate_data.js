@@ -122,6 +122,18 @@ function renderLatex(s) {
   katex.renderToString(s, { throwOnError: true, displayMode: true, strict: false });
 }
 
+// 正文里单独一行的 [[fig:key]]（前端 mdBlocks() 的 t:'fig' 块）：一张小问可以配多张图，
+// 这些图不占 st.fig 字段，引用统计必须一起算，否则会被误报成「未被任何题目引用」。
+function inlineFigKeys(body) {
+  if (!Array.isArray(body)) return [];
+  const keys = [];
+  for (const line of body) {
+    if (typeof line !== 'string') continue;
+    for (const m of line.matchAll(/\[\[fig:([A-Za-z0-9_-]+)\]\]/g)) keys.push(m[1]);
+  }
+  return keys;
+}
+
 function checkStrings(obj, p) {
   if (typeof obj === 'string') {
     if (!obj.includes('$')) return;
@@ -230,7 +242,10 @@ for (const year of Object.keys(B.papers).sort()) {
     checkStrings(q, q.id);
 
     if (q.fig && !figs[q.fig]) errors.push(`${q.id}: 图缺失 ${q.fig}`);
-    if (q.sol && q.sol.steps) q.sol.steps.forEach((st, i) => { if (st.fig && !figs[st.fig]) errors.push(`${q.id} step${i}: 图缺失 ${st.fig}`); });
+    if (q.sol && q.sol.steps) q.sol.steps.forEach((st, i) => {
+      if (st.fig && !figs[st.fig]) errors.push(`${q.id} step${i}: 图缺失 ${st.fig}`);
+      for (const k of inlineFigKeys(st.body)) if (!figs[k]) errors.push(`${q.id} step${i}: 正文内联图缺失 [[fig:${k}]]`);
+    });
   });
 
   // 组：optionSets 键必须存在；组干齐全；组内题必须指定 oKey
@@ -244,9 +259,15 @@ for (const year of Object.keys(B.papers).sort()) {
     inGroup.forEach((q) => { if (g.optionSets && !q.oKey) warns.push(`${q.id}: 组 ${gk} 有多套选项但题目未指定 oKey`); });
   });
 
-  // 未被引用的图
+  // 未被引用的图（两处引用都算：题干/小问的 fig 字段，以及正文里单独一行的 [[fig:key]]）
   const usedFigs = new Set();
-  qs.forEach((q) => { if (q.fig) usedFigs.add(q.fig); if (q.sol) (q.sol.steps || []).forEach((st) => st.fig && usedFigs.add(st.fig)); });
+  qs.forEach((q) => {
+    if (q.fig) usedFigs.add(q.fig);
+    if (q.sol) (q.sol.steps || []).forEach((st) => {
+      if (st.fig) usedFigs.add(st.fig);
+      inlineFigKeys(st.body).forEach((k) => usedFigs.add(k));
+    });
+  });
   Object.keys(figs).forEach((k) => { if (!usedFigs.has(k)) warns.push(`${year}: 图 ${k} 未被任何题目引用`); });
 }
 
