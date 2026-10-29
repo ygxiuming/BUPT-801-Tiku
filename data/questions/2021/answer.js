@@ -497,16 +497,16 @@ window.BUPT801.answers["2021"] = {
     }
   },
   "2021-39": {
-    "answer": "B",
+    "answer": "A",
     "exp": {
-      "concl": "选B。32FSK 每符号 5 bit，$R_s=30/5=6$ kBaud；正交最小频率间隔等于符号速率，即 6 kHz。",
+      "concl": "选A。32FSK 每符号 $\\log_2 32=5$ bit，$R_s=R_b/5=30/5=6$ kBaud，$T_s=1/6000$ s。两路 FSK 在一个符号内正交要求 $\\Delta f=n/(2T_s)$，取最小 $n=1$ 得 $\\Delta f_{\\min}=1/(2T_s)=R_s/2=3$ kHz。",
       "opts": {
-        "A": "错误。$3$ kHz 是 $R_s/2$，对应最小相干正交间隔（非相干正交需 $R_s$）。",
-        "B": "正确。非相干正交要求 $\\Delta f=R_s=6$ kHz。",
-        "C": "错误。$15$ kHz 是 $R_b/2$。",
-        "D": "错误。$30$ kHz 等于比特速率，偏大。"
+        "A": "正确。$\\Delta f_{\\min}=1/(2T_s)=R_s/2=6/2=3$ kHz。",
+        "B": "错误。$6$ kHz 是 $1/T_s=R_s$，那是**非相干**（包络）检测时两路输出不相关的要求，不是“保持频率正交”的最小间隔。",
+        "C": "错误。$15$ kHz 是 $R_b/2$，与符号速率无关。",
+        "D": "错误。$30$ kHz 等于比特速率 $R_b$。"
       },
-      "note": "正交 FSK 的最小间隔：相干 $1/(2T_s)$，非相干 $1/T_s$；本题按 $1/T_s=R_s$ 取。"
+      "note": "正交的判据是 $\\int_0^{T_s}\\cos2\\pi f_1t\\cos2\\pi f_2t\\,\\mathrm dt=0$，解出 $\\Delta f=n/(2T_s)$，最小取 $1/(2T_s)=R_s/2$。$1/T_s=R_s$ 只是非相干检测的额外要求；题干只说“保持频率正交”，按 $R_s/2$ 取，与参考答案一致。"
     }
   },
   "2021-40": {
@@ -729,6 +729,8 @@ window.BUPT801.answers["2021"] = {
           "q": "(4) $p(x)$、$E[X]$ 与 $E[X^2]$",
           "body": [
             "全概率公式：$$p(x)=\\frac23p(x\\mid Y=1)+\\frac13p(x\\mid Y=3)=\\begin{cases}\\dfrac13,&0\\le x<2\\\\[4pt]\\dfrac16,&2\\le x\\le4\\\\[4pt]0,&\\text{其他}\\end{cases}$$",
+            "对应的 $p(x)$ 曲线（两段台阶，面积和为 1）：",
+            "[[fig:q6pdf]]",
             "均值：$$E[X]=\\int_0^2\\frac{x}{3}\\mathrm dx+\\int_2^4\\frac{x}{6}\\mathrm dx=\\frac23+1=\\frac53$$",
             "功率：$$E[X^2]=\\int_0^2\\frac{x^2}{3}\\mathrm dx+\\int_2^4\\frac{x^2}{6}\\mathrm dx=\\frac89+\\frac{28}{9}=4$$",
             "校验：$E[Y]=1\\cdot\\frac23+3\\cdot\\frac13=\\frac53$，$E[Y^2]=\\frac23+3=\\frac{11}{3}$，$E[X^2]=E[Y^2]+E[Z^2]=\\frac{11}{3}+\\frac13=4$ ✓"
