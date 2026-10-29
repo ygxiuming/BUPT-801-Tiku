@@ -6,16 +6,16 @@ window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q2psd = { src: '/data/images/2025/answer/2025-二-q2psd.png', w: 1431, h: 678 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q2psd = { src: '/data/images/2025/answer/2025-二-q2psd.png', w: 1575, h: 822 };
 (window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).ssb = { src: '/data/images/2025/2025-三-ssb.png', w: 920, h: 230 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q3psd = { src: '/data/images/2025/answer/2025-三-q3psd.png', w: 1485, h: 371 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q3psd = { src: '/data/images/2025/answer/2025-三-q3psd.png', w: 1633, h: 519 };
 (window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).pam = { src: '/data/images/2025/2025-四-pam.png', w: 1063, h: 295 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q4x = { src: '/data/images/2025/answer/2025-四-q4x.png', w: 1495, h: 502 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).ookpdf = { src: '/data/images/2025/answer/2025-五-ookpdf.png', w: 1492, h: 603 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).psk8 = { src: '/data/images/2025/answer/2025-六-psk8.png', w: 1427, h: 1379 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).psk8new = { src: '/data/images/2025/answer/2025-六-psk8new.png', w: 1406, h: 1522 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q7quant = { src: '/data/images/2025/answer/2025-七-q7quant.png', w: 1523, h: 435 };
-(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q8chan = { src: '/data/images/2025/answer/2025-八-q8chan.png', w: 1462, h: 823 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q4x = { src: '/data/images/2025/answer/2025-四-q4x.png', w: 1645, h: 652 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).ookpdf = { src: '/data/images/2025/answer/2025-五-ookpdf.png', w: 1642, h: 753 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).psk8 = { src: '/data/images/2025/answer/2025-六-psk8.png', w: 1569, h: 1521 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).psk8new = { src: '/data/images/2025/answer/2025-六-psk8new.png', w: 1546, h: 1662 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q7quant = { src: '/data/images/2025/answer/2025-七-q7quant.png', w: 1675, h: 587 };
+(window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).q8chan = { src: '/data/images/2025/answer/2025-八-q8chan.png', w: 1608, h: 969 };
 (window.BUPT801.figures["2025"] = window.BUPT801.figures["2025"] || {}).encoder = { src: '/data/images/2025/2025-九-encoder.png', w: 1011, h: 295 };
 
 (window.BUPT801.figureMeta["2025"] = window.BUPT801.figureMeta["2025"] || {}).q2psd = { q: "题二", kind: "answer", desc: "带限白噪声功率谱：高 N0/2、宽 2B 的矩形" };
