@@ -169,7 +169,9 @@ function scanImageDir(imgDir, year) {
     try { names = fs.readdirSync(dir).sort() } catch { return } // 目录不存在 = 这一年没有截图
     for (const name of names) {
       if (name.startsWith('_') || name.startsWith('.')) continue // _meta.json / 草稿不注册
-      const full = path.join(dir, name)
+      const root = path.resolve(dir)
+      const full = path.resolve(root, name)
+      if (!full.startsWith(root + path.sep)) continue // 越出扫描根的目录项不收（防御 crafted 名）
       let st = null
       try { st = fs.statSync(full) } catch { continue }
       if (st.isDirectory()) { walk(full, sub ? sub + '/' + name : name); continue }

@@ -66,11 +66,20 @@ IMG_MIME = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
             '.webp': 'image/webp', '.gif': 'image/gif'}
 
 
+PREVIEW_ROOT = os.path.realpath('/tmp/w801')
+
+
 def inline_hrefs(svg_path):
-    txt = open(svg_path, encoding='utf-8').read()
+    sp = os.path.realpath(svg_path)
+    if not sp.startswith(PREVIEW_ROOT + os.sep):
+        return False  # 本函数只处理 /tmp/w801 下的临时副本，越界路径一律不动
+    txt = open(sp, encoding='utf-8').read()
 
     def rep(m):
-        f = os.path.join(ROOT, m.group(3).lstrip('/'))
+        root = os.path.realpath(ROOT)
+        f = os.path.realpath(os.path.join(ROOT, m.group(3).lstrip('/')))
+        if not f.startswith(root + os.sep):
+            return m.group(0)  # 越出项目根的引用一律不内联（svg 是数据文件，防 crafted 路径）
         if not os.path.exists(f):
             print('警告：%s 引用的 %s 不存在，预览里这张会是空白' % (os.path.basename(svg_path), m.group(3)))
             return m.group(0)
@@ -80,7 +89,20 @@ def inline_hrefs(svg_path):
 
     out = HREF_SITE.sub(rep, txt)
     if out != txt:
-        open(svg_path, 'w', encoding='utf-8').write(out)
+        dst = os.path.realpath(svg_path)
+        if not dst.startswith(PREVIEW_ROOT + os.sep):
+            return False  # 越出 /tmp/w801 预览区的副本一律不写
+        name = os.path.basename(dst)
+        if not re.fullmatch(r'[A-Za-z0-9_.\-]+\.svg', name):
+            return False  # 文件名白名单：只回写预览区里的 <key>.svg 临时副本
+        cwd = os.getcwd()
+        os.chdir(os.path.dirname(dst))
+        try:
+            fd = os.open(name, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                f.write(out)
+        finally:
+            os.chdir(cwd)
     return out != txt
 
 

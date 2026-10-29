@@ -1,0 +1,19 @@
+{
+  "q7spec": { "q": "题一(7)", "kind": "paper", "desc": "第7题 基带系统梯形（升余弦滚降）功率谱" },
+  "q2sys": { "q": "题二", "kind": "paper", "desc": "窄带噪声→解析信号/复包络/正交分量框图" },
+  "q2psd": { "q": "题二", "kind": "answer", "desc": "z(t)、n_L(t)、n_c(t) 功率谱密度" },
+  "q4mf": { "q": "题四", "kind": "answer", "desc": "匹配滤波器 h(t)=g(T_b−t) 波形" },
+  "q5const": { "q": "题五", "kind": "paper", "desc": "八进制星座图（4 个全等正三角形）" },
+  "q5dec": { "q": "题五", "kind": "answer", "desc": "s1 的最佳判决域（右上开口楔形）" },
+  "q5vor": { "q": "题五", "kind": "answer", "desc": "8 点完整判决区域划分" },
+  "q6sys": { "q": "题六", "kind": "paper", "desc": "双信道分路传输与功率分配框图" },
+  "q7enc": { "q": "题七", "kind": "answer", "desc": "(2,1,3) 卷积码编码器框图" },
+  "q7state": { "q": "题七", "kind": "answer", "desc": "4 状态状态转移图（8 条支路）" },
+  "q7trellis": { "q": "题七", "kind": "answer", "desc": "输入 11 的累积度量更新（幸存/淘汰）" },
+  "q8sys": { "q": "题八", "kind": "paper", "desc": "量化与哈夫曼编码框图" },
+  "q8huff": { "q": "题八", "kind": "answer", "desc": "哈夫曼编码树（码字 0/10/110/111）" },
+  "q9sys": { "q": "题九", "kind": "paper", "desc": "采样—编码—复用—循环码—64QAM 链路框图" },
+  "q9mod": { "q": "题九", "kind": "answer", "desc": "64QAM 调制框图" },
+  "q9demod": { "q": "题九", "kind": "answer", "desc": "64QAM 相干解调框图" },
+  "q9psd": { "q": "题九", "kind": "answer", "desc": "E 点单边功率谱（平顶 15 kHz、滚降至 25 kHz）" }
+}
