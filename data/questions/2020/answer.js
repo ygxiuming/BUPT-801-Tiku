@@ -571,9 +571,10 @@ window.BUPT801.answers["2020"] = {
         {
           "q": "（1）$s(t)$ 的带宽、功率",
           "body": [
-            "上支路 $m(t)\\cos\\omega_ct$ 与下支路 $-\\hat m(t)\\sin\\omega_ct$ 相加构成单边带（上边带）信号，",
+            "上支路 $m(t)\\cos\\omega_ct$ 与下支路 $-\\hat m(t)\\sin\\omega_ct$ 相加构成单边带（上边带）信号，频谱只保留 $f_c$ 以上（$1000\\sim1200\\ \\mathrm{Hz}$）的半个边带，",
             "带宽 $B_s=200\\ \\mathrm{Hz}$（等于基带带宽）；",
-            "SSB 各分量的功率都来自 $m(t)$，$P_s=P_m=3\\ \\mathrm{W}$。"
+            "功率按正交两路分别平均：$P_s=\\dfrac{P_m}{2}+\\dfrac{P_{\\hat m}}{2}$，希尔伯特变换不改变功率（$P_{\\hat m}=P_m=3\\ \\mathrm{W}$），",
+            "故 $P_s=\\dfrac{3}{2}+\\dfrac{3}{2}=3\\ \\mathrm{W}$。"
           ],
           "ans": "$B_s=200\\ \\mathrm{Hz}$，$P_s=3\\ \\mathrm{W}$",
           "fig": null
@@ -628,7 +629,8 @@ window.BUPT801.answers["2020"] = {
             "互相关：$E_{12}=\\displaystyle\\int_0^{T_b}s_1(t)s_2(t)\\mathrm{d}t=2\\int_0^{T_b}\\left[\\cos\\frac{2\\pi t}{T_b}+\\cos\\frac{42\\pi t}{T_b}\\right]\\mathrm{d}t=0$（两信号正交）。",
             "能量归一化的匹配滤波器：",
             "$$h_1(t)=\\frac{1}{\\sqrt{E_b}}\\,s_1(T_b-t)=\\sqrt{\\frac{2}{T_b}}\\cos\\left(\\frac{22\\pi(T_b-t)}{T_b}\\right),\\quad0\\le t\\le T_b$$",
-            "$$h_2(t)=\\frac{1}{\\sqrt{E_b}}\\,s_2(T_b-t)=\\sqrt{\\frac{2}{T_b}}\\cos\\left(\\frac{20\\pi(T_b-t)}{T_b}\\right),\\quad0\\le t\\le T_b$$"
+            "$$h_2(t)=\\frac{1}{\\sqrt{E_b}}\\,s_2(T_b-t)=\\sqrt{\\frac{2}{T_b}}\\cos\\left(\\frac{20\\pi(T_b-t)}{T_b}\\right),\\quad0\\le t\\le T_b$$",
+            "（$\\cos(22\\pi-\\omega t)=\\cos\\omega t$：$22\\pi/2\\pi=11$ 为整数圈，镜像折叠后余弦不变号，故也可写为 $\\cos(22\\pi t/T_b)$；$20\\pi$ 同理。）"
           ],
           "ans": "$h_1(t)=\\sqrt{2/T_b}\\cos\\left(22\\pi(T_b-t)/T_b\\right)$，$h_2(t)=\\sqrt{2/T_b}\\cos\\left(20\\pi(T_b-t)/T_b\\right)$，$0\\le t\\le T_b$",
           "fig": null

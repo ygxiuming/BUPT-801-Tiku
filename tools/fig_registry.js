@@ -301,17 +301,21 @@ function rebuildIndex(figDir, year, orderHint) {
     '',
   ];
   for (const it of items) {
+    // key 必须是合法 JS 标识符才能裸写；截图工具命名的纯数字 key（如 2020-七-3.png → key `3`）要加引号，
+    // 否则生成的 _index.js 直接语法错误、整年图库加载失败（2020-10-31 踩过）
+    const qk = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key) ? it.meta.key : JSON.stringify(it.meta.key);
     const k = it.meta.key;
     const s = pics.get(k);
-    lines.push('(window.BUPT801.figures["' + year + '"] = window.BUPT801.figures["' + year + '"] || {}).' + k +
+    lines.push('(window.BUPT801.figures["' + year + '"] = window.BUPT801.figures["' + year + '"] || {}).' + qk +
       ' = ' + (s
         ? "{ src: '" + escape1(s.src) + "', w: " + s.w + ', h: ' + s.h + ' };'
         : "'" + escape1(it.svg) + "';"));
   }
   lines.push('');
   for (const it of items) {
+    const qk = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key) ? it.meta.key : JSON.stringify(it.meta.key);
     lines.push('(window.BUPT801.figureMeta["' + year + '"] = window.BUPT801.figureMeta["' + year + '"] || {}).' +
-      it.meta.key + ' = { q: ' + JSON.stringify(it.meta.q) + ', kind: ' + JSON.stringify(it.meta.kind) +
+      qk + ' = { q: ' + JSON.stringify(it.meta.q) + ', kind: ' + JSON.stringify(it.meta.kind) +
       ', desc: ' + JSON.stringify(it.meta.desc) + ' };');
   }
   const text = lines.join('\n') + '\n';
