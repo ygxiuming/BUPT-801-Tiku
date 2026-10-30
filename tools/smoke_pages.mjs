@@ -488,10 +488,10 @@ await step('练习页2018：选选项 → 查看解析', async () => {
   w.close()
 })
 
-await step('试卷页2018：题图与解析图全部渲染（17 张 SVG）', async () => {
+await step('试卷页2018：题图与解析图全部渲染（18 张位图，五(3) 拆调制/解调两图）', async () => {
   const w = await openPage('/paper/2018', 'paper18fig')
   const n = w.document.querySelectorAll('.figblock svg').length
-  if (n !== 17) throw new Error('.figblock svg ' + n + ' 张（应 17）')
+  if (n !== 18) throw new Error('.figblock svg ' + n + ' 张（应 18）')
   const empty = w.document.querySelectorAll('.figblock').length - n
   if (empty) throw new Error(empty + ' 个图块没解析出 SVG（fig key 悬空）')
   const bigs = [...w.document.querySelectorAll('.bigq > .subs')]
