@@ -25,20 +25,20 @@ window.BUPT801.answers["2025"] = {
         "C": "错误。$s(t)$ 是高斯的：线性运算不产生非高斯性。",
         "D": "错误。两个维度均不成立。"
       },
-      "note": "对比记忆卡：DSB-SC→非平稳高斯；SSB→平稳高斯；FM→非高斯（平稳性与初相约定有关，本题组按确定初相处理为非平稳）。"
+      "note": "对比记忆卡：DSB-SC→非平稳高斯；SSB→平稳高斯；FM→平稳非高斯（2026-10-31 修正，分析见第(3)题）。"
     }
   },
   "2025-3": {
-    "answer": "D",
+    "answer": "C",
     "exp": {
-      "concl": "选D：非平稳的非高斯过程。FM是非线性调制：相位中含 $\\int m(\\tau)\\mathrm d\\tau$，输出取值被压入 $[-A,A]$，高斯性被破坏；同时均值 $E[s(t)]$ 随 $t$ 周期变化，非广义平稳。",
+      "concl": "选C：平稳非高斯过程。FM 是非线性调制，余弦运算破坏高斯性；但 $E[s(t)]\\equiv0$、自相关只与 $\\tau$ 有关，是广义平稳的。",
       "opts": {
-        "A": "错误。“平稳”与“高斯”均不成立。",
-        "B": "错误。“高斯”不成立：$s(t)=A\\cos[\\omega_c t+\\theta(t)]$，余弦是非线性运算，$s$ 的取值范围为 $[-A,A]$，而高斯变量取值无界。",
-        "C": "错误。“平稳”不成立：$E[s(t)]=A\\cos\\omega_ct\\cdot E[\\cos\\theta(t)]-A\\sin\\omega_ct\\cdot E[\\sin\\theta(t)]=A\\mathrm e^{-\\sigma_\\theta^2/2}\\cos\\omega_ct\\neq$ 常数，均值随 $t$ 变。",
-        "D": "正确。非线性 → 非高斯；均值含 $\\cos\\omega_c t$ 项 → 非平稳。"
+        "A": "错误。“高斯”不成立：$s(t)=A\\cos[\\omega_ct+\\theta(t)]$，$\\theta(t)=k_f\\int_{-\\infty}^t m(\\tau)\\mathrm d\\tau$，余弦是非线性运算，$s$ 取值有界 $[-A,A]$，而高斯变量取值无界。",
+        "B": "错误。“非高斯”对（理由同A），但“非平稳”不成立，平稳性分析见C。",
+        "C": "正确。①非高斯：非线性变换、取值有界。②平稳：均值 $E[s(t)]=A\\cos\\omega_ct\\,E[\\cos\\theta(t)]-A\\sin\\omega_ct\\,E[\\sin\\theta(t)]$，$\\theta(t)$ 是零均值平稳高斯过程的积分，方差随 $t$ 发散，故 $E[\\cos\\theta(t)]=\\mathrm e^{-\\sigma_\\theta^2/2}\\to0$、$E[\\sin\\theta(t)]=0$，均值恒为 0。自相关 $R_s(t,t+\\tau)=\\tfrac{A^2}{2}\\big\\{E[\\cos(\\omega_c\\tau+\\Delta\\theta)]+E[\\cos(2\\omega_ct+\\omega_c\\tau+\\theta(t)+\\theta(t+\\tau))]\\big\\}$：后一项含 $2\\theta(t)$，方差发散 → 期望为零；前一项 $\\Delta\\theta=k_f\\int_t^{t+\\tau}m(\\tau')\\mathrm d\\tau'$ 只依赖 $\\tau$，$E[\\cos(\\omega_c\\tau+\\Delta\\theta)]=\\mathrm e^{-\\sigma_\\Delta^2(\\tau)/2}\\cos\\omega_c\\tau$。均值常数 + 自相关只依赖 $\\tau$ → 广义平稳。",
+        "D": "错误。“非平稳”不成立：FM 的积分相位方差发散，恰好把含绝对时间 $t$ 的项“平均掉”；不能像处理 DSB 那样把 $\\sigma_\\theta^2$ 当有限常数，由 $E[\\cos\\theta]=\\mathrm e^{-\\sigma_\\theta^2/2}$ 得出均值 $\\propto\\cos\\omega_ct$。"
       },
-      "note": "自洽性检验：本组按“载波初相确定”统一口径才同时成立。若给FM加随机均匀初相，FM变平稳，但DSB也会变成“平稳非高斯”，与第(1)题矛盾——故BAD三连是自洽的唯一组合。"
+      "note": "对比记忆卡（本组三题口径自洽，均不需随机初相）：DSB→非平稳高斯（自相关含 $\\cos(2\\omega_ct+\\omega_c\\tau)$ 项）；SSB→平稳高斯（希尔伯特相移使时间项恰好相消）；FM→平稳非高斯（非线性破坏高斯性，积分相位方差发散使含 $t$ 项期望为零）。翻案记录（2026-10-31）：原入库答 D，系把 $\\sigma_\\theta^2$ 误当有限常数；复核参考答案 PDF 手写标记（(3) 处标 C，与 (10) 处 C 笔迹一致）并独立验算后改为 C。"
     }
   },
   "2025-4": {
