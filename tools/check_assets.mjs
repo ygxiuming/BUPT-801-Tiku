@@ -114,7 +114,8 @@ for (const t of TARGETS) {
   // 2) 题目数据 + 图库注册表（读该目录下真实下发的文件）
   const qDir = path.join(t.dir, 'data', 'questions')
   if (fs.existsSync(qDir)) {
-    const years = fs.readdirSync(qDir).filter(y => fs.statSync(path.join(qDir, y)).isDirectory())
+    // 只认 4 位年份目录：Mimosa hook 会在快照里塞 .mimosa 状态目录，不跳过会把整年遍历搞崩
+    const years = fs.readdirSync(qDir).filter(y => /^\d{4}$/.test(y) && fs.statSync(path.join(qDir, y)).isDirectory())
     for (const y of years) {
       const paperF = path.join(qDir, y, 'paper.js')
       const ansF = path.join(qDir, y, 'answer.js')

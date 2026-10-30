@@ -121,6 +121,37 @@ export function boldBlanks(s) {
   return escHtml(s).replace(/（(\d+)）/g, '（<strong class="blank">$1</strong>）')
 }
 
+/** 题干 → HTML：在 boldBlanks 基础上支持块级 markdown 表格（2019 六的信道转移概率表等
+ *  直接渲染成真表格，不再配图）。表格判定/拼装与解析正文 mdBlocks 是同一套；
+ *  表头单元格要写公式竖线时用 \\vert，字面 | 会被当成列分隔符切开。 */
+export function stemHtml(s) {
+  const lines = String(s == null ? '' : s).split('\n')
+  const out = []
+  let buf = []
+  const flush = () => {
+    if (!buf.length) return
+    out.push(buf.join('\n'))
+    buf = []
+  }
+  for (let i = 0; i < lines.length; i++) {
+    if (isRow(lines[i]) && isRow(lines[i + 1]) && isSep(lines[i + 1])) {
+      flush()
+      const head = mdCells(lines[i])
+      const rows = []
+      i += 1
+      while (i + 1 < lines.length && isRow(lines[i + 1])) {
+        i += 1
+        rows.push(mdCells(lines[i]))
+      }
+      out.push(mdTable(head, rows))
+      continue
+    }
+    buf.push(boldBlanks(lines[i]))
+  }
+  flush()
+  return out.join('\n')
+}
+
 /* ---------- 卷面编号（选择题 / 大题小问） ----------
    选择题按「题号」编号：一题对应一个空（2018/2025/2026），也可能一题含多个空
    （2017/2019/2021/2022/2024 的 num≠blank），所以行首写题号、空号另标。

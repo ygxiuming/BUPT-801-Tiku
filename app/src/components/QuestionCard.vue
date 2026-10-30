@@ -39,7 +39,7 @@ import OptTable from './OptTable.vue'
 import ChoiceExp from './ChoiceExp.vue'
 import BigSol from './BigSol.vue'
 import FigBlock from './FigBlock.vue'
-import { stemOf, optsOf, chapterLabel, boldBlanks, subsHtml, papers } from '../lib/data.js'
+import { stemOf, optsOf, chapterLabel, stemHtml as stemWithTable, boldBlanks, subsHtml, papers } from '../lib/data.js'
 
 export default {
   name: 'QuestionCard',
@@ -53,7 +53,7 @@ export default {
   emits: ['pick'],
   computed: {
     q() { return this.item.q },
-    stemHtml() { return boldBlanks(stemOf(this.item)) },
+    stemHtml() { return stemWithTable(stemOf(this.item)) },
     opts() { return optsOf(this.item) },
     label() { return chapterLabel(this.q) },
     subsBody() { return subsHtml(this.q.subs, 'qsubs') },

@@ -735,25 +735,29 @@ window.BUPT801.answers["2019"] = {
           "body": [
             "$s_1$ 与 $x$、$y$ 共用同一组 $a_n$，是**相干叠加**，必须先做幅度相减再平方：",
             "$$G_3(f)=G_1(f)-G_2(f)=\\begin{cases}T-\\dfrac T2=+\\dfrac T2,&|f|\\le\\dfrac{1}{2T}\\\\0-\\dfrac T2=-\\dfrac T2,&\\dfrac{1}{2T}<|f|\\le\\dfrac1T\\end{cases}$$",
+            "[[fig:q3g3]]",
             "两段幅度相反但平方相同，故功率谱是矩形：",
             "$$P_{s1}(f)=\\frac1T|G_3(f)|^2=\\begin{cases}\\dfrac T4,&|f|\\le\\dfrac1T\\\\0,&\\text{else}\\end{cases}$$",
+            "[[fig:q3ps1]]",
             "$$P_{s1}=\\frac T4\\cdot\\frac2T=\\frac12,\\qquad B_{s1}=\\frac1T$$",
             "独立校验：$P_{s1}=P_x+P_y-2R_{xy}(0)$，其中 $R_{xy}(0)=\\dfrac1T\\int G_1G_2^*\\mathrm df=\\dfrac1T\\left(T\\cdot\\dfrac T2\\cdot\\dfrac1T\\right)=\\dfrac12$，得 $1+\\dfrac12-1=\\dfrac12$ ✓"
           ],
           "ans": "$P_{s1}(f)=T/4\\ (|f|\\le1/T)$；$P_{s1}=1/2$；$B_{s1}=1/T$",
-          "fig": "q3s1"
+          "fig": "q3g3"
         },
         {
           "q": "(4) $s_2(t)=x(t)+\\mathrm{j}y(t)$ 的功率谱密度、功率、带宽",
           "body": [
             "$s_2$ 是复信号，$G_4(f)=G_1(f)+\\mathrm{j}G_2(f)$。取模平方时虚部与实部不相加（不是相干叠加）：",
             "$$|G_4(f)|^2=|G_1(f)|^2+|G_2(f)|^2=\\begin{cases}T^2+\\dfrac{T^2}{4}=\\dfrac{5T^2}{4},&|f|\\le\\dfrac{1}{2T}\\\\\\dfrac{T^2}{4},&\\dfrac{1}{2T}<|f|\\le\\dfrac1T\\end{cases}$$",
+            "[[fig:q3g4sq]]",
             "$$P_{s2}(f)=\\frac1T|G_4(f)|^2=\\begin{cases}\\dfrac{5T}{4},&|f|\\le\\dfrac{1}{2T}\\\\\\dfrac T4,&\\dfrac{1}{2T}<|f|\\le\\dfrac1T\\end{cases}$$",
+            "[[fig:q3ps2]]",
             "$$P_{s2}=\\frac{5T}{4}\\cdot\\frac1T+\\frac T4\\cdot\\frac1T=\\frac32,\\qquad B_{s2}=\\frac1T$$",
             "校验：$|s_2|^2=x^2+y^2$，交叉项 $2xy$ 是实数且 $E[xy]$ 在 $t$ 上平均为 0，故 $P_{s2}=P_x+P_y=1+\\dfrac12=\\dfrac32$ ✓"
           ],
           "ans": "$P_{s2}(f)$：中心段 $5T/4$、外侧 $T/4$；$P_{s2}=3/2$；$B_{s2}=1/T$",
-          "fig": "q3s2"
+          "fig": "q3g4sq"
         }
       ],
       "summary": "(1) $P_x=T$、$P_x=1$、$B_x=1/(2T)$；(2) $P_y=T/4$、$P_y=1/2$、$B_y=1/T$；(3) $P_{s1}=T/4$（矩形）、$P_{s1}=1/2$、$B=1/T$；(4) $P_{s2}(f)$ 中心 $5T/4$/外侧 $T/4$、$P_{s2}=3/2$、$B=1/T$。",
@@ -924,8 +928,7 @@ window.BUPT801.answers["2019"] = {
             "$$S=\\int_{-1}^{1}x^2(1-|x|)\\mathrm dx=2\\int_0^1x^2(1-x)\\mathrm dx=2\\left(\\frac13-\\frac14\\right)=\\frac16$$",
             "校验 $\\int p=1$：$2\\int_0^1(1-x)\\mathrm dx=2\\cdot\\frac12=1$ ✓"
           ],
-          "ans": "$S=1/6$",
-          "fig": "q7pdf"
+          "ans": "$S=1/6$"
         },
         {
           "q": "(2) $Y$ 的概率分布",
@@ -951,8 +954,7 @@ window.BUPT801.answers["2019"] = {
             "$$N_q=\\frac16-2\\cdot\\frac16+\\frac3{16}=\\frac1{48}$$",
             "量化信噪比（定义是“输入信号功率 ÷ 量化噪声功率”）：$\\dfrac{S}{N_q}=\\dfrac{1/6}{1/48}=8\\approx9.03$ dB。"
           ],
-          "ans": "$a=1/4$，$b=3/4$；$S_q=3/16$；$N_q=1/48$；$S/N_q=8$",
-          "fig": "q7quant"
+          "ans": "$a=1/4$，$b=3/4$；$S_q=3/16$；$N_q=1/48$；$S/N_q=8$"
         },
         {
           "q": "(4) 使量化信噪比最大的 $a$、$b$",

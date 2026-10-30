@@ -61,7 +61,7 @@
 
 <script>
 import Icon from '../components/Icon.vue'
-import { papers, escHtml, mdBlock, mdBlocks, numRange, subsHtml, normSubNo } from '../lib/data.js'
+import { papers, escHtml, mdBlock, mdBlocks, numRange, subsHtml, normSubNo, stemHtml } from '../lib/data.js'
 import { renderMath, figureSvg } from '../lib/render.js'
 import { APP_BASE } from '../router.js'
 
@@ -107,7 +107,7 @@ export default {
     bodyHtml() {
       const B = window.BUPT801
       const p = this.p
-      const blank = (s) => escHtml(s).replace(/（(\d+)）/g, '（<strong class="blank">$1</strong>）')
+      // 题干一律走 stemHtml（escHtml + 空号加粗 + 块级 markdown 表格），与练习/考试页同一管道
       // 一张选项表服务哪几个空（多空共用一套选项时按「（1）（2）」并列标出）——
       // 不加这行，四张表连着排、解析又只写「答案：C」，读者分不清哪张表对哪一空。
       const optTable = (o, tag) => {
@@ -179,7 +179,7 @@ export default {
         const extra = (bs.length > 1 || numLab !== blankLab) ? `<span class="qblk">空 ${blankLab}</span>` : ''
         // 行首写题号（悬挂缩进，折行后与正文左缘对齐），选项表前标空号——
         // 这样任取一段卷面都能读出「第几题、第几空」，不再靠范围徽标去猜
-        html += `<div class="qgroup"><div class="qline qn"><span class="qnr">${numLab}．</span>${extra}${blank(g.stem || '')}</div>`
+        html += `<div class="qgroup"><div class="qline qn"><span class="qnr">${numLab}．</span>${extra}${stemHtml(g.stem || '')}</div>`
         const gfig = cluster.find((cq) => cq.fig)
         if (gfig) html += fig(gfig.fig)
         multi.forEach((o, k) => {
@@ -202,7 +202,7 @@ export default {
       if (s1.intro) html += `<div class="sec-intro">${escHtml(s1.intro)}</div>`
       big.forEach((q) => {
         html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．<span class="pts">（${q.score}分）</span><a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
-          `<div class="stem">${blank(q.stem)}</div>`
+          `<div class="stem">${stemHtml(q.stem)}</div>`
         if (q.fig) html += fig(q.fig)
         if (q.subs && q.subs.length) html += subsHtml(q.subs, 'subs')
         html += bigSol(q) + `</div>`
