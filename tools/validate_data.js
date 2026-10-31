@@ -53,6 +53,7 @@ require('../data/figures/2013/_index.js');
 require('../data/figures/2014/_index.js');
 require('../data/figures/2015/_index.js');
 require('../data/figures/2012/_index.js');
+require('../data/figures/2011/_index.js');
 require('../data/questions/2012/paper.js');
 require('../data/questions/2012/answer.js');
 require('../data/questions/2013/paper.js');
@@ -61,6 +62,8 @@ require('../data/questions/2014/paper.js');
 require('../data/questions/2014/answer.js');
 require('../data/questions/2015/paper.js');
 require('../data/questions/2015/answer.js');
+require('../data/questions/2011/paper.js');
+require('../data/questions/2011/answer.js');
 
 // KaTeX 单一来源：server 的 npm 依赖（app/ 是 ESM 包，require 其下 .js 会按 ESM 加载失败）。
 // module.paths.unshift(项目根) 后用裸说明符：require(变量)/路径字面量 .. 会被 Mimosa 拦。
@@ -113,7 +116,10 @@ const EXPECT = {
   // 2014 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（13/10/15/12/16/13/11/10 = 100 分）= 150 分
   2014: { choice: 30, big: 18, score: 150 },
   // 2013 原卷：一（30 空 × 1 分 = 30 分）+ 二 判断题（10×2 = 20 分）+ 三～十（10/13/12/14/14/10/12/15 = 100 分）= 150 分
-  2013: { choice: 30, big: 18, score: 150 }
+  2013: { choice: 30, big: 18, score: 150 },
+  // 2011 原卷：一 填空题（20 空 × 1 分 = 20 分，建模为 sec:0 的 big 题）+ 二 判断题（10×2 = 20 分）
+  //            + 三～十（17/14/12/12/14/12/13/16 = 110 分）= 150 分；全卷没有选择题
+  2011: { big: 29, score: 150 }
 };
 
 // ---------------- KaTeX ----------------
@@ -193,8 +199,11 @@ for (const year of Object.keys(B.papers).sort()) {
   if (exp.big && big.length !== exp.big) errors.push(`${year}: 大题应为 ${exp.big} 题，实际 ${big.length}`);
   if (exp.score && choiceScore + bigScore !== exp.score) errors.push(`${year}: 总分应为 ${exp.score}，实际 ${choiceScore + bigScore}`);
 
-  // sections 声明与实际一致
-  if (secBig && secBig.score !== bigScore) errors.push(`${year}: sections.big.score=${secBig.score} 与大题合计 ${bigScore} 不一致`);
+  // sections 声明与实际一致（q.sec=0 的 big 题是 2011 式填空题，归第一节，不计入 big 节分值）
+  const big0Score = big.reduce((s, q) => s + (q.sec === 0 ? (q.score || 0) : 0), 0);
+  if (secBig && secBig.score !== bigScore - big0Score) errors.push(`${year}: sections.big.score=${secBig.score} 与大题合计 ${bigScore - big0Score} 不一致`);
+  const secBlank = (paper.sections || []).find((s) => s.id === 'blank');
+  if (secBlank && secBlank.score !== big0Score) errors.push(`${year}: sections.blank.score=${secBlank.score} 与填空题合计 ${big0Score} 不一致`);
   if (secChoice && secChoice.score !== choiceScore) errors.push(`${year}: sections.choice.score=${secChoice.score} 与 ${choice.length} 空 × ${perBlank} 分 = ${choiceScore} 不一致`);
 
   // 题号连续（同一道题可含多个空、共享题号：2024 为 20 题 × 2 空，故先去重）
@@ -1622,6 +1631,52 @@ t.push(['2019(9) AM 效率 ma=1 → 1/3', approx(1 / (2 + 1), 1 / 3)]);
   let area = 0; const N = 2e6;
   for (let i = 0; i < N; i++) { const f = -3 + 6 * i / N; const d = Math.abs(Math.abs(f) - 1); area += (d <= 0.5 ? 1 - d / 0.5 : 0) * 6 / N; }
   t.push(['2013(22)(24) P=(N0/2)·B=N0B/2、E[R²]=2P=N0B', approx(0.5 * area, 0.5, 1e-3) && approx(area, 1.0, 1e-3)]);
+})();
+
+// ---------------- 2011 数值抽查（独立方法复核） ----------------
+(function () {
+  // 一-03：Rc=1M/(2/3)=1.5M → Rs=500kBaud；α≤2W/Rs−1=0.6
+  t.push(['2011一(03) Rs=500k、α≤0.6', approx(1e6 / (2 / 3) / 3, 5e5) && approx(2 * 4e5 / 5e5 - 1, 0.6)]);
+  // 一-05/08：n=2^3−1=7、效率 4/7；m 序列周期 2^5−1=31
+  t.push(['2011一(05)(08) n=7、4/7、N=31', approx(Math.pow(2, 3) - 1, 7) && approx(4 / 7, 4 / 7) && approx(Math.pow(2, 5) - 1, 31)]);
+  // 一-09：dmin=2·√(Eg/2)=√(2Eg)（Eg=1 数值核）
+  t.push(['2011一(09) dmin=√(2Eg)', approx(2 * Math.sqrt(1 / 2), Math.sqrt(2))]);
+  // 三：等能量 Eb=A²T/2；erfc 自变量 Eb/(2N0)=A²T/(4N0)（A=T=N0=1 → 1/4）；两种 y 在 t=T 取值 ±A²T/2
+  t.push(['2011三(4) Eb/(2N0)=A²T/4N0、y(T)=±A²T/2', approx((1 / 2) / 2, 1 / 4) && approx(1 / 2, Math.pow(1, 2) * 1 / 2)]);
+  // 四(2)：|G(m/T)| = AT/2、AT/4、0 —— 用升余弦脉冲数值积分 G(f)=∫g e^{-j2πft}dt 验 |G(0)|、|G(1/T)|
+  (function () {
+    const Nn = 2e5, T = 1, A = 1;
+    let re = 0, im = 0, re1 = 0, im1 = 0;
+    for (let i = 0; i < Nn; i++) {
+      const tt = (i + 0.5) * T / Nn;
+      const g = A / 2 * (1 + Math.cos(2 * Math.PI / T * (tt - T / 2)));
+      const w = 2 * Math.PI * tt; // f=1/T
+      re += g * Math.cos(0) * T / Nn; im += 0;
+      re1 += g * Math.cos(w) * T / Nn; im1 += -g * Math.sin(w) * T / Nn;
+    }
+    t.push(['2011四(2) |G(0)|=AT/2、|G(1/T)|=AT/4', approx(re, A * T / 2, 1e-9) && approx(Math.hypot(re1, im1), A * T / 4, 1e-9)]);
+  })();
+  // 五(3)：系统码生成矩阵四行 = u·x³ mod g(x)（GF(2) 多项式余式，g=1101）
+  (function () {
+    const deg = (a) => 31 - Math.clz32(a);
+    const polymod = (a, m) => { while (a && deg(a) >= deg(m)) a ^= m << (deg(a) - deg(m)); return a; };
+    const g = 0b1101; // x³+x²+1
+    const rows = [8, 4, 2, 1].map((u) => (u << 3) | polymod(u << 3, g));
+    t.push(['2011五(3) G=1000110/0100011/0010111/0001101', rows.join(',') === [0b1000110, 0b0100011, 0b0010111, 0b0001101].join(',')]);
+  })();
+  // 六：Rs=2W/(1+α)=5k、Rb=15k、fh=15k/8=1875Hz；量化 255
+  t.push(['2011六 Rs=5k、Rb=15k、fh=1875、SNR=255', approx(2 * 4000 / 1.6, 5000) && approx(5000 * 3, 15000) && approx(15000 / 8, 1875) && approx(16 * 16 - 1, 255)]);
+  // 七：Pm=4/3、Pmn=1/3；DSB P_T=2×10⁴、A_c²=3×10⁴；AM P_T=2.6×10⁵、A_c²=4.8×10⁵；FM P_T=800、A_c=40
+  t.push(['2011七 Pm=4/3', approx(16 / 12, 4 / 3)]);
+  t.push(['2011七(1) P_T=2e4、A_c²=3e4', approx(1e4 * 2, 2e4) && approx(2e4 * 3 / 2, 3e4)]);
+  t.push(['2011七(2) G=2/13、A_c²=4.8e5', approx((2 / 12) / (13 / 12), 2 / 13) && approx(2.6e5 * 24 / 13, 4.8e5)]);
+  t.push(['2011七(3) P_T=800、A_c=40', approx(1e4 / (3 * 25 * (1 / 3)) * 2, 800) && approx(Math.sqrt(2 * 800), 40)]);
+  // 八：Rb=640k、编码后 1.28M、Rs=640kBaud、W=1.28MHz
+  t.push(['2011八 Rs=640k、W=1.28M', approx(10 * 8e3 * 8 * 2 / 2, 6.4e5) && approx(2 * 6.4e5, 1.28e6)]);
+  // 十(1)：τ0=1μs、N≥100 → 2⁷−1=127>100 且 2⁶−1=63<100
+  t.push(['2011十(1) N=127、Tc=0.787μs', approx(300 / 3e8, 1e-6) && Math.pow(2, 7) - 1 > 100 && Math.pow(2, 6) - 1 < 100 && approx(1e-4 / 127 * 1e6, 100 / 127)]);
+  // 十(2)(3)：极限 0.05 / 0.005；三档概率 0.01+0.18+0.81=1
+  t.push(['2011十(3) 概率归一 + 极限 0.005', approx(0.01 + 0.18 + 0.81, 1) && approx(0.01 / 2, 0.005)]);
 })();
 
 

@@ -80,6 +80,9 @@ const ROUTES = [
   ['/paper/2013', '试卷页2013'],
   ['/practice?y=2013', '练习页2013'],
   ['/exam?y=2013', '考试页2013'],
+  ['/paper/2011', '试卷页2011'],
+  ['/practice?y=2011', '练习页2011'],
+  ['/exam?y=2011', '考试页2011'],
   ['/paper/2012', '试卷页2012'],
   ['/practice?y=2012', '练习页2012'],
   ['/exam?y=2012', '考试页2012'],
@@ -585,6 +588,49 @@ await step('练习页2014：选选项 → 查看解析', async () => {
   if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
   const kx = w.document.querySelectorAll('.katex').length
   if (kx < 3) throw new Error('解析区公式只有 ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+// 2011 全年没有选择题（填空题按 sec:0 的 big 建模）：钉死三件事——
+// 第一节标题是填空题、11 道填空渲染在「二、判断题与计算题」之前、10 张位图全部注册可渲染。
+await step('试卷页2011：填空题分节 + 位图图件全部渲染', async () => {
+  const w = await openPage('/paper/2011', 'paper11')
+  const data = (w.BUPT801 && w.BUPT801.papers && w.BUPT801.papers['2011'].questions) || []
+  const big0 = data.filter((q) => q.type === 'big' && q.sec === 0)
+  if (big0.length !== 11) throw new Error('填空题（sec:0）数 ' + big0.length + '（应 11）')
+  const secTitles = [...w.document.querySelectorAll('.sec-title')].map((el) => el.textContent || '')
+  if (!secTitles.some((s) => s.includes('填空题'))) throw new Error('第一节标题不是填空题：' + secTitles[0])
+  const firstBig = w.document.querySelector('.bigq')
+  const secBigEl = w.document.getElementById('sec-big')
+  if (!firstBig || !secBigEl || !(firstBig.compareDocumentPosition(secBigEl) & 4)) throw new Error('填空题没有渲染在第二节标题之前')
+  if (w.document.querySelectorAll('.bigq').length !== data.filter((q) => q.type === 'big').length) throw new Error('bigq 数与数据不一致')
+  // 填空题干里的空号要被加粗（boldBlanks 认全角（n））
+  const blanks = w.document.querySelectorAll('#q-一-01 strong.blank').length
+  if (blanks < 3) throw new Error('一-01 题干空号加粗只有 ' + blanks + ' 处（应 3）')
+  // 位图走 svg 外壳（<svg><image/></svg>）：试卷页有 3 张题图
+  const figs = w.document.querySelectorAll('.figblock svg').length
+  if (figs < 3) throw new Error('试卷页题图只有 ' + figs + ' 张')
+  const kx = w.document.querySelectorAll('.katex-error').length
+  if (kx) throw new Error('katex-error ' + kx + ' 处')
+  if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
+  w.close()
+})
+
+await step('练习页2011：大题（匹配滤波）显示解析 → 自评 → 配图渲染', async () => {
+  const w = await openPage('/practice?y=2011&type=big&id=2011-三', 'prac11')
+  const b = btnByText(w, '显示解析') || btnByText(w, '查看解析')
+  if (!b) throw new Error('找不到「显示/查看解析」按钮')
+  click(w, b)
+  await sleep(240)
+  if (!w.document.querySelector('.ans')) throw new Error('没有渲染解析块 .ans')
+  // 解析里 3 张配图（a3recv/a3ht/a3y）走位图 svg 外壳
+  const figs = w.document.querySelectorAll('.figblock svg').length
+  if (figs < 3) throw new Error('解析配图只有 ' + figs + ' 张（应 ≥3）')
+  const judge = btnByText(w, '会')
+  if (!judge) throw new Error('大题自评按钮（会/模糊/不会）没出现')
+  click(w, judge)
+  await sleep(120)
   if ((w.__vueErrors || []).length) throw new Error('Vue 错误: ' + w.__vueErrors[0])
   w.close()
 })

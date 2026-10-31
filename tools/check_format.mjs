@@ -19,7 +19,8 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const require = createRequire(path.join(ROOT, 'package.json'))
 // 2012 于 2026-10-29 补入。2013–2015 仍在表外（这三年的数据早于本工具），
 // 其中 2013 已查出一处已知缺陷（g10.o20 只有 A/B/C，缺 D），纳入前须先核原卷。
-const ALL = [2012, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+// 2011 无选择题（填空题按 sec:0 的 big 建模，题干（n）是全卷连续空号不是小问），2026-11-01 入库时纳入。
+const ALL = [2011, 2012, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
 const args = process.argv.slice(2).map(Number).filter(Boolean)
 const YEARS = args.length ? args : ALL
 
@@ -85,7 +86,8 @@ for (const y of YEARS) {
     const subs = q.subs || []
     const stem = q.stem || ''
     if (!subs.length) {
-      if (/[（(]\s*1\s*[)）]/.test(stem)) warn(y, `大题 ${q.num} 没 subs，但 stem 里挤着编号小问`)
+      // 2011 式填空题（sec:0）题干里的（n）是全卷连续空号（1..20），不是编号小问
+      if (q.sec !== 0 && /[（(]\s*1\s*[)）]/.test(stem)) warn(y, `大题 ${q.num} 没 subs，但 stem 里挤着编号小问`)
       continue
     }
     // 小问行首编号：全角/半角都认（渲染时 normSubNo 统一成全角），

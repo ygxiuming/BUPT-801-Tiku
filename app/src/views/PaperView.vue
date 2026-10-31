@@ -98,10 +98,15 @@ export default {
       const out = []
       const choice = p.questions.filter((q) => q.type === 'choice')
       const big = p.questions.filter((q) => q.type === 'big')
-      out.push({ id: 'sec-choice', label: '一、' + p.sections[0].name, note: choice.length + ' 空' })
-      out.push({ id: 'sec-big', label: '二、' + p.sections[1].name, note: big.length + ' 题' })
+      // 2011 起第一节可能是真·填空题（无选项的 big 题，q.sec=0 归属第一节）；
+      // 没有这类题时（其余年份）行为与原来完全一致。
+      const big0 = big.filter((q) => q.sec === 0)
+      const big1 = big.filter((q) => q.sec !== 0)
+      out.push({ id: 'sec-choice', label: '一、' + p.sections[0].name, note: choice.length ? choice.length + ' 空' : big0.length + ' 题' })
+      out.push({ id: 'sec-big', label: '二、' + p.sections[1].name, note: big1.length + ' 题' })
       // 大题序号直接用数据里的 q.num（中文数字），不再按数组下标推 —— 否则会整体错一位
-      big.forEach((q) => out.push({ id: 'q-' + q.num, label: '第 ' + q.num + ' 题', note: q.score + ' 分', sub: true }))
+      big0.forEach((q) => out.push({ id: 'q-' + q.num, label: '第 ' + q.num + ' 题', note: q.score + ' 分', sub: true }))
+      big1.forEach((q) => out.push({ id: 'q-' + q.num, label: '第 ' + q.num + ' 题', note: q.score + ' 分', sub: true }))
       return out
     },
     bodyHtml() {
@@ -195,12 +200,22 @@ export default {
         html += `</div>`
         i = j
       }
-      const big = p.questions.filter((q) => q.type === 'big')
+      const bigAll = p.questions.filter((q) => q.type === 'big')
+      const big0 = bigAll.filter((q) => q.sec === 0)
+      const big1 = bigAll.filter((q) => q.sec !== 0)
+      // 2011 起第一节可以是真·填空题（无选项的 big 题，q.sec=0），渲染在第一节标题之下
+      big0.forEach((q) => {
+        html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．<span class="pts">（${q.score}分）</span><a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
+          `<div class="stem">${stemHtml(q.stem)}</div>`
+        if (q.fig) html += fig(q.fig)
+        if (q.subs && q.subs.length) html += subsHtml(q.subs, 'subs')
+        html += bigSol(q) + `</div>`
+      })
       const s1 = p.sections[1]
       // 大题分值不一定均匀（如 2026 第二题 20 分、其余 15 分），标题只报总分
       html += `<div class="sec-title" id="sec-big">二、${s1.name}（共${s1.score}分）</div>`
       if (s1.intro) html += `<div class="sec-intro">${escHtml(s1.intro)}</div>`
-      big.forEach((q) => {
+      big1.forEach((q) => {
         html += `<div class="bigq" id="q-${q.num}"><div class="qnum">${q.num}．<span class="pts">（${q.score}分）</span><a class="qanchor no-print" href="#q-${q.num}" title="复制/引用本题锚点">#</a></div>` +
           `<div class="stem">${stemHtml(q.stem)}</div>`
         if (q.fig) html += fig(q.fig)

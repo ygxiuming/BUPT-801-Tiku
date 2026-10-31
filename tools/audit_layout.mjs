@@ -72,13 +72,18 @@ out.choice.tablesNoCap = groups.reduce((n, g) => {
 }, 0)
 out.choice.capSamples = groups.slice(0, 4).map((g) => [...g.querySelectorAll('.opt-cap')].map(t).join('|'))
 
+// 2011 起第一节可以是无选项的填空题（.bigq 出现在 #sec-big 之前），
+// 它们题干里的（n）是全卷连续空号，不算「小问挤在 stem 里」
+const secBigEl = doc.getElementById('sec-big')
+const isBlankQ = (el) => secBigEl && !!(el.compareDocumentPosition(secBigEl) & 4) // 4 = DOCUMENT_POSITION_FOLLOWING
 for (const b of doc.querySelectorAll('.bigq')) {
+  const blankQ = isBlankQ(b)
   const stem = t(b.querySelector(':scope > .stem'))
   const subs = b.querySelector(':scope > .subs')
   const rows = subs ? [...subs.querySelectorAll(':scope > .sub-row')] : []
   const grps = subs ? [...subs.querySelectorAll(':scope > .sub-grp')] : []
   // 小问挤在 stem 里的判据：stem 里出现「（1）」这类编号，且没有任何 subs 行
-  const inline = /[（(]\s*[1１]\s*[)）]/.test(stem)
+  const inline = !blankQ && /[（(]\s*[1１]\s*[)）]/.test(stem)
   out.big.push({
     num: t(b.querySelector('.qnum')).replace(/#.*/, '').trim(),
     subs: rows.length + grps.length,

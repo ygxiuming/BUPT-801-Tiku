@@ -4,8 +4,6 @@ const { B } = require('./print-html-data.js')
 const { renderMathInString } = require('./tex.js')
 const { buildInlineCss } = require('./inline-css.js')
 
-const HAN = ['二', '三', '四', '五', '六', '七', '八', '九', '十']
-
 // HTML 转义：公式里的裸 <（如 $0<r<1$）不转义会被浏览器当成标签吞掉
 function esc(s) {
   if (s == null) return ''
@@ -87,7 +85,7 @@ function buildBody(year, withAnswers) {
   const p = B.papers[String(year)]
   let html = ''
   const c0 = p.sections[0]
-  html += `<div class="sec-title">一、${c0.name}（每题1分，共${c0.score}分）</div>`
+  html += `<div class="sec-title">一、${c0.name}（每空${c0.perBlank || 1}分，共${c0.score}分）</div>`
   html += `<div class="sec-intro">${M(c0.intro)}</div>`
   const choice = p.questions.filter((q) => q.type === 'choice')
   let i = 0
@@ -109,13 +107,24 @@ function buildBody(year, withAnswers) {
     html += `</div>`
     i = j
   }
-  const big = p.questions.filter((q) => q.type === 'big')
+  // 2011 起第一节可以是真·填空题（无选项的 big 题，q.sec=0），渲染在第一节标题之下
+  const bigAll = p.questions.filter((q) => q.type === 'big')
+  const big0 = bigAll.filter((q) => q.sec === 0)
+  const big = bigAll.filter((q) => q.sec !== 0)
+  big0.forEach((q) => {
+    html += `<div class="bigq"><div class="qnum">${q.num}．（${q.score}分）</div>` +
+      `<div class="stem">${boldBlanks(q.stem)}</div>`
+    if (q.fig) html += `<figure class="figblock">${figSvg(year, q.fig)}</figure>`
+    if (q.subs && q.subs.length) html += `<div class="subs">${q.subs.map((s) => `<div>${boldBlanks(s)}</div>`).join('')}</div>`
+    html += bigSol(year, q) + `</div>`
+  })
   const s1 = p.sections[1]
   // 大题分值不一定均匀（如2026第二题20分、其余15分），标题只报总分，明细交给 sections.intro
   html += `<div class="sec-title">二、${s1.name}（共${s1.score}分）</div>`
   if (s1.intro) html += `<div class="sec-intro">${M(s1.intro)}</div>`
-  big.forEach((q, idx) => {
-    html += `<div class="bigq"><div class="qnum">${HAN[idx]}．（${q.score}分）</div>` +
+  // 题号用数据里的 q.num（2011 填空是 一-01、判断是 二-01，HAN 序号会整体错位）
+  big.forEach((q) => {
+    html += `<div class="bigq"><div class="qnum">${q.num}．（${q.score}分）</div>` +
       `<div class="stem">${boldBlanks(q.stem)}</div>`
     if (q.fig) html += `<figure class="figblock">${figSvg(year, q.fig)}</figure>`
     if (q.subs && q.subs.length) html += `<div class="subs">${q.subs.map((s) => `<div>${boldBlanks(s)}</div>`).join('')}</div>`
