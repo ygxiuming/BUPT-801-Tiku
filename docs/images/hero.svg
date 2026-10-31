@@ -154,7 +154,7 @@
       <rect x="899" y="537" width="6" height="6" rx="1.5" fill="#2f5dfd" opacity=".45"/>
       <rect x="907" y="537" width="6" height="6" rx="1.5" fill="#7a52f0"/>
       <text x="934" y="541" font-size="14.5" font-weight="700" fill="#1f2430">图库</text>
-      <text x="898" y="572" font-size="12" fill="#5b6172">62 张按原卷重绘的 SVG 框图</text>
+      <text x="898" y="572" font-size="12" fill="#5b6172">196 张原卷截图 PNG</text>
       <text x="898" y="592" font-size="12" fill="#5b6172">题图 + 解析配图，可搜索</text>
       <text x="898" y="620" font-size="11.5" fill="#2f5dfd">浏览图库 →</text>
     </g>
