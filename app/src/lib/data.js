@@ -222,10 +222,13 @@ const isRow = (s) => typeof s === 'string' && MD_ROW.test(s)
 const isSep = (s) => typeof s === 'string' && MD_ROW.test(s) && MD_SEP.test(s)
 
 function inlineMd(s) {
-  // 按公式段切开，只对非公式段替换 **：公式里可能出现 *（如 H^{*}）
+  // 先在整行上配对 **…**（内容允许跨 $…$ 公式：<strong> 包住公式不影响 KaTeX auto-render），
+  // 再按公式切段。旧实现先切段后配对，粗体范围一跨公式就失配，页面漏出字面 **（2011 一-08
+  // 用户反馈；全库 8 个年份另有 27 处同病，此处一处修复全解决）。全库公式内不含 **（已扫），
+  // 故先配对不会误吃公式里的单个 *（如 H^{*}）。
   return String(s)
+    .replace(/\*\*((?:[^*]|\*(?!\*))*)\*\*/g, '<strong>$1</strong>')
     .split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*\$)/g)
-    .map((seg, i) => (i % 2 ? seg : seg.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')))
     .join('')
 }
 
