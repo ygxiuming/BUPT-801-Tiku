@@ -1,0 +1,11 @@
+{
+  "q1psd": { "q": "题一", "kind": "paper", "desc": "PAM功率谱" },
+  "q3block": { "q": "题三", "kind": "answer", "desc": "抽样重建框图" },
+  "q4figs": { "q": "题四", "kind": "paper", "desc": "sinc脉冲与升余弦频谱、抽样值" },
+  "q5pdf": { "q": "题五", "kind": "paper", "desc": "概率密度" },
+  "q7wave": { "q": "题七", "kind": "paper", "desc": "四信号波形" },
+  "q7const": { "q": "题七", "kind": "answer", "desc": "星座图" },
+  "q7recv": { "q": "题七", "kind": "answer", "desc": "最佳接收机" },
+  "q7decide": { "q": "题七", "kind": "answer", "desc": "判决区域" },
+  "q8block": { "q": "题八", "kind": "answer", "desc": "相干解调框图" }
+}

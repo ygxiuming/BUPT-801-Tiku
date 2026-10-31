@@ -574,6 +574,7 @@ window.BUPT801.answers["2014"] = {
           "body": [
             "把 $X(t)$ 看成冲激序列 $\\sum_n A_n\\delta(t-nT)$ 通过 $g(t)=\\mathrm{sinc}\\,2Wt$ 的输出。",
             "独立随机序列调幅的冲激序列功率谱为 $\\dfrac{\\sigma^2}{T}$（每秒 $1/T$ 个冲激、每个方差 $\\sigma^2$）。",
+            "这条也可以从自相关推：样值独立零均值 ⇒ 冲激串自相关 $R(\\tau)=\\sigma^2\\sum_k\\delta(\\tau-kT)$，仍是周期 $T$ 的冲激串；傅氏变换得间隔 $1/T$ 的谱线串，写成连续密度就是 $\\dfrac{\\sigma^2}{T}$。",
             "$\\mathrm{sinc}(2Wt)\\leftrightarrow G(f)=\\dfrac{1}{2W}G_{2W}(f)$，其中 $G_{2W}(f)$ 是高度 1、底宽 $2W$（$|f|<W$）的门函数。",
             "$$P_X(f)=\\frac{\\sigma^2}{T}\\,|G(f)|^2=\\frac{\\sigma^2}{4W^2T}\\,G_{2W}(f)$$",
             "即 $|f|<W$ 内为常数 $\\dfrac{\\sigma^2}{4W^2T}$，其外为 0。"
@@ -597,7 +598,8 @@ window.BUPT801.answers["2014"] = {
             "代入 $\\dfrac{\\sigma^2}{4W^2T}$（$\\sigma^2=N_0W$，$T=\\frac{1}{2W}$）：",
             "$$P_X(f)=\\frac{N_0W}{4W^2\\cdot\\frac{1}{2W}}\\,G_{2W}(f)=\\frac{N_0}{2}G_{2W}(f)=P_{X_1}(f)$$",
             "功率同为 $P_X=N_0W$。",
-            "关系：$X_1(t)$ 带限于 $W$，以奈奎斯特间隔 $T=\\dfrac{1}{2W}$ 抽样的样值经 $\\mathrm{sinc}$ 内插可均方重建原过程：$X(t)=\\sum_n X_1(nT)\\,\\mathrm{sinc}\\,2W(t-nT)$，故 $X(t)$ 与 $X_1(t)$ 在均方意义上相等（均值同为 0、功率谱与功率全同）。"
+            "关系：$X_1(t)$ 带限于 $W$，以奈奎斯特间隔 $T=\\dfrac{1}{2W}$ 抽样的样值经 $\\mathrm{sinc}$ 内插可均方重建原过程：$X(t)=\\sum_n X_1(nT)\\,\\mathrm{sinc}\\,2W(t-nT)$，故 $X(t)$ 与 $X_1(t)$ 在均方意义上相等（均值同为 0、功率谱与功率全同）。",
+            "重建链路见下图：$X_1(t)$ 经抽样得样值 $A_n$，冲激串 $\\delta(t)$ 与滤波器 $g(t)=\\mathrm{sinc}\\,2Wt$ 级联，输出即为内插重建的 $X(t)$。"
           ],
           "ans": "$P_X(f)=P_{X_1}(f)=\\dfrac{N_0}{2}G_{2W}(f)$，$P_X=N_0W$；$X(t)$ 是 $X_1(t)$ 的奈奎斯特抽样—内插重建，二者均方相等。",
           "fig": "q3block"
@@ -782,6 +784,9 @@ window.BUPT801.answers["2014"] = {
             "距离：$d^2(\\boldsymbol s_1,\\boldsymbol s_3)=d^2(\\boldsymbol s_1,\\boldsymbol s_4)=d^2(\\boldsymbol s_2,\\boldsymbol s_3)=d^2(\\boldsymbol s_2,\\boldsymbol s_4)=\\dfrac{A^2T}{4}+\\dfrac{A^2T}{8}=\\dfrac{3A^2T}{8}$（脚本 PASS）。",
             "$$d_{\\min}^2=\\frac{3A^2T}{8},\\qquad d_{\\min}=\\sqrt{\\frac{3A^2T}{8}}$$",
             "每个信号点恰有 2 个最近邻（$\\boldsymbol s_1,\\boldsymbol s_2$ 的近邻是 $\\boldsymbol s_3,\\boldsymbol s_4$，反之亦然），仿照 2ASK 的 $Q(\\cdot)$ 表达式做联合界：",
+            "成对错误概率：发送 $\\boldsymbol s_i$ 错成 $\\boldsymbol s_j$ 的概率只由两点间距离决定，$P(\\boldsymbol s_i\\to\\boldsymbol s_j)=Q\\!\\left(\\sqrt{\\dfrac{d^2(\\boldsymbol s_i,\\boldsymbol s_j)}{2N_0}}\\right)$（噪声沿两点连线方向投影的方差为 $N_0/2$）。",
+            "条件误码率（以 $\\boldsymbol s_1$ 为例）：$P(e\\mid\\boldsymbol s_1)\\le P(\\boldsymbol s_1\\!\\to\\!\\boldsymbol s_3)+P(\\boldsymbol s_1\\!\\to\\!\\boldsymbol s_4)=2Q\\!\\left(\\sqrt{\\dfrac{d_{\\min}^2}{2N_0}}\\right)$——两条 $d_{\\min}$ 路径联合；到 $\\boldsymbol s_2$ 的距离更远（$\\sqrt2\\,a$），其次近邻项暂略。",
+            "由星座的对称结构，四个点的条件误码率上界相同，等概平均后 $P_e=\\tfrac14\\sum_i P(e\\mid\\boldsymbol s_i)$ 仍被同一上界罩住：",
             "$$P_e\\le 2\\,Q\\!\\left(\\sqrt{\\frac{d_{\\min}^2}{2N_0}}\\right)=2\\,Q\\!\\left(\\sqrt{\\frac{3A^2T}{16N_0}}\\right)$$"
           ],
           "ans": "$P_e\\le 2Q\\!\\left(\\sqrt{\\dfrac{3A^2T}{16N_0}}\\right)$（联合界取主导的 4 个 $d_{\\min}$ 对，每点 2 个最近邻）。"
@@ -809,7 +814,10 @@ window.BUPT801.answers["2014"] = {
           "body": [
             "$$r(t)=A_k\\sin 2\\pi f_ct\\pm A_x\\sqrt{1-k^2}\\cos 2\\pi f_ct+n_c(t)\\cos 2\\pi f_ct-n_s(t)\\sin 2\\pi f_ct$$",
             "信号带宽按零点带宽计 $B=\\dfrac{2}{T_b}$；带通噪声功率 $P_n=N_0B=\\dfrac{2N_0}{T_b}$，且 $P_{n_c}=P_{n_s}=P_n$（$n_c$ 谱密度 $N_0$、$|f|<\\dfrac1{T_b}$）。",
-            "乘 $\\cos 2\\pi f_ct$ 并经 LPF（截止 $\\dfrac1{T_b}$）：导频项被滤除，数据项给出",
+            "相乘器逐项算（记 $\\omega_c=2\\pi f_c$）：导频 $A_k\\sin\\omega_ct\\cdot\\cos\\omega_ct=\\tfrac{A_k}{2}\\sin 2\\omega_ct$，全部落在 $2f_c$，被 LPF 滤除；",
+            "数据项 $\\pm A_x\\sqrt{1-k^2}\\cos^2\\omega_ct=\\pm\\tfrac{A_x}{2}\\sqrt{1-k^2}\\left[1+\\cos 2\\omega_ct\\right]$，LPF 取出低频直流项；",
+            "噪声项 $n_c\\cos^2\\omega_ct-n_s\\sin\\omega_ct\\cos\\omega_ct=\\tfrac12 n_c(t)+\\tfrac12\\left[n_c(t)\\cos 2\\omega_ct-n_s(t)\\sin 2\\omega_ct\\right]$，LPF 取出 $\\tfrac12 n_c(t)$（$2\\omega_c$ 附近分量滤除）。",
+            "故 LPF（截止 $\\dfrac1{T_b}$）输出为",
             "$$y(t)=\\pm\\frac{A_x}{2}\\sqrt{1-k^2}+\\frac12 n_c(t)$$",
             "$$E[y]=\\pm\\frac{A_x}{2}\\sqrt{1-k^2},\\qquad D[y]=\\frac14P_{n_c}=\\frac{N_0}{2T_b}$$",
             "等概对称 ⇒ 判决门限为 0。发送 1 时 $y<0$ 的概率：",
