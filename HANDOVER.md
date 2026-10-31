@@ -1,25 +1,20 @@
 # 交接文档 · 北邮801真题库
 
 > 数据格式、加载链路、工具链与已知坑的速查手册。配合 `skills/bupt801/SKILL.md`（入库流程）与 `README.md`（使用说明）阅读。
-> 最后更新：2026-10-29（图件：SVG 重绘为主，某张可换成原卷截图）
+> 最后更新：2026-11-01（图件：全量位图 PNG，SVG 重绘链路已退役删除）
 
-## 一、data/ 目录格式（2026-10-29 定稿：SVG 为主 + 可选截图覆盖）
+## 一、data/ 目录格式（2026-11-01 定稿：图件全位图，SVG 已退役）
 
 ```
 data/
 ├── chapters.js                    # 全站筛选维度：[{ id, name, points: [知识点...] }]
-├── images/                        # 可选：把某张图换成原卷截图（同名 key 优先于 svg）
+├── images/                        # 图库唯一来源：原卷截图 PNG（用户提供，只许改名/垫边）
 │   └── <年>/
-│       ├── <年>-<题号>-<key>.png   # 覆盖题图（一般不加；照片型题图才用）
-│       ├── answer/                # 覆盖解析配图，同命名
+│       ├── <年>-<题号>-<key>.png   # 题图——数据里 q.fig = key
+│       ├── answer/                # 解析配图，同命名
 │       │   └── <年>-<题号>-<key>.png
-│       └── _meta.json             # 可选：{ "<key>": { q, kind, desc } }，键序 = 图库显示序
-├── figures/                       # 矢量图真身（默认画法）+ 每年一个自动生成的注册表
-│   └── <年>/
-│       ├── <年>-<题号>-<图名>.svg  # 矢量图真身（新图照 SKILL.md 第 5 节画；首行 figureMeta 注释）
-│       ├── _index.js              # emit 自动生成的注册表（浏览器/Node 两用，勿手改）
-│       ├── assets/                # 2026-10 的旧截图通道（仍兼容，优先级低于 data/images）
-│       └── answer/                # 解析配图 .svg
+│       ├── _meta.json             # 可选：{ "<key>": { q, kind, desc } }，键序 = 图库显示序
+│       └── _index.js              # emit/server 自动生成的注册表（位图描述符 {src,w,h}，勿手改）
 └── questions/
     └── <年>/
         ├── paper.js               # 真题：试卷元数据 + groups(选项组) + 题目（题干/选项/章节/标签，无答案无解析）
@@ -29,14 +24,14 @@ data/
 ### 关键约定
 
 - **题目与答案分离**：paper.js 不含 `answer/exp/sol`；answer.js 按题目 id 存答案与解析。加载后由 `hydrateAnswers()` 就地合并回题目对象（前端 `app/src/lib/data.js`，server `server/lib/load-data.js`，校验器 `tools/validate_data.js` 三处同逻辑）。
-- **图库两层：`.svg` 真身 + 自动注册表**：`data/figures/<年>/[answer/]<年>-<题号>-<图名>.svg` 是**默认来源与唯一维护对象**（首行 `figureMeta` 带 key/q/kind/desc；Inkscape 手调后直接存盘）。要让**某一张**改用原卷截图，就把同名 png 放进 `data/images/<年>/[answer/]<年>-<题号>-<key>.png`（key = 文件名最后一个 `-` 之后那段，必须等于数据里的 `fig:"key"`），`.svg` 不用删也不用改。`data/figures/<年>/_index.js` 是自动生成的注册表——server 启动时全量对齐 + 运行中监听 `data/images` 与 `data/figures` 变化自动重建（`tools/fig_registry.js`），没起 server 就跑 `node tools/emit_figures.mjs <年> --rebuild`。注册 `figures["年"][key]`（`'<svg …>'` 或 `{ src, w, h }` 两种形态可混排）与 `figureMeta["年"][key]`。**优先级：`data/images` > `figures/<年>/assets` > `figures/<年>/*.svg`**——删掉那张图就自动回落矢量，一秒钟复原。**两个覆盖陷阱**：①`app/public/data` 是下发快照，别改那里的副本（sync 会用 data/ 覆盖回去，svg 也不下发）；②`emit` 默认**只重建注册表**，不跑生成器；要由生成器刷新 `.svg` 必须显式加 `--run-gen`（会把同名 `.svg` **整个覆盖**，Inkscape 手改过的图一跑就没——2021 出过事，跑前先 commit）。
+- **图库一层：位图 + 自动注册表**（2026-11 起 SVG 重绘已退役，`data/figures/` 已删除）：`data/images/<年>/[answer/]<年>-<题号>-<key>.png` 是唯一维护对象——**用户提供的截图只许改名与垫白边（`tools/pad_png_margin.py`），禁改内容**；用户没给的图从 300dpi 页图裁（`tools/crop_orig.py`）或自绘后截图。`data/images/<年>/_index.js` 是自动生成的注册表——server 启动时全量对齐 + 运行中监听 `data/images` 变化自动重建（`tools/fig_registry.js`），没起 server 就跑 `node tools/emit_figures.mjs <年>`。注册 `figures["年"][key] = { src, w, h }`（位图描述符，前端 `figToSvg()` 包成 `<image>` 外壳）与 `figureMeta["年"][key] = { q, kind, desc }`。**覆盖陷阱**：`app/public/data` 是下发快照，别改那里的副本（sync 会用 data/ 覆盖回去）。
 - **选项组多套选项**：2026 起组内可声明 `optionSets: ["options5","options6"]` 且题目用 `oKey` 指定用哪套；2025 旧约定（`options12/13/25/26` 按 blank 号）继续兼容。渲染端（PaperView / print-html.js）先看 optionSets 再回退旧键。
 - **公式**：`$...$` / `$$...$$`（KaTeX）；JS 字符串里反斜杠双写。渲染层统一做 HTML 转义（公式里的裸 `<` 会被 innerHTML 当标签吞掉）。
 - **数据一律是挂 `window.BUPT801` 的 .js**（不用 fetch/json）。
 
 ## 二、加载链路（2025-10-25 二改：单文件引用 + 生产实时映射）
 
-**页面只持引用**：`app/index.html` 逐文件 `<script src="/data/figures/<年>/<文件>.js">`、`/data/questions/<年>/(paper|answer).js`，**无合并 bundle**。
+**页面只持引用**：`app/index.html` 逐文件 `<script src="/data/images/<年>/_index.js">`（图库注册表）、`/data/questions/<年>/(paper|answer).js`（题目），**无合并 bundle**。
 
 | 端 | 数据来源 | 改数据后的生效方式 |
 |---|---|---|
@@ -50,25 +45,20 @@ data/
 
 | 工具 | 作用 |
 |---|---|
-| `tools/gen_figures_<年>.py` + `node tools/emit_figures.mjs <年>` | **默认画图链路**：生成器输出 → `data/figures/<年>/*.svg` + `answer/` → 重建 `_index.js` |
-| `node tools/emit_figures.mjs <年> --rebuild` | **只重建注册表**（`data/images` 覆盖 + `data/figures` 的 .svg → `_index.js`），不跑生成器；`--sync-all` 全量 |
-| `tools/crop_orig.py` | 裁图：整页 PNG + x,y,w,h → `data/images/<年>/[answer/]<年>-<题号>-<key>.png`（换截图、对照原卷时用；`--norm` 按页面比例） |
-| `tools/preview_figures.py <年>` | 整年图件拼成带图名的网格（矢量与截图都支持，`--only` 单张放大） |
-| `tools/compare_figures.py <年>` | 左原卷/右重绘逐图对照（核「画得像不像原卷」） |
-| `tools/dump_figures.js` | 图库 JSON 导出（compare 的数据通道）；新年份在文件头加一行静态 require |
+| `node tools/emit_figures.mjs <年>` | **重建该年注册表**：扫 `data/images/<年>/**` 位图 → `_index.js`；`--sync-all` 全量（sync/dev/server 启动都会跑） |
+| `tools/crop_orig.py` | 裁图：整页 PNG + x,y,w,h → `data/images/<年>/[answer/]<年>-<题号>-<key>.png`（用户没给的图用；`--norm` 按页面比例） |
+| `tools/pad_png_margin.py` | 截图 PNG 四边垫白到 ≥5% 图宽（幂等，只加白不裁内容；垫完重建注册表） |
 | `node tools/split_questions.mjs <年>` | 旧格式 `<年>.js/-b.js/-big.js` → `<年>/paper.js + answer.js`（用后删旧文件） |
 | `node tools/validate_data.js` | 结构/引用/公式/数值抽查校验；新年份在文件头 require 区和 EXPECT 里各登记一次 |
 | `cd app && npm run sync` | data → public 逐文件拷贝（开发快照；生产不需要）；dev/build 前自动跑 |
 | `node tools/build-frontend.mjs` | **回退构建**：esbuild + compiler-sfc 生成 `app/dist`（vite 在受限环境因 wasm 起不来时用）；同时把 public/data 快照对齐到 dist/data |
 | `node tools/smoke_pages.mjs` | **页面冒烟**（jsdom + dist，不需要浏览器/网络）：逐年 × 3 页 + 首页/统计/图库/复习/编辑器，逐页断言"非空 + KaTeX 零报错 + Vue 零错误"，再跑 11 条交互（导航、考试开始、练习选答、⌘K 搜索、复习评分、编辑器切换与导出、备份导出导入） |
 | `node tools/audit_site.mjs` | **全站审计**（同样走 jsdom）：结构侧核对大题序号与数据一致/目录锚点/DOM id 重复/图件空块，交互侧 21 条完整流程，附 a11y 扫描（h1、label、按钮可访问名、SVG title）。`--json` 可接 CI |
-| `tools/svgkit.py` | **统一收边**：`tighten(svg, PAD=18)` 按 line/rect/circle/poly/path/text 包围盒收 viewBox，只改 viewBox 不动坐标（2025 起唯一口径） |
-| `tools/svg_fit.py` + `tools/fit_figures_render.py` | 旧两步收边链路，已随 .js 存储退役（2023/2024 生成器内部还在调 svg_fit；fit_figures_render 不再可用） |
 | `cd server && npm start` | 托管 app/dist + `/data/**` 实时映射项目 data/ + `/api/pdf/<年>/(paper|ans)` Puppeteer 排版（每年份自动注册路由） |
 
 ## 四、已知坑（重要）
 
-1. **图件默认 SVG 重绘**（`data/figures/<年>/**.svg`，规范见 SKILL.md 第 5 节）；需要时**逐张**换原卷截图：从 `pdftoppm -r 300` 页图上裁，存 `data/images/<年>/[answer/]<年>-<题号>-<key>.png`，宽 900~1600、PNG、≤250 kB，框内含图注/轴标签、不含题干与题号。同名 key 截图优先于 svg；删掉截图就回落矢量。截图外壳由 `figToSvg()` 补 18px 留白，所以 `node tools/check_figure_overlap.js <年>` 对截图报 `18/18/18/18`、`文字0 线段0 位图N` 是正常的。
+1. **图件全位图**（2026-11 起 SVG 重绘已退役）：唯一来源 `data/images/<年>/[answer/]<年>-<题号>-<key>.png`——用户提供的截图只许改名/垫边（`pad_png_margin.py`），禁改内容；没给的图从 300dpi 页图裁（宽 900~1600、PNG、≤250 kB，框内含图注/轴标签、不含题干与题号）。规范见 SKILL.md 第 5 节。
 1b. **文件名就是 key**：`<年>-<题号>-<key>.png` 里最后一个 `-` 之后那段必须等于数据里 `fig:"key"`；截图工具默认名（`截图 2026-10-29 19-32-25.png`）会被注册表拒收（emit 会打印清单）。
 2. **公式里的 `<`**：数据必须经 `escHtml`（前端）/`esc`（server）转义再进 innerHTML，否则如 `$H\le L<H+1$` 的 `<H+1$…>` 整段被浏览器吞成标签。
 3. **Lightbox 里的 SVG**：只有 viewBox 无固有尺寸会塌缩成小白块，打开时按宽高比显式注入 width/height（Lightbox.vue figSvg）。
@@ -76,7 +66,7 @@ data/
 5. **Mimosa 安全 Hook**：Bash 重定向/cp 写 .js 会被拦（用 Write 工具或项目内 node 工具）；动态 `require(变量)` 会被误报命令注入（用静态字符串，新年份加一行）。
 6. **app/ 是 ESM 包**（package.json type:module）：Node 端 require app/ 下的 .js 会按 ESM 加载失败，KaTeX 一律从 `server/node_modules` require。
 7. **并行会话**：本项目常有多个会话同时改数据（如 2026 入库），改公共文件（index.html、校验器、data.js）前先重读，冲突时以数据格式约定（本文档）为准对齐。
-8. **本机没有 Chrome**（headless 一律 EXIT=133），方案是"SVG → PNG 预览"目视核对遮挡。渲染器两档：**Inkscape（`/usr/bin/inkscape`，首选）**——中文/tspan 上下标/text-anchor 全部正确，`compare_figures.py` 用它；**cairosvg 兜底**（装在本机 Python venv `~/.workbuddy/binaries/python/envs/default`，preview_figures.py 用）。**预览时必须把 `font-family` 整个替换成 `Noto Sans CJK SC`**——若列表里留 `Helvetica`，cairosvg 只取第一个字体、中文直接渲染成空白（看起来像"漏画了字"）；Inkscape 没这个问题。另：cairosvg 对 `text-anchor='middle'` 的 tspan 会按"每个 chunk 各自居中"，预览里下标会被拉开成空隙（如 `2cos(2πf c t)`）；这是预览器的老 bug，Inkscape/浏览器都正常，**不要为此改图**。要判断几何遮挡只看线条与方框。
+8. **本机没有 Chrome**（headless 一律 EXIT=133），页面/图件核对全靠 jsdom 工具链（`audit_layout` / `smoke_pages`）与直接 Read 图片文件。图件核对就是 Read 裁片/截图本身，不再需要 SVG 渲染器（Inkscape/cairosvg 链路已随对照闭环一起退役）。
 9. **主题色一律走 CSS 变量**（`app/src/styles/app.css` 第 1 节）。组件里不要写死 `#fff` / `#eef3ff`，否则深色主题下会白底白字。卷面 `.paper-sheet` 内部已锁定一套浅色令牌（`--ink/--surface/--line…` 局部覆盖），所以在白纸上渲染解析块时不用另写颜色。
 10. **组件不写 `<style scoped>`**：样式统一放 `app.css`。一是便于主题令牌复用，二是本机沙箱内 `vite build` 不可用（rollup 内置 wasm 在 4GB 虚拟内存上限下无法实例化），临时产物由 esbuild + `@vue/compiler-sfc` 生成，不处理 scoped 样式。
 11. **沙箱里连不上 127.0.0.1**：`curl http://127.0.0.1:3000` 返回 502、`npm run sync` 报 `EPERM copyfile`（被文件策略拦）。所以页面验证走 `node tools/smoke_pages.mjs`：读 `app/dist/index.html` → 在 jsdom 里 `window.eval` 所有数据脚本（数据脚本必须早于 bundle）→ 动态 `import('dist/assets/app.js?r=N')` 让它自己 mount，全程只用文件通道。esbuild 写文件走原生二进制，不受该策略影响。
@@ -125,19 +115,18 @@ app/src/
 - **图块 `.figblock` 永远白底**：SVG 线条是深色，深色主题下不给白底会"消失"。
 - 记录相关的派生统计（进度、正确率、近 14 天活跃、最近一次作答）都在 `lib/records.js`，视图只消费。
 - 题目深链 `/practice?id=<题目id>`：首页「继续上次」、统计页错题/收藏、⌘K 搜索结果都走这个入口。
-- **图件的 id 必须加作用域**：`render.js` 的 `scopeIds()` 会在渲染时给 SVG 内部 id 加 `f<年>-<图名>-<序号>` 前缀
-  （server 端 `print-html.js` 同逻辑）。生成器起的是 `a241` 这类内容哈希短名，一页十几张图必然撞车，
-  撞了会让 `url(#a241)` 指向别的图的箭头。新增渲染路径时记得一并调用。
+- **图件的 id 必须加作用域**：`render.js` 的 `scopeIds()` 会在渲染时给 SVG 外壳内部 id 加 `f<年>-<图名>-<序号>` 前缀
+  （server 端 `print-html.js` 同逻辑）。位图外壳本身没有内部 id，但沿用同一入口能保证
+  未来任何带 id 的图件（如手写 SVG 图表）不会在一页多图时撞车。新增渲染路径时记得一并调用。
 - **三个图表组件是手写 SVG**（热度矩阵用 `<table>` + 色块，趋势/散点是 `<svg>`），不引第三方图表库：
   本机沙箱装不了外部依赖，且数据量小（≤5 年 × 9 章），手写更轻。图表容器要能扛住空数据（显示空态而非报错）。
 
 ## 五、待办 / 已知问题
 
 - [x] 2026 数值抽查 2 项失败 —— 定位为**校验器公式写错**（量化噪声不等于 `E[X²]-E[Y²]`，须用 `E[X²]-2E[XY]+E[Y²]`）。已改为数值积分独立复核：p(x)=(3-|x|)/9 上直接算 E[X²]=3/2、E[XY]=29/18、E[Y²]=23/12、7/36 全部命中；另补 (7,4) 循环码 G·Hᵀ=0 / dmin=3 / s=(101) / 8 个错误图样重量分布 1·3重+3·2重+4·4重 的程序化验算。
-- [x] 2026 图库 5 张 viewBox 已复核并收边：q3recv → `0 56 470 126`、q5const → `20 0 440 450`；其余三张留白已在 30px 内。另修 q2psd 的幅度轴（f=0 处细灰线不带箭头，避免被误读成谱线）。
-- [x] SVG 文本下标：`gen_figures_<年>.py` 的 `text()` 支持 `x_c` / `T_{b}` / `y^2` 迷你标记（用 tspan 排上下标），不再出现 `T_b`、`V_T` 这种下划线写法。
-- [ ] **2024 数据是半成品**：`data/questions/2024/{paper,answer}.js` 已写完（51 个 id、9 段 `sol`），`data/figures/2024/` 10 张图且被题目全部引用，但 `app/index.html` 与 `tools/validate_data.js` 都没登记 2024 —— 未校验、未冒烟。补登记后跑 `validate_data.js` + `smoke_pages.mjs` 即可收尾（详见 `解析日志.md` 待办）。
-- [ ] `待解析/` 里 2020、2021 两份 PDF 未入库（2022 已于 2026-10-25 入库，见 `解析日志.md`）。
+- [x] 2024 半成品已于后续入库流程补齐登记（index.html / validate_data.js 均已就位，校验与冒烟全绿）。
+- [x] 2020、2021 已入库（见 `解析日志.md`）。
+- [x] 2026-11-01：图件全量位图化收尾——`data/figures/` 目录与 SVG 工具链（生成器/收边/对照/预览/遮挡检查）全部删除，注册表迁到 `data/images/<年>/_index.js`，规范改写进 SKILL.md 第 5 节与 `data/images/_TEMPLATE.md`。
 
 ## 七、版本管理（2026-10-25 起）
 
@@ -145,7 +134,7 @@ app/src/
 
 ```bash
 cd ~/Desktop/北邮801-通信原理
-git add data/questions/<年> data/figures/<年> app/index.html tools/ 解析日志.md
+git add data/questions/<年> data/images/<年> app/index.html tools/ 解析日志.md
 git commit -m "feat(<年>): 入库 <年> 真题（50 空 + 8 大题 + 16 图）"
 ```
 
