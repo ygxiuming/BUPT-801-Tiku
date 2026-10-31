@@ -194,7 +194,7 @@ window.BUPT801.papers["2016"] = {
       }
     },
     "g20": {
-      "stem": "下列星座图中，采用格雷码映射的是（20）。（四个方案都是 4 个等间距星座点排在一条轴上，从左到右的比特标注如下）",
+      "stem": "下列星座图中，采用格雷码映射的是（20）。",
       "options": {
         "A": "00、01、10、11",
         "B": "00、11、01、10",
@@ -275,7 +275,7 @@ window.BUPT801.papers["2016"] = {
       }
     },
     "g29": {
-      "stem": "下列当中，（29）是 4PAM 的眼图。（四个方案都只有 2 个水平电平线对应的“眼”，差别在电平层次数与眼张开程度）",
+      "stem": "下列当中，（29）是 4PAM 的眼图。",
       "options": {
         "A": "3 个电平、2 个眼，线条很疏",
         "B": "层次偏少、眼偏窄，上下沿有拖尾",
@@ -313,16 +313,16 @@ window.BUPT801.papers["2016"] = {
     {"id": "2016-17", "num": 17, "type": "choice", "group": "g17", "blank": 17, "chapter": "ch5", "point": "抽样定理", "tags": ["易错"]},
     {"id": "2016-18", "num": 18, "type": "choice", "group": "g18", "blank": 18, "chapter": "ch6", "point": "循环码", "tags": ["计算"]},
     {"id": "2016-19", "num": 19, "type": "choice", "group": "g19", "blank": 19, "chapter": "ch1", "point": "无线信道（多径/多普勒/相干带宽）", "tags": ["概念"]},
-    {"id": "2016-20", "num": 20, "type": "choice", "group": "g20", "blank": 20, "chapter": "ch4", "point": "MPSK/MQAM 星座图与格雷映射", "tags": ["易错"]},
+    {"id": "2016-20", "num": 20, "type": "choice", "group": "g20", "blank": 20, "fig": "q20gray", "chapter": "ch4", "point": "MPSK/MQAM 星座图与格雷映射", "tags": ["易错"]},
     {"id": "2016-21", "num": 21, "type": "choice", "group": "g21", "blank": 21, "chapter": "ch4", "point": "2ASK/2FSK/2PSK/2DPSK", "tags": ["概念"]},
-    {"id": "2016-22", "num": 22, "type": "choice", "group": "g22", "blank": 22, "chapter": "ch6", "point": "扩频通信与处理增益", "tags": ["计算"]},
+    {"id": "2016-22", "num": 22, "type": "choice", "group": "g22", "blank": 22, "fig": "q22ds", "chapter": "ch6", "point": "扩频通信与处理增益", "tags": ["计算"]},
     {"id": "2016-23", "num": 23, "type": "choice", "group": "g23", "blank": 23, "chapter": "ch5", "point": "哈夫曼编码", "tags": ["易错"]},
     {"id": "2016-24", "num": 24, "type": "choice", "group": "g24", "blank": 24, "chapter": "ch1", "point": "随机过程通过线性系统", "tags": ["概念"]},
     {"id": "2016-25", "num": 25, "type": "choice", "group": "g25", "blank": 25, "chapter": "ch4", "point": "多进制调制的误码性能与带宽", "tags": ["结论"]},
-    {"id": "2016-26", "num": 26, "type": "choice", "group": "g26", "blank": 26, "chapter": "ch8", "point": "载波同步（平方环/科斯塔斯环）", "tags": ["概念"]},
+    {"id": "2016-26", "num": 26, "type": "choice", "group": "g26", "blank": 26, "fig": "q26pll", "chapter": "ch8", "point": "载波同步（平方环/科斯塔斯环）", "tags": ["概念"]},
     {"id": "2016-27", "num": 27, "type": "choice", "group": "g27", "blank": 27, "chapter": "ch6", "point": "汉明距离与纠检错能力", "tags": ["计算"]},
     {"id": "2016-28", "num": 28, "type": "choice", "group": "g28", "blank": 28, "chapter": "ch5", "point": "A律13折线与PCM编码", "tags": ["常识"]},
-    {"id": "2016-29", "num": 29, "type": "choice", "group": "g29", "blank": 29, "chapter": "ch3", "point": "眼图", "tags": ["概念"]},
+    {"id": "2016-29", "num": 29, "type": "choice", "group": "g29", "blank": 29, "fig": "q29eye", "chapter": "ch3", "point": "眼图", "tags": ["概念"]},
     {"id": "2016-30", "num": 30, "type": "choice", "group": "g30", "blank": 30, "chapter": "ch4", "point": "2ASK/2FSK/2PSK/2DPSK", "tags": ["计算"]},
 
     {"id": "2016-二", "num": "二", "type": "big", "score": 12,
