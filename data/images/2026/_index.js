@@ -1,7 +1,6 @@
 // 2026 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件：data/images/2026/**（原卷截图，唯一维护对象）→ 优先级最高
-//         data/figures/2026/**.svg（历史矢量，只读保留，没有同名截图时才用）
-// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
+// 源文件：data/images/2026/**（原卷截图，唯一维护对象）；勿手改本文件
+// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};

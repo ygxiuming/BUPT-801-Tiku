@@ -18,8 +18,8 @@ function publicBaseRewrite() {
   }
 }
 
-// dev 模式下 public/ 的静态文件（尤其 data/figures/<年>/_index.js，server 监听 svg 变化
-// 自动重建的那个）会被浏览器启发式缓存卡住，出现"改了 svg 刷新还是旧的"——强制每次校验。
+// dev 模式下 public/ 的静态文件（尤其 data/images/<年>/_index.js，server 监听图片变化
+// 自动重建的那个）会被浏览器启发式缓存卡住，出现"改了图刷新还是旧的"——强制每次校验。
 // 生产（server:3000）的对称修复在 server/index.js 的 /data 静态配置里。
 function dataNoCache() {
   return {

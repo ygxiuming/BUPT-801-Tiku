@@ -1,7 +1,6 @@
 // 2021 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件：data/images/2021/**（原卷截图，唯一维护对象）→ 优先级最高
-//         data/figures/2021/**.svg（历史矢量，只读保留，没有同名截图时才用）
-// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
+// 源文件：data/images/2021/**（原卷截图，唯一维护对象）；勿手改本文件
+// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
@@ -10,11 +9,11 @@ window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q2block = { src: '/data/images/2021/2021-二-q2block.png', w: 1180, h: 250 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q2psd2 = { src: '/data/images/2021/answer/2021-二-q2psd2.png', w: 2170, h: 725 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q2psd3 = { src: '/data/images/2021/answer/2021-二-q2psd3.png', w: 1878, h: 378 };
-(window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q3block = { src: '/data/images/2021/2021-三-q3block.png', w: 1179, h: 199 };
+(window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q3block = { src: '/data/images/2021/2021-三-q3block.png', w: 2170, h: 725 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q3ht = { src: '/data/images/2021/answer/2021-三-q3ht.png', w: 1278, h: 394 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q3eye1 = { src: '/data/images/2021/answer/2021-三-q3eye1.png', w: 553, h: 411 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q3eye2 = { src: '/data/images/2021/answer/2021-三-q3eye2.png', w: 558, h: 444 };
-(window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q4rx = { src: '/data/images/2021/2021-四-q4rx.png', w: 1057, h: 205 };
+(window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q4rx = { src: '/data/images/2021/2021-四-q4rx.png', w: 2170, h: 725 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q5stem = { src: '/data/images/2021/2021-五-q5stem.png', w: 1311, h: 1200 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q5region = { src: '/data/images/2021/answer/2021-五-q5region.png', w: 699, h: 753 };
 (window.BUPT801.figures["2021"] = window.BUPT801.figures["2021"] || {}).q6pdf = { src: '/data/images/2021/answer/2021-六-q6pdf.png', w: 1342, h: 695 };

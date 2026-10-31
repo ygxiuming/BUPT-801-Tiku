@@ -1,80 +1,17 @@
-// 图库注册表共享模块：.svg 真身 ↔ _index.js 注册表 之间的解析/重建逻辑。
-// 被两处使用：tools/emit_figures.mjs（ESM 落盘链路）与 server/index.js（启动同步 + svg 变更监听）。
+// 图库注册表共享模块：data/images/<年>/**.png ↔ _index.js 注册表 之间的扫描/重建逻辑。
+// 被两处使用：tools/emit_figures.mjs（落盘链路）与 server/index.js（启动同步 + 图片变更监听）。
 // 约定（过 Mimosa 扫描）：路径一律 path.join；写文件前先比对内容，无变化不写（防 git 噪音与监听自触发）。
+//
+// 存储形态（2026-11 定稿：图件只有位图，SVG 重绘已退役）：
+//   data/images/<年>/<年>-<题号>-<key>.png          题图（唯一维护对象：用户提供的截图，只许改名/垫边）
+//   data/images/<年>/answer/<年>-<题号>-<key>.png   解析配图，同命名
+//   data/images/<年>/_meta.json                    可选：{ "<key>": { q, kind, desc } }，键序 = 图库显示序
+//   data/images/<年>/_index.js                     自动生成的注册表（浏览器/Node 两用，勿手改）
+// 注册值一律是位图描述符 { src, w, h }，前端 figToSvg() 包成「只有一张 <image> 的 svg 外壳」，
+// 于是正文 / 图库 / 灯箱 / 版式审计全部照旧工作，页面上仍是一张 <svg>。
 const fs = require('fs');
 const path = require('path');
 
-// —— 生成器输出的 .js 块解析（格式由生成器保证，全仓统一；embed 工具产物是双引号，兼容两种）——
-const FIG_RE = /\(window\.BUPT801\.figures\["(\d{4})"\][^)]*\)\.([A-Za-z0-9_]+) = ('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*");/s;
-const META_RE = /\(window\.BUPT801\.figureMeta\["(\d{4})"\][^)]*\)\.([A-Za-z0-9_]+) = (\{[^}]*\});/s;
-
-function unescape1(s) {
-  // 单/双引号 JS 字符串字面量 → 原文。要认全转义：\' \\ \" \uXXXX \u{...} \xXX \n \t 等，
-  // 否则像 2016 a11trellis 里的 \u3000（全角空格）会被啃成 u3000。
-  return s.replace(/\\(u\{[0-9a-fA-F]+\}|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g, (_, e) => {
-    if (e[0] === 'u' || e[0] === 'x') {
-      const hex = e[0] === 'u' && e[1] === '{' ? e.slice(2, -1) : e.slice(1);
-      const cp = parseInt(hex, 16);
-      return cp > 0xffff ? String.fromCodePoint(cp) : String.fromCharCode(cp);
-    }
-    const map = { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', v: '\v', '0': '\0' };
-    return Object.prototype.hasOwnProperty.call(map, e) ? map[e] : e;
-  });
-}
-
-function escape1(s) {
-  // \n \r \t 也要转义：Inkscape 存盘的 svg 是多行文本，直接嵌单引号 JS 字符串会语法错误
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-    .replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t');
-}
-
-// fig[3] 带首尾引号（单/双两种包裹都在组里），剥壳后再反转义
-function payloadOf(quoted) {
-  return unescape1(quoted.slice(1, -1));
-}
-
-// 从生成器 .js 块里抠出 meta 三字段（q/kind/desc 都是 "..." 字面量）
-function parseMetaObj(literal) {
-  const get = (k) => {
-    const m = literal.match(new RegExp(k + ':\\s*"([^"]*)"'));
-    if (!m) throw new Error('meta 缺字段 ' + k + '：' + literal);
-    return m[1];
-  };
-  return { q: get('q'), kind: get('kind'), desc: get('desc') };
-}
-
-function parseSvgFile(text, rel) {
-  // Inkscape 存盘会在最前面插 <?xml ...?> 声明，把 figureMeta 注释挤到第二行——
-  // 所以只要求"注释出现在 <svg 之前"，不锁第一行。
-  const ci = text.indexOf('<!-- figureMeta')
-  const si = text.indexOf('<svg')
-  if (ci === -1 || si === -1 || ci > si) {
-    throw new Error(rel + ' 缺 figureMeta 注释（<svg 之前应有 <!-- figureMeta {...} -->，' +
-      'Inkscape 编辑时别删它；误删可从其他图复制一行并改 key）')
-  }
-  const m = text.slice(ci).match(/^<!--\s*figureMeta\s+([\s\S]*?)\s*-->/)
-  const meta = JSON.parse(m[1])
-  if (!meta.key) throw new Error(rel + ' figureMeta 注释缺 key')
-  return { meta, svg: text.slice(si).trim() }
-}
-
-function svgTextOf(meta, svg) {
-  return '<!-- figureMeta ' + JSON.stringify(meta) + ' -->\n' + svg.trim() + '\n';
-}
-
-// —— 图件来源与优先级（2026-10-29 定稿）——
-// **默认画法仍是 SVG 重绘**：`data/figures/<年>/**.svg` 是唯一维护对象，新图照第 5.1~5.11 节规范画。
-// 允许**逐张**把某张图换成原卷截图（照片型题图：眼图、星座仪屏摄、实测谱——重绘必然失真）：
-//   data/images/<年>/<年>-<题号>-<key>.png          题图（可选覆盖，用户点名才做）
-//   data/images/<年>/answer/<年>-<题号>-<key>.png   解析配图（可选覆盖）
-//   data/images/<年>/_meta.json                    可选：{ "<key>": { q, kind, desc } }，键序 = 图库显示序
-//                                                  （只有截图、没有 .svg 的 key 靠它补题号/说明）
-//   data/figures/<年>/assets/<key>.png              2026-10 的旧截图通道（仍兼容，优先级低于 images/）
-//   data/figures/<年>/<年>-<题号>-<key>.svg         矢量图真身（默认来源，.svg 一律不动）
-// **优先级：data/images > figures/<年>/assets > figures/<年>/*.svg**，同一 key 取最高优先级那个
-// —— 也就是「换了图片就用图片」。删掉那张图片即自动回落 svg，一秒钟复原。
-// 命名与 svg 完全一致：去掉扩展名、去掉「年份-题号-」前缀，剩下的就是题目数据里 fig:"key" 的 key；
-// 目录格式也照抄 figures（根目录 = 题图，answer/ = 解析图）。
 const IMG_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.gif']; // 越前优先级越高
 
 // 读图片像素尺寸（注册表要 w/h，外壳 svg 才能算对 viewBox）。只解析文件头，不依赖任何库。
@@ -107,36 +44,6 @@ function imgSize(buf) {
     }
   }
   return null; // 认不出来：调用方退回像素级无法计算，用占位并告警
-}
-
-// 扫 assets/ 目录，返回 { key: { src, w, h, file } }。同名多格式按 IMG_EXT 优先级取一张。
-function scanShots(figDir, year, keys) {
-  const dir = path.join(figDir, 'assets');
-  const shots = {};
-  let names = [];
-  try { names = fs.readdirSync(dir); } catch { return shots; }
-  for (const name of names) {
-    const ext = path.extname(name).toLowerCase();
-    const pri = IMG_EXT.indexOf(ext);
-    if (pri === -1) continue;
-    const key = path.basename(name, path.extname(name));
-    if (!keys.has(key)) {
-      shots['\u0000unused:' + name] = { file: name, unused: true };
-      continue;
-    }
-    const cur = shots[key];
-    if (cur && IMG_EXT.indexOf(path.extname(cur.file).toLowerCase()) <= pri) continue;
-    let size = null;
-    try { size = imgSize(fs.readFileSync(path.join(dir, name))); } catch { /* 读不了当未知 */ }
-    shots[key] = {
-      src: '/data/figures/' + year + '/assets/' + name,
-      w: (size && size.w) || 1200,
-      h: (size && size.h) || 800,
-      file: name,
-      sizeKnown: !!size,
-    };
-  }
-  return shots;
 }
 
 // 从截图文件名推 key / 题号：`2026-三-q3recv.png` → { key:'q3recv', q:'三' }；
@@ -212,59 +119,29 @@ function readIndexHint(text) {
   return keys;
 }
 
-// 扫描年目录的截图（data/images/<年>）与历史 .svg（data/figures/<年>）重建 _index.js。
-// orderHint 是 key 的期望顺序（来自生成器 _index 块或迁移脚本）——图库页按注册顺序显示，
-// 必须跟着题号走，不能按文件名排；不传时用 data/images/<年>/_meta.json 的键序，再不行沿用现有 _index.js。
-// 内容无变化不写盘。返回 { count, changed, shots, shotKeys, unused, unknown, imgs }。
-// 只有截图、没有 svg 的年份也走这里（figDir 会被建出来，因为 index.html 引用的是 figures/<年>/_index.js）。
-function rebuildIndex(figDir, year, orderHint) {
-  fs.mkdirSync(figDir, { recursive: true }) // 新年份可能只有 data/images/，注册表仍写在 figures/<年>/
+// 扫 data/images/<年>/ 重建该年注册表 _index.js（注册值一律 { src, w, h } 位图描述符）。
+// orderHint 是 key 的期望顺序——图库页按注册顺序显示，必须跟着题号走：优先 _meta.json 的键序，
+// 再不行沿用现有 _index.js 的注册序。内容无变化不写盘。返回 { count, changed, shotKeys, imgs, badNames, unknown }。
+function rebuildIndex(imgDir, year, orderHint) {
+  fs.mkdirSync(imgDir, { recursive: true }) // 首次也把目录建出来
 
-  const imgDir = path.resolve(figDir, '..', '..', 'images', year) // data/figures/<年> → data/images/<年>
   const { map: imageMap, bad: badNames } = scanImageDir(imgDir, year)
   const metaJson = readMetaJson(imgDir)
 
   const items = [];
-  const addDir = (dir, sub) => {
-    for (const name of fs.readdirSync(dir).sort()) {
-      if (!name.endsWith('.svg') || name.startsWith('_')) continue // _ 前缀 = 备份/草稿，不注册
-      const rel = sub ? sub + '/' + name : name;
-      const parsed = parseSvgFile(fs.readFileSync(path.join(dir, name), 'utf8'), 'figures/' + year + '/' + rel);
-      parsed.file = rel;
-      items.push(parsed);
-    }
-  };
-  addDir(figDir, '');
-  const ansDir = path.join(figDir, 'answer');
-  let hasAns = false;
-  try { fs.readdirSync(ansDir); hasAns = true; } catch { /* 无 answer/ 目录 */ }
-  if (hasAns) addDir(ansDir, 'answer');
-
-  // 同名 key 防护：备份/副本文件（如 "xxx (副本).svg"）混进图库会让注册表二义
-  const seen = new Set();
-  for (const it of items) {
-    if (seen.has(it.meta.key)) {
-      throw new Error(`figures/${year}: key "${it.meta.key}" 重复（文件 ${it.file}）。` +
-        '请把备份/副本文件挪出 data/figures/ 再重建注册表');
-    }
-    seen.add(it.meta.key);
-  }
-
-  // 只有截图、没有对应 .svg 的 key（新年份的常态）：meta 从 _meta.json 补，缺了按文件名推。
-  // q 用「题」+ 文件名里的题号段；desc 缺省用 key（图库页显示成 "题三 · q3recv"，够认）。
-  const svgKeys = new Set(items.map((it) => it.meta.key));
   for (const [k, im] of imageMap) {
-    if (svgKeys.has(k)) continue;
+    // meta：_meta.json 补 q/kind/desc；缺了按文件名推（q 用「题」+ 文件名里的题号段，
+    // desc 缺省用 key，图库页显示成 "题三 · q3recv"，够认）。
     const mj = metaJson[k] || {};
     items.push({
+      key: k,
       meta: {
         key: k,
         q: mj.q || (im.q ? '题' + im.q : ''),
         kind: mj.kind || im.kind,
         desc: mj.desc || k,
       },
-      file: 'images/' + im.rel,
-      imageOnly: true,
+      pic: im,
     });
   }
 
@@ -274,7 +151,7 @@ function rebuildIndex(figDir, year, orderHint) {
     if (mjOrder.length) hint = mjOrder;
   }
   if (!hint) {
-    try { hint = readIndexHint(fs.readFileSync(path.join(figDir, '_index.js'), 'utf8')); } catch { /* 首次无旧表 */ }
+    try { hint = readIndexHint(fs.readFileSync(path.join(imgDir, '_index.js'), 'utf8')); } catch { /* 首次无旧表 */ }
   }
   const rank = (it) => {
     const i = (hint || []).indexOf(it.meta.key);
@@ -282,21 +159,10 @@ function rebuildIndex(figDir, year, orderHint) {
   };
   items.sort((a, b) => rank(a) - rank(b));
 
-  // 截图描述符：data/images/<年>/** 优先，其次 figures/<年>/assets/*。命中时该 key 注册成
-  // { src, w, h }；前端 figToSvg() 会把它包成「只有一张 <image> 的 svg 外壳」，于是图库页 / 正文 /
-  // 灯箱 / 版式审计 / 遮挡检查全都不用改，截图上页面仍然是一张 <svg>。
-  const assetShots = scanShots(figDir, year, new Set(items.map((it) => it.meta.key)));
-  const unused = Object.keys(assetShots).filter((k) => k.startsWith('\u0000unused:')).map((k) => assetShots[k].file);
-  const pics = new Map();
-  for (const [k, v] of Object.entries(assetShots)) if (!k.startsWith('\u0000unused:')) pics.set(k, v);
-  for (const [k, v] of imageMap) pics.set(k, v); // 截图目录优先级最高，覆盖 assets/ 同名图
-  const shotKeys = [...pics.keys()];
-
   const lines = [
     '// ' + year + ' 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；',
-    '// 源文件：data/images/' + year + '/**（原卷截图，唯一维护对象）→ 优先级最高',
-    '//         data/figures/' + year + '/**.svg（历史矢量，只读保留，没有同名截图时才用）',
-    '// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件',
+    '// 源文件：data/images/' + year + '/**（原卷截图，唯一维护对象）；勿手改本文件',
+    '// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示',
     'window.BUPT801 = window.BUPT801 || {};',
     'window.BUPT801.figures = window.BUPT801.figures || {};',
     'window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};',
@@ -304,39 +170,34 @@ function rebuildIndex(figDir, year, orderHint) {
   ];
   for (const it of items) {
     // key 必须是合法 JS 标识符才能裸写；纯数字 key（如 2016-一-20.png → key `20`）要走方括号
-    // obj["20"]——点号接引号 .\"20\" 是语法错误，整年图库加载失败（2020-10-31 / 2016 踩过）
-    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key)
-      ? '.' + it.meta.key
-      : '[' + JSON.stringify(it.meta.key) + ']';
-    const k = it.meta.key;
-    const s = pics.get(k);
+    // obj["20"]——点号接引号 ."20" 是语法错误，整年图库加载失败（2020-10-31 / 2016 踩过）
+    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.key)
+      ? '.' + it.key
+      : '[' + JSON.stringify(it.key) + ']';
     lines.push('(window.BUPT801.figures["' + year + '"] = window.BUPT801.figures["' + year + '"] || {})' + acc +
-      ' = ' + (s
-        ? "{ src: '" + escape1(s.src) + "', w: " + s.w + ', h: ' + s.h + ' };'
-        : "'" + escape1(it.svg) + "';"));
+      " = { src: '" + it.pic.src + "', w: " + it.pic.w + ', h: ' + it.pic.h + ' };');
   }
   lines.push('');
   for (const it of items) {
-    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key)
-      ? '.' + it.meta.key
-      : '[' + JSON.stringify(it.meta.key) + ']';
+    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.key)
+      ? '.' + it.key
+      : '[' + JSON.stringify(it.key) + ']';
     lines.push('(window.BUPT801.figureMeta["' + year + '"] = window.BUPT801.figureMeta["' + year + '"] || {})' +
       acc + ' = { q: ' + JSON.stringify(it.meta.q) + ', kind: ' + JSON.stringify(it.meta.kind) +
       ', desc: ' + JSON.stringify(it.meta.desc) + ' };');
   }
   const text = lines.join('\n') + '\n';
-  const out = path.join(figDir, '_index.js');
+  const out = path.join(imgDir, '_index.js');
   let changed = true;
   try { changed = fs.readFileSync(out, 'utf8') !== text; } catch { /* 首次生成 */ }
   if (changed) fs.writeFileSync(out, text);
-  const unknown = shotKeys.filter((k) => !pics.get(k).sizeKnown);
+  const unknown = items.filter((it) => !it.pic.sizeKnown).map((it) => it.key);
   return {
-    count: items.length, changed: changed, shots: shotKeys.length, shotKeys: shotKeys,
-    imgs: imageMap.size, badNames: badNames, unused: unused, unknown: unknown,
+    count: items.length, changed: changed, shotKeys: items.map((it) => it.key),
+    imgs: imageMap.size, badNames: badNames, unknown: unknown,
   };
 }
 
 module.exports = {
-  FIG_RE, META_RE, unescape1, escape1, payloadOf, parseMetaObj, parseSvgFile, svgTextOf,
-  readIndexHint, rebuildIndex, scanShots, scanImageDir, readMetaJson, keyFromImageName, imgSize, IMG_EXT,
+  readIndexHint, rebuildIndex, scanImageDir, readMetaJson, keyFromImageName, imgSize, IMG_EXT,
 };

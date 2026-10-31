@@ -891,14 +891,11 @@ await step('试卷页2021：七(2) 编码器框图内联在「框图如下」之
   }
   const img = st.querySelector('.figblock svg image')
   if (!img) throw new Error('图块里没有 <image>（位图没内联进去）')
-  // 三种存法都认：base64 内联 / /data/figures/<年>/assets/*.png（旧截图通道）/
-  // /data/images/<年>/[answer/]*.png（现行截图通道：注册表直接写外链，不再内联）
+  // 注册表直接写外链：/data/images/<年>/[answer/]*.png（base64 内联与旧 assets 通道已随 SVG 退役）
   const href = img.getAttribute('xlink:href') || img.getAttribute('href') || ''
-  const okHref = /^data:image\/png;base64,/.test(href)
-    || /\/assets\/[\w.-]+\.png$/.test(href)
-    || /^\/data\/images\/\d{4}\/(?:[^/]+\/)*[^/]+\.(png|jpe?g|webp|gif)$/i.test(href)
+  const okHref = /^\/data\/images\/\d{4}\/(?:[^/]+\/)*[^/]+\.(png|jpe?g|webp|gif)$/i.test(href)
   if (!okHref) {
-    throw new Error('图块的 href 既不是 base64 PNG / assets 外链 / data-images 外链：' + href.slice(0, 48))
+    throw new Error('图块的 href 不是 data-images 外链：' + href.slice(0, 48))
   }
   w.close()
 })

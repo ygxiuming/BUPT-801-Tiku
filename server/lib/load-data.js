@@ -1,12 +1,12 @@
 // 在 Node 端加载题库数据（数据脚本向 window.BUPT801 挂载）
 // 题目：data/questions/<年>/paper.js（真题）+ answer.js（答案解析，按题目 id）
-// 图库：data/figures/<年>/ 内单图文件由 _index.js 静态索引（生成器维护）
+// 图库：data/images/<年>/_index.js 静态注册表（位图描述符，emit/server 自动维护）
 global.window = global.window || {}
 require('../../data/chapters.js')
-require('../../data/figures/2025/_index.js')
+require('../../data/images/2025/_index.js')
 require('../../data/questions/2025/paper.js')
 require('../../data/questions/2025/answer.js')
-require('../../data/figures/2026/_index.js')
+require('../../data/images/2026/_index.js')
 require('../../data/questions/2026/paper.js')
 require('../../data/questions/2026/answer.js')
 

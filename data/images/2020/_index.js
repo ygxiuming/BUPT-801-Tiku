@@ -1,7 +1,6 @@
 // 2020 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件：data/images/2020/**（原卷截图，唯一维护对象）→ 优先级最高
-//         data/figures/2020/**.svg（历史矢量，只读保留，没有同名截图时才用）
-// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
+// 源文件：data/images/2020/**（原卷截图，唯一维护对象）；勿手改本文件
+// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
@@ -15,7 +14,7 @@ window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 (window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q5gray = { src: '/data/images/2020/answer/2020-五-q5gray.png', w: 872, h: 702 };
 (window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q7pdf = { src: '/data/images/2020/2020-七-q7pdf.png', w: 1380, h: 486 };
 (window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q7huf = { src: '/data/images/2020/answer/2020-七-q7huf.png', w: 1291, h: 636 };
-(window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q8enc = { src: '/data/images/2020/2020-八-q8enc.png', w: 1108, h: 477 };
+(window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q8enc = { src: '/data/images/2020/2020-八-q8enc.png', w: 1911, h: 823 };
 (window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q8state = { src: '/data/images/2020/answer/2020-八-q8state.png', w: 1295, h: 595 };
 (window.BUPT801.figures["2020"] = window.BUPT801.figures["2020"] || {}).q9psd = { src: '/data/images/2020/answer/2020-九-q9psd.png', w: 1240, h: 530 };
 

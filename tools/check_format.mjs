@@ -31,7 +31,7 @@ for (const y of YEARS) {
   if (!fs.existsSync(p)) { console.error('缺 paper.js: ' + y); continue }
   require(p)
   if (fs.existsSync(a)) require(a)
-  const idx = path.join(ROOT, 'data/figures', String(y), '_index.js')
+  const idx = path.join(ROOT, 'data/images', String(y), '_index.js')
   if (fs.existsSync(idx)) require(idx)
 }
 

@@ -1,22 +1,21 @@
 // 2017 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件：data/images/2017/**（原卷截图，唯一维护对象）→ 优先级最高
-//         data/figures/2017/**.svg（历史矢量，只读保留，没有同名截图时才用）
-// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
+// 源文件：data/images/2017/**（原卷截图，唯一维护对象）；勿手改本文件
+// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 
 (window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q2sys = { src: '/data/images/2017/2017-二-q2sys.png', w: 1776, h: 1329 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q3sys = { src: '/data/images/2017/2017-三-q3sys.png', w: 4808, h: 1303 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6sys = { src: '/data/images/2017/2017-六-q6sys.png', w: 3738, h: 1456 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q2nc = { src: '/data/images/2017/answer/2017-二-q2nc.png', w: 3145, h: 1583 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6psd = { src: '/data/images/2017/answer/2017-六-q6psd.png', w: 4101, h: 1435 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6mod = { src: '/data/images/2017/answer/2017-六-q6mod.png', w: 3767, h: 1490 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6mseq = { src: '/data/images/2017/answer/2017-六-q6mseq.png', w: 4292, h: 1372 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6state = { src: '/data/images/2017/answer/2017-六-q6state.png', w: 2088, h: 888 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q7h = { src: '/data/images/2017/answer/2017-七-q7h.png', w: 2943, h: 1669 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q8const = { src: '/data/images/2017/answer/2017-八-q8const.png', w: 2558, h: 1828 };
-(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q8dom = { src: '/data/images/2017/answer/2017-八-q8dom.png', w: 2463, h: 1858 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q3sys = { src: '/data/images/2017/2017-三-q3sys.png', w: 1972, h: 405 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6sys = { src: '/data/images/2017/2017-六-q6sys.png', w: 1140, h: 373 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q2nc = { src: '/data/images/2017/answer/2017-二-q2nc.png', w: 1992, h: 915 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6psd = { src: '/data/images/2017/answer/2017-六-q6psd.png', w: 1909, h: 553 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6mod = { src: '/data/images/2017/answer/2017-六-q6mod.png', w: 1974, h: 658 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6mseq = { src: '/data/images/2017/answer/2017-六-q6mseq.png', w: 1873, h: 496 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q6state = { src: '/data/images/2017/answer/2017-六-q6state.png', w: 2008, h: 795 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q7h = { src: '/data/images/2017/answer/2017-七-q7h.png', w: 1815, h: 1015 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q8const = { src: '/data/images/2017/answer/2017-八-q8const.png', w: 1852, h: 1369 };
+(window.BUPT801.figures["2017"] = window.BUPT801.figures["2017"] || {}).q8dom = { src: '/data/images/2017/answer/2017-八-q8dom.png', w: 1852, h: 1369 };
 
 (window.BUPT801.figureMeta["2017"] = window.BUPT801.figureMeta["2017"] || {}).q2sys = { q: "题二", kind: "paper", desc: "(a) SSB 相干解调框图：r(t) 分两支各乘 2cos/2sin 2πf_ct 经 LPF(2 kHz)，下支路再 −90° 移相，输出 y₁/y₂；(b) 窄带噪声谱 Pₙ(f)：4~7 kHz 双三角、峰 1/1000 W/kHz" };
 (window.BUPT801.figureMeta["2017"] = window.BUPT801.figureMeta["2017"] || {}).q3sys = { q: "题三", kind: "paper", desc: "(a) 双极性波形 s(t)：0~2 为 +1、2~4 为 −1；(b) 接收机 y(t)→h(t)→t=t₀ 开关抽样→判决（V_T=0）" };

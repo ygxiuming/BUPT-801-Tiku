@@ -43,11 +43,26 @@ function scopeIds(s, prefix) {
   return s.replace(/\sid\s*=\s*["']([^"']+)["']/g, (mm, id) => ' id="' + p + '-' + id + '"')
 }
 
+// 位图描述符 → svg 外壳（与 app/src/lib/render.js 的 figToSvg 同口径）：图库注册值一律是
+// { src, w, h }（2026-11 起 SVG 重绘已退役），打印页里同样包成一张 <svg><image/></svg>。
+// 外壳 viewBox 四边各留 18px；正文的显示宽夹取在前端做，打印版按固有比例出图。
+function figToSvg(v, pad = 18) {
+  if (!v) return ''
+  if (typeof v !== 'object' || !v.src) return ''
+  const w = Math.max(1, Math.round(+v.w || 1200))
+  const h = Math.max(1, Math.round(+v.h || w * 0.6))
+  const p = v.pad === undefined ? pad : Math.max(0, +v.pad)
+  const src = String(v.src).replace(/&/g, '&amp;').replace(/'/g, '&#39;')
+  return "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' " +
+    "viewBox='0 0 " + (w + 2 * p) + ' ' + (h + 2 * p) + "' font-size='14'>" +
+    "<image x='" + p + "' y='" + p + "' width='" + w + "' height='" + h + "' xlink:href='" + src + "'/></svg>"
+}
+
 // 同一张图可能在一页里出现多次（两个小问引用同一张配图），再叠上出现序号
 const figSeq = {}
 function figSvg(year, key) {
   const f = B.figures[String(year)]
-  const s = (f && f[key]) || ''
+  const s = figToSvg(f && f[key])
   const k = String(year) + '/' + key
   const n = (figSeq[k] = (figSeq[k] || 0) + 1)
   return scopeIds(s, 'f' + year + '-' + key + '-' + n)
@@ -133,11 +148,15 @@ function buildBody(year, withAnswers) {
   return html
 }
 
-function buildPrintHtml(year, withAnswers) {
+function buildPrintHtml(year, withAnswers, baseUrl) {
   const p = B.papers[String(year)]
   const body = buildBody(year, withAnswers)
+  // baseUrl：图件是 <image src="/data/images/…"> 绝对路径，puppeteer 的 setContent 以 about:blank
+  // 为基准解析不了这种路径（整页 PDF 图全空），所以渲染 PDF 时传入服务端自己的 origin 作 <base>。
+  const base = baseUrl ? `<base href="${baseUrl}">` : ''
   return `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
+${base}
 <title>${year}年${p.subject}真题${withAnswers ? '含解析' : ''}</title>
 <style>${buildInlineCss()}</style>
 </head><body class="${withAnswers ? 'with-ans' : 'no-ans'}">

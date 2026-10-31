@@ -1,12 +1,11 @@
 // 2016 图库注册表 —— 由 tools/emit_figures.mjs / server 启动同步自动生成；
-// 源文件：data/images/2016/**（原卷截图，唯一维护对象）→ 优先级最高
-//         data/figures/2016/**.svg（历史矢量，只读保留，没有同名截图时才用）
-// 有截图的 key 注册为位图描述符 { src, w, h }，否则注册 svg 字符串；勿手改本文件
+// 源文件：data/images/2016/**（原卷截图，唯一维护对象）；勿手改本文件
+// 每个 key 注册为位图描述符 { src, w, h }，前端 figToSvg() 包成 svg 外壳显示
 window.BUPT801 = window.BUPT801 || {};
 window.BUPT801.figures = window.BUPT801.figures || {};
 window.BUPT801.figureMeta = window.BUPT801.figureMeta || {};
 
-(window.BUPT801.figures["2016"] = window.BUPT801.figures["2016"] || {}).p3H = { src: '/data/images/2016/2016-三-p3H.png', w: 1572, h: 539 };
+(window.BUPT801.figures["2016"] = window.BUPT801.figures["2016"] || {}).p3H = { src: '/data/images/2016/2016-三-p3H.png', w: 654, h: 249 };
 (window.BUPT801.figures["2016"] = window.BUPT801.figures["2016"] || {}).q20gray = { src: '/data/images/2016/2016-20-q20gray.png', w: 1274, h: 254 };
 (window.BUPT801.figures["2016"] = window.BUPT801.figures["2016"] || {}).q22ds = { src: '/data/images/2016/2016-22-q22ds.png', w: 639, h: 225 };
 (window.BUPT801.figures["2016"] = window.BUPT801.figures["2016"] || {}).q26pll = { src: '/data/images/2016/2016-26-q26pll.png', w: 1098, h: 424 };

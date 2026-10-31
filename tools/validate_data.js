@@ -2,29 +2,28 @@
 // 运行: node tools/validate_data.js
 //
 // 约定：
-//   data/figures/<年>/[answer/]<图名>.js     单图一文件；有 _index.js 则用它，否则递归 require 全部非 _ 文件
-//   data/questions/<年>.js / <年>-b.js / <年>-big.js
-// 新增年份只需在下面 EXPECT 里登记期望的题量，脚本自动发现数据文件。
+//   data/images/<年>/_index.js               自动生成的位图注册表（emit / server 同步维护，勿手改）
+//   data/questions/<年>/paper.js + answer.js 题目与解析分离
+// 新增年份在下面 require 区和 EXPECT 里各登记一次，脚本自动核对期望题量。
 global.window = {};
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 
-// ---------------- 数据加载 ----------------
 // ---------------- 数据加载（静态登记，新增年份在此加行）----------------
-// 图库：data/figures/<年>/（_index.js 由生成器维护）
-// 题目：旧格式 <年>.js/-b.js/-big.js；新格式 <年>/paper.js + <年>/answer.js
+// 图库：data/images/<年>/_index.js（位图注册表，勿手改）
+// 题目：data/questions/<年>/paper.js + answer.js
 require('../data/chapters.js');
-require('../data/figures/2021/_index.js');
-require('../data/figures/2023/_index.js');
-require('../data/figures/2024/_index.js');
-require('../data/figures/2025/_index.js');
-require('../data/figures/2026/_index.js');
-require('../data/figures/2017/_index.js');
-require('../data/figures/2019/_index.js');
-require('../data/figures/2022/_index.js');
-require('../data/figures/2020/_index.js');
+require('../data/images/2021/_index.js');
+require('../data/images/2023/_index.js');
+require('../data/images/2024/_index.js');
+require('../data/images/2025/_index.js');
+require('../data/images/2026/_index.js');
+require('../data/images/2017/_index.js');
+require('../data/images/2019/_index.js');
+require('../data/images/2022/_index.js');
+require('../data/images/2020/_index.js');
 require('../data/questions/2020/paper.js');
 require('../data/questions/2020/answer.js');
 require('../data/questions/2021/paper.js');
@@ -43,17 +42,17 @@ require('../data/questions/2017/paper.js');
 require('../data/questions/2017/answer.js');
 require('../data/questions/2019/paper.js');
 require('../data/questions/2019/answer.js');
-require('../data/figures/2018/_index.js');
+require('../data/images/2018/_index.js');
 require('../data/questions/2018/paper.js');
 require('../data/questions/2018/answer.js');
-require('../data/figures/2016/_index.js');
+require('../data/images/2016/_index.js');
 require('../data/questions/2016/paper.js');
 require('../data/questions/2016/answer.js');
-require('../data/figures/2013/_index.js');
-require('../data/figures/2014/_index.js');
-require('../data/figures/2015/_index.js');
-require('../data/figures/2012/_index.js');
-require('../data/figures/2011/_index.js');
+require('../data/images/2013/_index.js');
+require('../data/images/2014/_index.js');
+require('../data/images/2015/_index.js');
+require('../data/images/2012/_index.js');
+require('../data/images/2011/_index.js');
 require('../data/questions/2012/paper.js');
 require('../data/questions/2012/answer.js');
 require('../data/questions/2013/paper.js');

@@ -12,7 +12,7 @@
  *  2. 在同目录里加载题目数据（paper.js / answer.js）与图库，核对「引用了但没注册」
  *     的悬空图 key。
  *  3. 反向核对「注册了但没人引用」的孤儿图（多为改题后忘删，不算错，只提示）。
- *  4. 检查每个注册的图确实是 <svg 开头的字符串或 {src,w,h} 截图描述符。
+ *  4. 检查每个注册的图确实是 {src,w,h} 位图描述符（SVG 重绘已退役）。
  *  5. 核对 data/images/<年>/ 里的截图是否都进了注册表（忘跑 emit 的静默漏图）。
  *
  * 用法：
@@ -120,7 +120,7 @@ for (const t of TARGETS) {
       const paperF = path.join(qDir, y, 'paper.js')
       const ansF = path.join(qDir, y, 'answer.js')
       const figs = []
-      const figDir = path.join(t.dir, 'data', 'figures', y)
+      const figDir = path.join(t.dir, 'data', 'images', y)
       // 图库注册表 = emit 自动生成的 _index.js（浏览器/Node 两用，快照里必须真实下发）
       if (fs.existsSync(path.join(figDir, '_index.js'))) figs.push(path.join(figDir, '_index.js'))
       const files = [paperF, ansF, ...figs].filter(f => fs.existsSync(f))
@@ -137,24 +137,16 @@ for (const t of TARGETS) {
       for (const k of used) if (!regKeys.includes(k)) r.dangling.push({ year: y, fig: k, why: '题干/解析引用了，但图库里没有' })
       for (const k of regKeys) {
         const v = reg[k]
-        // 注册值两种形态：'<svg …>'（矢量图，也是老 base64 外壳的形态）；或 { src, w, h } 位图描述符
-        // （assets/<key>.png 覆盖了同名 svg 时，emit 自动生成——png 优先于 svg）。
-        const isObj = v && typeof v === 'object'
-        if (isObj) {
-          if (!v.src) r.badSvg.push({ year: y, fig: k, why: '位图描述符缺 src' })
-          if (v.w < 40 || v.h < 40) r.badSvg.push({ year: y, fig: k, why: `位图描述符尺寸可疑：${v.w}x${v.h}` })
-        } else if (!/^\s*<svg\b/i.test(String(v || ''))) {
-          r.badSvg.push({ year: y, fig: k, why: '注册值既不是 <svg 字符串也不是 {src,w,h}' })
+        // 注册值一律是 { src, w, h } 位图描述符（SVG 重绘已于 2026-11 退役）
+        if (!v || typeof v !== 'object' || !v.src) {
+          r.badSvg.push({ year: y, fig: k, why: '注册值不是 {src,w,h} 位图描述符（旧 svg 字符串残留？重跑 emit）' })
+          continue
         }
-        // 图片引用（两种形态都要查）：描述符的 src，或外壳 svg 里的 <image xlink:href="/data/…">。
-        // 它们是浏览器真实请求路径，必须在快照目录下真的存在，否则图静默空白（FigBlock 的 v-if 为假）。
-        const refs = isObj ? [String(v.src || '')]
-          : [...String(v || '').matchAll(/(?:xlink:href|href|src)=["'](\/data\/[^"']+)["']/g)].map((m) => m[1])
-        for (const ref of refs) {
-          if (!ref.startsWith('/data/')) continue
-          if (!fs.existsSync(path.join(t.dir, ref))) {
-            r.missing.push({ file: ref, why: `图 ${y}/${k} 引用的图片在快照里不存在（图会空白）` })
-          }
+        if (v.w < 40 || v.h < 40) r.badSvg.push({ year: y, fig: k, why: `位图描述符尺寸可疑：${v.w}x${v.h}` })
+        // 描述符的 src 是浏览器真实请求路径，必须在快照目录下真的存在，否则图静默空白（FigBlock 的 v-if 为假）。
+        const ref = String(v.src || '')
+        if (ref.startsWith('/data/') && !fs.existsSync(path.join(t.dir, ref))) {
+          r.missing.push({ file: ref, why: `图 ${y}/${k} 引用的图片在快照里不存在（图会空白）` })
         }
         if (!used.has(k)) r.orphan.push({ year: y, fig: k })
       }

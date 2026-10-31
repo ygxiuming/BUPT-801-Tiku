@@ -11,19 +11,18 @@ const ROOT = path.dirname(path.dirname(__filename))
 const DIST = path.join(ROOT, 'app', 'dist')
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome'
 
-// ---- 图库注册表自动同步：截图（data/images）优先、历史 .svg 兜底，_index.js 只是自动生成的缓存 ----
-// 启动时全量对齐一次；运行中监听 data/images 的图片与 data/figures 的 .svg 变化（存盘 → 自动重建 → 刷新即生效）。
+// ---- 图库注册表自动同步：源 = data/images/<年>/** 位图，_index.js 只是自动生成的缓存 ----
+// 启动时全量对齐一次；运行中监听 data/images 的图片变化（存盘 → 自动重建 → 刷新即生效）。
 // 任何失败只告警不退出（同步不了时 _index.js 保持上次内容，页面照常工作）。
 module.paths.unshift(ROOT) // require('tools/...') 从项目根解析（require(变量)/路径 .. 字面量会被 Mimosa 拦）
 const figRegistry = require('tools/fig_registry.js')
-const FIG_ROOT = path.join(ROOT, 'data', 'figures')
 const IMG_ROOT = path.join(ROOT, 'data', 'images')
 
 function syncFigures(years, tag) {
   const changed = []
   for (const y of years) {
     try {
-      const r = figRegistry.rebuildIndex(path.join(FIG_ROOT, y), y, null)
+      const r = figRegistry.rebuildIndex(path.join(IMG_ROOT, y), y, null)
       if (r.changed) changed.push(y)
     } catch (e) {
       console.warn('图库注册表同步失败（' + y + '）：' + e.message)
@@ -33,36 +32,19 @@ function syncFigures(years, tag) {
   return changed
 }
 
-// 年份 = figures/ ∪ images/（新年份可能只有截图，没有 figures 目录）
 const FIG_YEARS = (() => {
   const ys = new Set()
-  for (const d of [FIG_ROOT, IMG_ROOT]) {
-    try { for (const y of fs.readdirSync(d)) if (/^\d{4}$/.test(y)) ys.add(y) } catch { /* 目录还没建 */ }
-  }
+  try { for (const y of fs.readdirSync(IMG_ROOT)) if (/^\d{4}$/.test(y)) ys.add(y) } catch { /* 目录还没建 */ }
   return [...ys].sort()
 })()
 
-let figWatchTimer = null
-try {
-  fs.watch(FIG_ROOT, { recursive: true }, (_ev, name) => {
-    if (!name || !String(name).endsWith('.svg')) return
-    clearTimeout(figWatchTimer)
-    // 防抖：编辑器保存常连写多次；只重建受影响年份（目录名即年份，answer/ 子目录同理）
-    figWatchTimer = setTimeout(() => {
-      const year = String(name).split(path.sep)[0].split('/')[0]
-      syncFigures(/^\d{4}$/.test(year) ? [year] : FIG_YEARS, 'svg 变更')
-    }, 300)
-  })
-} catch (e) {
-  console.warn('图库 .svg 监听不可用（不影响启动）：' + e.message)
-
-}
-
-// 截图监听：往 data/images/<年>/ 丢一张 png → 该年注册表自动重建（新图立刻可用，不用重启）
+// 图片监听：往 data/images/<年>/ 丢一张 png → 该年注册表自动重建（新图立刻可用，不用重启）。
+// 自己写出的 _index.js 也会触发本监听，忽略之（重建本身是幂等的，但没必要空转）。
 let imgWatchTimer = null
 try {
   fs.watch(IMG_ROOT, { recursive: true }, (_ev, name) => {
     const n = String(name || '')
+    if (n.startsWith('_index.js') || n.includes(path.sep + '_index.js') || n.includes('/_index.js')) return
     if (!/\.(png|jpe?g|webp|gif)$/i.test(n)) return
     clearTimeout(imgWatchTimer)
     imgWatchTimer = setTimeout(() => {
@@ -110,7 +92,9 @@ function registerPdfRoute(yKey, paper) {
     const isAns = req.params.kind === 'ans'
     let browser = null
     try {
-      const html = buildPrintHtml(year, isAns)
+      // 图件 <image> 是 /data/** 绝对路径，setContent 的 about:blank 基准解析不了，
+      // 传服务端自己的 origin 作 <base>，让 Chrome 回源取图
+      const html = buildPrintHtml(year, isAns, 'http://127.0.0.1:' + PORT + '/')
       const puppeteer = require('puppeteer-core')
       browser = await puppeteer.launch({
         executablePath: CHROME,
