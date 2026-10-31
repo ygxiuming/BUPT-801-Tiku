@@ -1,0 +1,20 @@
+{
+  "q4figs": { "q": "题四", "kind": "paper", "desc": "基带传输系统框图与根号升余弦波形" },
+  "q6bec": { "q": "题六", "kind": "paper", "desc": "二进制删除信道" },
+  "q7pdf": { "q": "题七", "kind": "paper", "desc": "采样值概率密度 p(x)" },
+  "q10rx": { "q": "题十", "kind": "paper", "desc": "解调与解扩框图" },
+  "q3psd": { "q": "题三", "kind": "answer", "desc": "带通滤波输出功率谱" },
+  "q3iq": { "q": "题三", "kind": "answer", "desc": "同相/正交分量功率谱" },
+  "q5wave": { "q": "题五", "kind": "answer", "desc": "s1/s2/s3 信号波形" },
+  "q5const": { "q": "题五", "kind": "answer", "desc": "信号星座图" },
+  "q5decide": { "q": "题五", "kind": "answer", "desc": "MAP 最佳判决区域" },
+  "q5rot": { "q": "题五", "kind": "answer", "desc": "另一组正交基下的星座（旋转 45°）" },
+  "q7huff": { "q": "题七", "kind": "answer", "desc": "哈夫曼编码过程与码字" },
+  "q8psd": { "q": "题八", "kind": "answer", "desc": "FDM 基带信号功率谱示意" },
+  "q8block": { "q": "题八", "kind": "answer", "desc": "FDM/FM 解调框图" },
+  "q9enc": { "q": "题九", "kind": "answer", "desc": "(3,1,3) 卷积编码器框图" },
+  "q9state": { "q": "题九", "kind": "answer", "desc": "状态转移图" },
+  "q9trellis": { "q": "题九", "kind": "answer", "desc": "网格图（单节支路）" },
+  "q10psd": { "q": "题十", "kind": "answer", "desc": "接收机输入端功率谱（信号+干扰）" },
+  "q10bb": { "q": "题十", "kind": "answer", "desc": "r(t) 基带分量功率谱（解扩前后对比）" }
+}
