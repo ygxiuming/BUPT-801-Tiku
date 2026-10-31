@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""原卷图区域裁剪助手：从整页 PNG 裁出图区域，存到 待解析/crops/<年>/<key>.png 留档。
+"""原卷图区域裁剪助手：从整页 PNG（pdftoppm -r 300 的页图）裁出题图/解析图区域，
+直接存成最终入库的 data/images/<年>/[answer/]<年>-<题号>-<key>.png。
 
-裁图是"画完与原卷对照"的输入：compare_figures.py 按 待解析/crops/<年>/<key>.png
-找原图，找不到就跳过该图并警告。裁片与源 PDF 同在 待解析/（gitignore，不入库）。
+图件只有位图一条链路（SVG 重绘已退役）：用户没提供的图就从页图上裁——裁完不再做
+"重绘 vs 原卷"对照（对照闭环已停用），Read 一遍裁片确认框住了完整图区即可。
 
 用法（在项目根目录执行）：
     python tools/crop_orig.py /tmp/w801/2015/p-03.png 830,220,1450,560 \
-        --out 待解析/crops/2015/p3ssb.png
+        --out data/images/2015/2015-三-p3ssb.png
     python tools/crop_orig.py 页.png 0.18,0.35,0.62,0.30 --norm --out ...   # 按页面比例
 
 坐标：左上角 x,y + 宽 w,h（页面像素）；--norm 时四个数按 0~1 页面比例解析。
@@ -24,7 +25,7 @@ def main():
     ap.add_argument('page', help='整页 PNG（pdftoppm -r 300 的产物）')
     ap.add_argument('box', help='x,y,w,h（像素；配合 --norm 则为 0~1 页面比例）')
     ap.add_argument('--norm', action='store_true', help='按页面比例解析 box')
-    ap.add_argument('--out', required=True, help='裁片输出路径，约定 待解析/crops/<年>/<key>.png')
+    ap.add_argument('--out', required=True, help='裁片输出路径，data/images/<年>/[answer/]<年>-<题号>-<key>.png')
     a = ap.parse_args()
 
     im = Image.open(a.page)
