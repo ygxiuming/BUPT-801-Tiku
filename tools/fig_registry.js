@@ -206,7 +206,9 @@ function scanImageDir(imgDir, year) {
 // 从一个 _index.js 文本里按注册出现顺序取 key（保序重建用）
 function readIndexHint(text) {
   const keys = [];
-  for (const m of text.matchAll(/figures\["\d{4}"\][^=]*?\.([A-Za-z0-9_]+)\s*=/g)) keys.push(m[1]);
+  for (const m of text.matchAll(/figures\["\d{4}"\][^=]*?(?:\.([A-Za-z0-9_]+)|\[("(?:[^"\\]|\\.)*")\])\s*=/g)) {
+    keys.push(m[1] || JSON.parse(m[2]));
+  }
   return keys;
 }
 
@@ -301,21 +303,25 @@ function rebuildIndex(figDir, year, orderHint) {
     '',
   ];
   for (const it of items) {
-    // key 必须是合法 JS 标识符才能裸写；截图工具命名的纯数字 key（如 2020-七-3.png → key `3`）要加引号，
-    // 否则生成的 _index.js 直接语法错误、整年图库加载失败（2020-10-31 踩过）
-    const qk = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key) ? it.meta.key : JSON.stringify(it.meta.key);
+    // key 必须是合法 JS 标识符才能裸写；纯数字 key（如 2016-一-20.png → key `20`）要走方括号
+    // obj["20"]——点号接引号 .\"20\" 是语法错误，整年图库加载失败（2020-10-31 / 2016 踩过）
+    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key)
+      ? '.' + it.meta.key
+      : '[' + JSON.stringify(it.meta.key) + ']';
     const k = it.meta.key;
     const s = pics.get(k);
-    lines.push('(window.BUPT801.figures["' + year + '"] = window.BUPT801.figures["' + year + '"] || {}).' + qk +
+    lines.push('(window.BUPT801.figures["' + year + '"] = window.BUPT801.figures["' + year + '"] || {})' + acc +
       ' = ' + (s
         ? "{ src: '" + escape1(s.src) + "', w: " + s.w + ', h: ' + s.h + ' };'
         : "'" + escape1(it.svg) + "';"));
   }
   lines.push('');
   for (const it of items) {
-    const qk = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key) ? it.meta.key : JSON.stringify(it.meta.key);
-    lines.push('(window.BUPT801.figureMeta["' + year + '"] = window.BUPT801.figureMeta["' + year + '"] || {}).' +
-      qk + ' = { q: ' + JSON.stringify(it.meta.q) + ', kind: ' + JSON.stringify(it.meta.kind) +
+    const acc = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(it.meta.key)
+      ? '.' + it.meta.key
+      : '[' + JSON.stringify(it.meta.key) + ']';
+    lines.push('(window.BUPT801.figureMeta["' + year + '"] = window.BUPT801.figureMeta["' + year + '"] || {})' +
+      acc + ' = { q: ' + JSON.stringify(it.meta.q) + ', kind: ' + JSON.stringify(it.meta.kind) +
       ', desc: ' + JSON.stringify(it.meta.desc) + ' };');
   }
   const text = lines.join('\n') + '\n';
