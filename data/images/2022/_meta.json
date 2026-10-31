@@ -1,0 +1,10 @@
+{
+  "q2am": { "q": "题二", "kind": "paper", "desc": "AM 系统框图" },
+  "q4rx": { "q": "题四", "kind": "paper", "desc": "二进制调制系统接收框图" },
+  "q5const": { "q": "题五", "kind": "paper", "desc": "八进制星座图" },
+  "q7block": { "q": "题七", "kind": "paper", "desc": "量化器框图" },
+  "q9sd": { "q": "题九", "kind": "paper", "desc": "卷积码状态转移图" },
+  "q5region": { "q": "题五", "kind": "answer", "desc": "s2 最佳判决域" },
+  "q9enc": { "q": "题九", "kind": "answer", "desc": "编码器原理框图" },
+  "q9trellis": { "q": "题九", "kind": "answer", "desc": "网格图与维特比路径" }
+}
