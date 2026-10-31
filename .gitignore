@@ -12,16 +12,14 @@ app/public/vendor/
 Thumbs.db
 /tmp/
 
-# 原卷裁图与对照图（画图保真闭环的工作文件，不入库；compare_figures.py / crop_orig.py 产出）
-待解析/crops/
-
-# 图库目录里的备份/草稿 svg（_ 前缀不被注册表扫描，见 tools/fig_registry.js）
-data/figures/**/_*.svg
+# 待解析工作目录：原始试卷/答案 PDF 与答案图片（输入材料，版权归原卷权利人，
+# 只留本地不入库；入库产物是 data/ 下的转录与截图）
+待解析/
 
 # 工具运行时的审计账本（每次调用都会写，纯噪音）
 .mimosa/
 
-# Python 运行缓存（gen_figures_*.py 导入 svgkit 时生成）
+# Python 运行缓存
 __pycache__/
 
 # 编辑器/助手的私有工作目录（含本机路径与技术笔记，不对外）
