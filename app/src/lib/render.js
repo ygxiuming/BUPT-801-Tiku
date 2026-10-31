@@ -53,11 +53,27 @@ function nextFigPrefix(year, key) {
   return 'f' + year + '-' + key + '-' + n
 }
 
-// 图库注册值有两种形态，页面必须都认（矢量图是字符串，换成原卷截图后是对象）：
-//   '<svg …>…</svg>'        矢量图：生成器产出的 .svg 真身
-//   { src, w, h }           位图：原卷截图（src 可为 /data/… 绝对路径或 data: URI，w/h 是像素尺寸）
-// 统一转成"只有一张 <image> 的 svg 外壳"，下游（fitSvg / inlineFigure / 点击放大 / 图库页 /
-// 版式审计 / check_figure_overlap 的留白检查）就不用各认一套了 —— 位图在页面上仍然是一张 <svg>。
+// 图库注册值统一是 { src, w, h } 位图描述符（SVG 重绘已于 2026-11 退役）：
+// src 是 /data/images/… 站点绝对路径，w/h 是像素尺寸。统一转成"只有一张 <image> 的 svg 外壳"，
+// 下游（fitSvg / inlineFigure / 点击放大 / 图库页 / 版式审计）就不用各认一套了——位图在页面上仍然是一张 <svg>。
+
+// 部署前缀：GitHub Pages 等子路径部署下（/BUPT-801-Tiku/），注册表里的 /data/… 绝对路径
+// 会被解析到域名根而 404（图全空白）。这里从 index.html 的 chapters.js script src 反推部署前缀
+// ——根路径部署拿到 '/'（前缀空串，行为不变），子路径部署拿到 '/BUPT-801-Tiku'。只算一次。
+let DATA_PREFIX = null
+function dataPrefix() {
+  if (DATA_PREFIX === null) {
+    DATA_PREFIX = ''
+    try {
+      const el = document.querySelector('script[src$="data/chapters.js"]')
+      const s = el ? String(el.getAttribute('src') || '') : ''
+      const m = s.match(/(^.+\/)data\/chapters\.js/)
+      if (m && m[1] !== '/') DATA_PREFIX = m[1].replace(/\/+$/, '')
+    } catch { /* 非 DOM 环境按根路径处理 */ }
+  }
+  return DATA_PREFIX
+}
+
 export function figToSvg(v, pad = 18) {
   if (!v) return ''
   if (typeof v === 'string') return v
@@ -65,7 +81,10 @@ export function figToSvg(v, pad = 18) {
   const w = Math.max(1, Math.round(+v.w || 1200))
   const h = Math.max(1, Math.round(+v.h || w * 0.6))
   const p = v.pad === undefined ? pad : Math.max(0, +v.pad)
-  const src = String(v.src).replace(/&/g, '&amp;').replace(/'/g, '&#39;')
+  const pre = dataPrefix()
+  const raw = String(v.src)
+  const src = (pre && raw.startsWith('/') ? pre.concat(raw) : raw)
+    .replace(/&/g, '&amp;').replace(/'/g, '&#39;')
   return "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' " +
     "viewBox='0 0 " + (w + 2 * p) + ' ' + (h + 2 * p) + "' font-size='14'>" +
     "<image x='" + p + "' y='" + p + "' width='" + w + "' height='" + h + "' xlink:href='" + src + "'/></svg>"
